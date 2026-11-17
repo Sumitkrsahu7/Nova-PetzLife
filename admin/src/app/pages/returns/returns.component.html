@@ -1,0 +1,212 @@
+<div class="returns-page">
+  <div class="page-header">
+    <div>
+      <h1>Returns, Inspections & Refunds</h1>
+      <p class="subtitle">Review customer return requests, physical shop inspections, and inventory restock</p>
+    </div>
+    <button (click)="fetchReturns()" class="btn-refresh">🔄 Refresh</button>
+  </div>
+
+  <!-- Status Tabs -->
+  <div class="filter-bar">
+    <div class="status-tabs">
+      <button *ngFor="let tab of statusTabs"
+              (click)="setTab(tab)"
+              [class.active]="activeTab === tab"
+              class="tab-btn">
+        {{ tab }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Returns Table -->
+  <div class="table-card">
+    <table class="returns-table">
+      <thead>
+        <tr>
+          <th>Request Number</th>
+          <th>Order Number</th>
+          <th>Customer</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th>Estimated Refund</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="returnRequests.length === 0">
+          <td colspan="7" class="empty-cell">No return requests found in this view.</td>
+        </tr>
+        <tr *ngFor="let req of returnRequests">
+          <td>
+            <strong class="req-link" (click)="viewRequest(req)">{{ req.requestNumber }}</strong>
+            <span class="req-date">{{ req.createdAt | date:'short' }}</span>
+          </td>
+          <td>
+            <a [routerLink]="['/orders']" class="order-link">{{ req.orderNumber }}</a>
+          </td>
+          <td>
+            <div class="cust-name">{{ req.customerName }}</div>
+            <div class="cust-phone">{{ req.customerPhone }}</div>
+          </td>
+          <td>
+            <div class="reason-text">{{ req.reason }}</div>
+            <div class="comments-text" *ngIf="req.customerComments">"{{ req.customerComments }}"</div>
+          </td>
+          <td>
+            <span class="status-badge" [class]="req.status.toLowerCase()">
+              {{ req.status }}
+            </span>
+          </td>
+          <td>
+            <strong class="amount">₹{{ req.estimatedRefundAmount | number:'1.2-2' }}</strong>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button (click)="viewRequest(req)" class="btn-action view">View</button>
+
+              <button *ngIf="req.status === 'REQUESTED'" (click)="schedulePickup(req.id)" class="btn-action pickup">
+                Schedule Pickup
+              </button>
+
+              <button *ngIf="req.status === 'PICKUP_SCHEDULED'" (click)="markReceived(req.id)" class="btn-action receive">
+                Mark Received
+              </button>
+
+              <button *ngIf="req.status === 'RECEIVED'" (click)="openInspectDialog(req)" class="btn-action inspect">
+                Inspect Item
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Return Request Detail Modal -->
+  <div *ngIf="selectedRequest && !showInspectModal" class="modal-backdrop" (click)="closeDetail()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>Return Request {{ selectedRequest.requestNumber }}</h2>
+          <span class="status-badge" [class]="selectedRequest.status.toLowerCase()">{{ selectedRequest.status }}</span>
+        </div>
+        <button (click)="closeDetail()" class="btn-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="meta-section">
+          <div class="meta-item">
+            <span class="lbl">Order Number:</span>
+            <strong>{{ selectedRequest.orderNumber }}</strong>
+          </div>
+          <div class="meta-item">
+            <span class="lbl">Customer:</span>
+            <strong>{{ selectedRequest.customerName }} ({{ selectedRequest.customerPhone }})</strong>
+          </div>
+          <div class="meta-item">
+            <span class="lbl">Reason:</span>
+            <strong>{{ selectedRequest.reason }}</strong>
+          </div>
+          <div class="meta-item">
+            <span class="lbl">Customer Comments:</span>
+            <span>{{ selectedRequest.customerComments || 'None' }}</span>
+          </div>
+          <div class="meta-item" *ngIf="selectedRequest.adminNotes">
+            <span class="lbl">Admin Notes:</span>
+            <span>{{ selectedRequest.adminNotes }}</span>
+          </div>
+        </div>
+
+        <h3>Items to Return:</h3>
+        <div class="items-list">
+          <div *ngFor="let item of selectedRequest.items" class="modal-item-row">
+            <div class="item-info">
+              <strong>{{ item.productName }}</strong>
+              <div class="item-sub">Brand: {{ item.brandName }} | SKU: {{ item.sku }} | Return Qty: {{ item.quantity }}</div>
+            </div>
+            <div class="item-pricing">
+              ₹{{ item.totalPrice | number:'1.2-2' }}
+            </div>
+          </div>
+        </div>
+
+        <div class="order-total-bar">
+          <span>Estimated Refund Amount:</span>
+          <strong>₹{{ selectedRequest.estimatedRefundAmount | number:'1.2-2' }}</strong>
+        </div>
+
+        <!-- Inspection History -->
+        <div *ngIf="selectedRequest.inspections.length > 0" class="inspection-history">
+          <h3>Inspection Records:</h3>
+          <div *ngFor="let ins of selectedRequest.inspections" class="inspection-record">
+            <div>
+              <strong>Outcome: <span [class]="ins.outcome.toLowerCase()">{{ ins.outcome }}</span></strong>
+              <span class="ins-by">by {{ ins.inspectedBy }} on {{ ins.inspectedAt | date:'short' }}</span>
+            </div>
+            <p class="ins-notes">{{ ins.conditionNotes }}</p>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button *ngIf="selectedRequest.status === 'REQUESTED'" (click)="schedulePickup(selectedRequest.id)" class="btn-pickup">Schedule Pickup</button>
+          <button *ngIf="selectedRequest.status === 'PICKUP_SCHEDULED'" (click)="markReceived(selectedRequest.id)" class="btn-receive">Mark Received</button>
+          <button *ngIf="selectedRequest.status === 'RECEIVED'" (click)="openInspectDialog(selectedRequest)" class="btn-inspect">Inspect & Decide Refund</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Physical Inspection Dialog -->
+  <div *ngIf="showInspectModal && selectedRequest" class="modal-backdrop" (click)="closeInspectDialog()">
+    <div class="modal-card inspect-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>Physical Store Inspection — {{ selectedRequest.requestNumber }}</h2>
+          <p class="subtitle">Petzlife Kuravankonam Shop Item Verification</p>
+        </div>
+        <button (click)="closeInspectDialog()" class="btn-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Inspection Outcome:</label>
+          <select [(ngModel)]="inspectOutcome" class="form-control">
+            <option value="APPROVED">APPROVED — Undamaged & Meets Return Policy</option>
+            <option value="PARTIALLY_APPROVED">PARTIALLY APPROVED</option>
+            <option value="REJECTED">REJECTED — Compromised Seal / Packaging Damaged by Customer</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Condition Notes & Verification Findings:</label>
+          <textarea [(ngModel)]="inspectNotes" class="form-control" rows="3" placeholder="Describe physical packaging, seal status, and condition..."></textarea>
+        </div>
+
+        <div *ngIf="inspectOutcome === 'APPROVED' || inspectOutcome === 'PARTIALLY_APPROVED'" class="restock-box">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="restockStock" />
+            <span><strong>Restock Inventory:</strong> Automatically return item quantity back to available store stock</span>
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="approveRefund" />
+            <span><strong>Trigger Customer Refund:</strong> Process reversal to original payment gateway / COD record</span>
+          </label>
+
+          <div *ngIf="approveRefund" class="form-group refund-field">
+            <label>Approved Refund Amount (₹):</label>
+            <input type="number" [(ngModel)]="refundAmount" class="form-control" step="0.01" />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button (click)="closeInspectDialog()" class="btn-secondary" [disabled]="isSubmittingInspection">Cancel</button>
+          <button (click)="submitInspection()" class="btn-primary" [disabled]="isSubmittingInspection">
+            {{ isSubmittingInspection ? 'Processing...' : 'Confirm Decision' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

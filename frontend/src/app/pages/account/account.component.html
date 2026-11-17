@@ -1,0 +1,182 @@
+<div class="account-container">
+  <div class="account-header">
+    <div class="user-greeting">
+      <h1>Hello, {{ user?.firstName || 'Pet Parent' }}!</h1>
+      <p>{{ user?.email }} &bull; Customer Account</p>
+    </div>
+    <button class="btn btn-outline" (click)="logout()">Sign Out</button>
+  </div>
+
+  <div class="account-tabs">
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'profile'"
+      (click)="setTab('profile')"
+    >
+      👤 My Profile
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'addresses'"
+      (click)="setTab('addresses')"
+    >
+      📍 Saved Addresses
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'orders'"
+      (click)="setTab('orders')"
+    >
+      📦 Order History
+    </button>
+  </div>
+
+  <!-- Profile Tab -->
+  <div *ngIf="activeTab === 'profile'" class="tab-content">
+    <div class="card profile-card">
+      <h3>Personal Details</h3>
+      <div class="detail-row">
+        <span class="label">Full Name:</span>
+        <span class="value">{{ user?.firstName }} {{ user?.lastName }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Email Address:</span>
+        <span class="value">{{ user?.email }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Registered Roles:</span>
+        <span class="value badge" *ngFor="let role of user?.roles">{{ role }}</span>
+      </div>
+
+      <div class="store-info-box">
+        <h4>🏪 Petzlife Kuravankonam</h4>
+        <p>Your local pet supplies are fulfilled straight from Petzlife, Kuravankonam Junction, Kuravankonam Ambalamukku Road, Thiruvananthapuram, Kerala 695003.</p>
+        <p class="highlight">Standard express delivery within 20 km straight-line radius!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Addresses Tab -->
+  <div *ngIf="activeTab === 'addresses'" class="tab-content">
+    <div class="actions-bar">
+      <h3>Delivery Addresses</h3>
+      <button class="btn btn-primary" (click)="showAddAddress = !showAddAddress">
+        {{ showAddAddress ? 'Cancel' : '+ Add New Address' }}
+      </button>
+    </div>
+
+    <div *ngIf="addressSaveMessage" class="alert alert-success">
+      {{ addressSaveMessage }}
+    </div>
+
+    <!-- Add Address Form -->
+    <div *ngIf="showAddAddress" class="card add-address-card">
+      <h4>Add New Delivery Address (Trivandrum)</h4>
+      <form (ngSubmit)="saveAddress()">
+        <div class="form-row">
+          <div class="form-group col">
+            <label>Recipient Name *</label>
+            <input type="text" [(ngModel)]="addressForm.recipientName" name="recipientName" required />
+          </div>
+          <div class="form-group col">
+            <label>Phone Number *</label>
+            <input type="tel" [(ngModel)]="addressForm.phone" name="phone" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Quick Trivandrum Neighbourhood Preset</label>
+          <select (change)="onPresetLocationChange($event)" class="form-select">
+            <option value="">-- Choose popular delivery area --</option>
+            <option *ngFor="let loc of trivandrumLocations" [value]="loc.name">{{ loc.name }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Address Line 1 (House/Flat, Building, Street) *</label>
+          <input type="text" [(ngModel)]="addressForm.addressLine1" name="addressLine1" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col">
+            <label>Landmark</label>
+            <input type="text" [(ngModel)]="addressForm.landmark" name="landmark" />
+          </div>
+          <div class="form-group col">
+            <label>Postal Code / PIN *</label>
+            <input type="text" [(ngModel)]="addressForm.postalCode" name="postalCode" required />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Address</button>
+          <button type="button" class="btn btn-outline" (click)="showAddAddress = false">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Address Cards -->
+    <div class="addresses-grid">
+      <div *ngFor="let addr of addresses" class="card address-card" [class.default]="addr.isDefault">
+        <div class="addr-header">
+          <strong>{{ addr.recipientName }}</strong>
+          <span *ngIf="addr.isDefault" class="default-badge">Default</span>
+        </div>
+        <p class="addr-phone">📞 {{ addr.phone }}</p>
+        <p class="addr-text">{{ addr.addressLine1 }}<span *ngIf="addr.addressLine2">, {{ addr.addressLine2 }}</span></p>
+        <p *ngIf="addr.landmark" class="addr-landmark">Near {{ addr.landmark }}</p>
+        <p class="addr-city">{{ addr.city }}, {{ addr.state }} - {{ addr.postalCode }}</p>
+        <div class="addr-footer">
+          <button class="btn-text danger" (click)="deleteAddress(addr.id)">Delete</button>
+        </div>
+      </div>
+
+      <div *ngIf="addresses.length === 0 && !isLoadingAddresses" class="empty-state">
+        <p>No saved addresses found. Add one for quick checkout!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders Tab -->
+  <div *ngIf="activeTab === 'orders'" class="tab-content">
+    <h3>Order History</h3>
+    <div *ngIf="isLoadingOrders" class="loading">Loading your orders...</div>
+
+    <div *ngIf="!isLoadingOrders && orders.length === 0" class="empty-state">
+      <p>You haven't placed any orders yet.</p>
+      <a routerLink="/shop" class="btn btn-primary">Browse Shop</a>
+    </div>
+
+    <div class="orders-list" *ngIf="orders.length > 0">
+      <div *ngFor="let order of orders" class="card order-card">
+        <div class="order-top">
+          <div>
+            <span class="order-num">#{{ order.orderNumber }}</span>
+            <span class="order-date">{{ order.createdAt | date:'mediumDate' }}</span>
+          </div>
+          <span class="status-pill {{ order.orderStatus.toLowerCase() }}">{{ order.orderStatus }}</span>
+        </div>
+
+        <div class="order-mid">
+          <div>
+            <span class="label">Payable:</span>
+            <span class="amount">₹{{ order.finalPayableAmount }}</span>
+          </div>
+          <div>
+            <span class="label">Method:</span>
+            <span>{{ order.paymentMethod }}</span>
+          </div>
+          <div>
+            <span class="label">Slot:</span>
+            <span>{{ order.deliverySlot || 'Standard Delivery' }}</span>
+          </div>
+        </div>
+
+        <div class="order-actions">
+          <a [routerLink]="['/track', order.orderNumber]" class="btn btn-outline btn-sm">Track Order</a>
+          <a [routerLink]="['/invoice', order.orderNumber]" class="btn btn-outline btn-sm">View Invoice</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

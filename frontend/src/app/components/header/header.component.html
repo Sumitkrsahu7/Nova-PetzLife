@@ -1,0 +1,128 @@
+<!-- Top Bar -->
+<div class="top-announcement-bar">
+  <div class="container announcement-content">
+    <div class="announcement-left">
+      <span class="location-tag">📍 Petzlife, Kuravankonam Junction, Thiruvananthapuram</span>
+      <span class="delivery-tag">⚡ Fast Delivery within 20 km straight-line radius</span>
+    </div>
+    <div class="announcement-right">
+      <span class="help-text">📞 Store Desk: Mon - Sat 9:00 AM - 8:30 PM</span>
+    </div>
+  </div>
+</div>
+
+<!-- Main Header -->
+<header class="site-header">
+  <div class="container header-container">
+    <!-- Brand Logo -->
+    <a routerLink="/" class="brand-link">
+      <div class="brand-badge">🐾</div>
+      <div class="brand-details">
+        <span class="brand-name">NOVA PETZLIFE</span>
+        <span class="brand-sub">Pet Shop • Kuravankonam</span>
+      </div>
+    </a>
+
+    <!-- Search Form -->
+    <div class="header-search">
+      <div class="search-input-wrapper">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          placeholder="Search cat food, dog kibble, shampoos, toys..."
+          aria-label="Search products"
+        />
+        <button type="button" class="search-submit-btn" (click)="onSearch()">Search</button>
+      </div>
+    </div>
+
+    <!-- Actions: Connectivity, Cart, Account, Mobile Toggle -->
+    <div class="header-actions">
+      <!-- Backend Status Pill -->
+      <div class="backend-pill" [class.connected]="isBackendOnline" title="REST API Connection Status">
+        <span class="status-dot"></span>
+        <span class="status-text">{{ isBackendOnline ? 'API Connected' : 'Offline Mode' }}</span>
+      </div>
+
+      <!-- Auth Actions: Logged In vs Logged Out -->
+      <ng-container *ngIf="authService.currentUser$ | async as user; else loggedOutActions">
+        <a routerLink="/account" class="account-btn" aria-label="Customer Account">
+          <span class="account-icon">👤</span>
+          <span class="account-text">{{ user.firstName || 'Account' }}</span>
+        </a>
+        <button type="button" class="account-btn logout-header-btn" (click)="logout()" title="Log out from customer account">
+          <span class="account-icon">🚪</span>
+          <span class="account-text">Logout</span>
+        </button>
+      </ng-container>
+      <ng-template #loggedOutActions>
+        <a routerLink="/login" class="account-btn" aria-label="Customer Login">
+          <span class="account-icon">🔑</span>
+          <span class="account-text">Log In</span>
+        </a>
+        <a routerLink="/register" class="account-btn" aria-label="Customer Registration">
+          <span class="account-icon">📝</span>
+          <span class="account-text">Register</span>
+        </a>
+      </ng-template>
+
+      <!-- My Pets Button -->
+      <a routerLink="/my-pets" class="account-btn" title="Customer Pet Profiles">
+        <span class="account-icon">🐾</span>
+        <span class="account-text">My Pets</span>
+      </a>
+
+      <!-- Cart Button -->
+      <a routerLink="/cart" class="cart-button" aria-label="Shopping Cart">
+        <span class="cart-icon">🛒</span>
+        <span class="cart-label">Cart</span>
+        <span class="cart-badge">{{ cartCount }}</span>
+      </a>
+
+      <!-- Mobile Hamburger Toggle -->
+      <button class="hamburger-btn" type="button" (click)="toggleMobileMenu()" aria-label="Toggle Navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Navigation Bar -->
+  <nav class="main-nav" [class.mobile-open]="isMobileMenuOpen">
+    <div class="container nav-container">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
+        🏠 Home
+      </a>
+      <a routerLink="/shop" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
+        🛍️ All Products
+      </a>
+      <a [routerLink]="['/shop']" [queryParams]="{category: 'cat-food'}" class="nav-item">
+        🐱 Cat Care & Food
+      </a>
+      <a [routerLink]="['/shop']" [queryParams]="{category: 'dog-food'}" class="nav-item">
+        🐶 Dog Care & Food
+      </a>
+      <a [routerLink]="['/shop']" [queryParams]="{category: 'grooming'}" class="nav-item">
+        ✨ Grooming & Hygiene
+      </a>
+      <a [routerLink]="['/']" fragment="brands" class="nav-item">
+        🏷️ Brands
+      </a>
+      <a [routerLink]="['/']" fragment="delivery-checker" class="nav-item highlight">
+        📍 20 km Delivery Area
+      </a>
+      <a routerLink="/my-pets" routerLinkActive="active" class="nav-item">
+        🐾 My Pets
+      </a>
+      <a routerLink="/support" routerLinkActive="active" class="nav-item">
+        💬 Help & FAQs
+      </a>
+      <a [routerLink]="['/']" fragment="store-info" class="nav-item">
+        ℹ️ About Store
+      </a>
+    </div>
+  </nav>
+</header>

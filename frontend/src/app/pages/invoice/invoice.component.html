@@ -1,0 +1,191 @@
+<div class="invoice-page-container">
+  <!-- Actions Bar (Hidden in Print) -->
+  <div class="actions-bar no-print">
+    <div class="actions-left">
+      <a routerLink="/" class="btn-link">← Back to Shop</a>
+      <a [routerLink]="['/track', orderNumber]" class="btn-link">Track Delivery 🚚</a>
+    </div>
+    <div class="actions-right">
+      <button class="btn btn-outline" (click)="loadInvoice(orderNumber)">Refresh</button>
+      <button class="btn btn-primary" (click)="printInvoice()">
+        🖨️ Print / Save as PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading & Error States -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Generating official GST Tax Invoice...</p>
+  </div>
+
+  <div *ngIf="errorMessage && !isLoading" class="alert-error">
+    <p>⚠️ {{ errorMessage }}</p>
+  </div>
+
+  <!-- Printable GST Invoice Card -->
+  <div *ngIf="invoice && !isLoading" class="invoice-sheet" id="printable-invoice">
+    <!-- Header -->
+    <header class="invoice-header">
+      <div class="brand-block">
+        <div class="brand-logo-text">
+          <span class="brand-icon">🐾</span>
+          <span class="brand-title">{{ invoice.storeName }}</span>
+        </div>
+        <p class="brand-subtitle">Premium Pet Nutrition & Accessories</p>
+        <p class="store-address">
+          {{ invoice.storeAddress }}, {{ invoice.storeCity }}, {{ invoice.storeState }} - {{ invoice.storePinCode }}
+        </p>
+        <p class="store-contact">Phone: {{ invoice.storePhone }} | State: {{ invoice.storeState }} (Code: {{ invoice.storeStateCode }})</p>
+        <p class="gstin-badge"><strong>GSTIN:</strong> {{ invoice.storeGstin }}</p>
+      </div>
+
+      <div class="meta-block">
+        <div class="invoice-title-tag">TAX INVOICE</div>
+        <table class="meta-table">
+          <tr>
+            <td><strong>Invoice No:</strong></td>
+            <td>{{ invoice.invoiceNumber }}</td>
+          </tr>
+          <tr>
+            <td><strong>Invoice Date:</strong></td>
+            <td>{{ invoice.invoiceDate }}</td>
+          </tr>
+          <tr>
+            <td><strong>Order No:</strong></td>
+            <td><a [routerLink]="['/track', invoice.orderNumber]">{{ invoice.orderNumber }}</a></td>
+          </tr>
+          <tr>
+            <td><strong>Order Date:</strong></td>
+            <td>{{ invoice.orderDate | date:'medium' }}</td>
+          </tr>
+          <tr>
+            <td><strong>Payment Method:</strong></td>
+            <td><span class="badge-payment">{{ invoice.paymentMethod }}</span></td>
+          </tr>
+          <tr>
+            <td><strong>Payment Status:</strong></td>
+            <td>
+              <span class="badge-status" [class.success]="invoice.paymentStatus === 'COMPLETED'">
+                {{ invoice.paymentStatus }}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Delivery Slot:</strong></td>
+            <td>{{ invoice.deliverySlot || 'Standard Delivery' }}</td>
+          </tr>
+        </table>
+      </div>
+    </header>
+
+    <hr class="divider" />
+
+    <!-- Bill To / Ship To Grid -->
+    <section class="parties-grid">
+      <div class="party-card">
+        <h3>Billed & Delivered To:</h3>
+        <p class="party-name"><strong>{{ invoice.customerName }}</strong></p>
+        <p class="party-address">{{ invoice.deliveryAddress }}</p>
+        <p *ngIf="invoice.customerPhone" class="party-phone">📞 {{ invoice.customerPhone }}</p>
+        <p *ngIf="invoice.customerEmail" class="party-email">✉️ {{ invoice.customerEmail }}</p>
+      </div>
+
+      <div class="party-card tax-specs">
+        <h3>Tax Details:</h3>
+        <p><strong>Place of Supply:</strong> {{ invoice.placeOfSupply }}</p>
+        <p><strong>Reverse Charge:</strong> {{ invoice.reverseCharge }}</p>
+        <p><strong>Tax Type:</strong> Intra-State Supply (CGST + SGST &#64; 9% each)</p>
+        <p><strong>Store Delivery Radius:</strong> Within 20 km (Kuravankonam Store)</p>
+      </div>
+    </section>
+
+    <!-- Itemized Goods Table -->
+    <section class="items-section">
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Description of Goods</th>
+            <th>HSN</th>
+            <th class="text-center">Qty</th>
+            <th class="text-right">Unit Price</th>
+            <th class="text-right">Taxable Value</th>
+            <th class="text-right">CGST (9%)</th>
+            <th class="text-right">SGST (9%)</th>
+            <th class="text-right">Total (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of invoice.items">
+            <td>{{ item.itemNumber }}</td>
+            <td>
+              <div class="item-name">{{ item.productName }}</div>
+              <div class="item-brand">{{ item.brandName }} | SKU: {{ item.sku }}</div>
+              <div class="item-policy"><small>Policy: {{ item.returnPolicySummary }}</small></div>
+            </td>
+            <td>{{ item.hsnCode }}</td>
+            <td class="text-center">{{ item.quantity }}</td>
+            <td class="text-right">₹{{ item.unitPrice | number:'1.2-2' }}</td>
+            <td class="text-right">₹{{ item.taxableAmount | number:'1.2-2' }}</td>
+            <td class="text-right">₹{{ item.cgstAmount | number:'1.2-2' }}</td>
+            <td class="text-right">₹{{ item.sgstAmount | number:'1.2-2' }}</td>
+            <td class="text-right font-semibold">₹{{ item.grossTotal | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Financial Totals Section -->
+    <section class="totals-section">
+      <div class="words-column">
+        <p class="words-title"><strong>Amount in Words:</strong></p>
+        <p class="words-text">{{ invoice.amountInWords }}</p>
+
+        <div class="terms-block">
+          <p><strong>Terms & Conditions:</strong></p>
+          <ol>
+            <li>Goods once sold are covered by the item-level return policy indicated above.</li>
+            <li>Damaged/defective claims must be reported within 48 hours with packaging photo/video.</li>
+            <li>Subject to Thiruvananthapuram jurisdiction only.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="calculation-column">
+        <table class="calc-table">
+          <tr>
+            <td>Total Taxable Value:</td>
+            <td class="text-right">₹{{ invoice.totalTaxableValue | number:'1.2-2' }}</td>
+          </tr>
+          <tr>
+            <td>Central GST (CGST 9%):</td>
+            <td class="text-right">₹{{ invoice.totalCgst | number:'1.2-2' }}</td>
+          </tr>
+          <tr>
+            <td>State GST (SGST 9%):</td>
+            <td class="text-right">₹{{ invoice.totalSgst | number:'1.2-2' }}</td>
+          </tr>
+          <tr>
+            <td>Delivery & Handling Charge:</td>
+            <td class="text-right">₹{{ invoice.deliveryCharge | number:'1.2-2' }}</td>
+          </tr>
+          <tr class="grand-total-row">
+            <td><strong>Grand Total (Inclusive of GST):</strong></td>
+            <td class="text-right"><strong>₹{{ invoice.finalPayableAmount | number:'1.2-2' }}</strong></td>
+          </tr>
+        </table>
+
+        <div class="auth-signature">
+          <p class="sig-title">For NOVA PETZLIFE</p>
+          <div class="sig-space"></div>
+          <p class="sig-note">Authorised Signatory / Computer Generated</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="invoice-footer">
+      <p>Thank you for shopping at <strong>NOVA PETZLIFE</strong>! Visit us at Kuravankonam Junction, Thiruvananthapuram.</p>
+    </footer>
+  </div>
+</div>

@@ -1,0 +1,53 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1>Customer Account Management</h1>
+      <p>View registered pet parents and guest order profiles in Trivandrum</p>
+    </div>
+  </div>
+
+  <div class="filters-card">
+    <div class="search-box">
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        (keyup.enter)="fetchCustomers()"
+        placeholder="Search customers by name, email, or phone..."
+      />
+      <button (click)="fetchCustomers()" class="btn btn-outline">Search</button>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading">Loading customers...</div>
+    <table *ngIf="!isLoading && customers.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Customer Name</th>
+          <th>Email Address</th>
+          <th>Phone Number</th>
+          <th>Account Type</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of customers">
+          <td>#{{ c.id }}</td>
+          <td><strong>{{ c.firstName }} {{ c.lastName }}</strong></td>
+          <td>{{ c.email || '—' }}</td>
+          <td>{{ c.phone || '—' }}</td>
+          <td>
+            <span class="type-pill" [class.registered]="!c.isGuest" [class.guest]="c.isGuest">
+              {{ c.isGuest ? 'Guest Checkout' : 'Registered User' }}
+            </span>
+          </td>
+          <td>
+            <button *ngIf="!c.isGuest" class="btn-sm btn-outline" (click)="toggleStatus(c)">Toggle Active</button>
+            <span *ngIf="c.isGuest" class="text-muted">—</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

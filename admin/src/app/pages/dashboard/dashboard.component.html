@@ -1,0 +1,153 @@
+<div class="dashboard-content">
+  <!-- Critical Shop Location & 20 km Delivery Coordinates Card -->
+  <section class="location-approval-card" [class.approved]="shopLocationData.isOwnerApproved">
+    <div class="card-icon-col">
+      <span class="loc-icon">{{ shopLocationData.isOwnerApproved ? '✅' : '⚠️' }}</span>
+    </div>
+    <div class="card-details-col">
+      <div class="title-strip">
+        <h3>Shop Location & 20 km Delivery Radius Configuration</h3>
+        <span class="approval-badge" [class.badge-approved]="shopLocationData.isOwnerApproved">
+          {{ shopLocationData.isOwnerApproved ? 'OWNER APPROVED & ACTIVE' : 'PENDING OWNER VERIFICATION' }}
+        </span>
+      </div>
+      <p class="loc-address">
+        <strong>Confirmed Address:</strong> {{ shopLocationData.address }}
+      </p>
+      <div class="coords-strip">
+        <span class="coord-item">Latitude: <strong>{{ shopLocationData.latitude.toFixed(7) }}</strong></span>
+        <span class="coord-item">Longitude: <strong>{{ shopLocationData.longitude.toFixed(7) }}</strong></span>
+        <span class="coord-item">Maximum Radius: <strong>{{ shopLocationData.deliveryRadiusKm }} km (Straight-line)</strong></span>
+        <span class="coord-item" *ngIf="shopLocationData.verifiedDate">Verified At: <strong>{{ shopLocationData.verifiedDate }}</strong></span>
+      </div>
+      <p class="rule-note">
+        <strong>Strict Business Rule:</strong> Automatic delivery distance calculation during customer checkout requires owner approval of these resolved Kuravankonam coordinates.
+      </p>
+    </div>
+    <div class="card-action-col">
+      <button
+        type="button"
+        class="btn-approve"
+        [class.btn-revoke]="shopLocationData.isOwnerApproved"
+        (click)="toggleOwnerLocationApproval()"
+      >
+        {{ shopLocationData.isOwnerApproved ? 'Revoke Approval' : 'Approve Coordinates' }}
+      </button>
+    </div>
+  </section>
+
+  <!-- KPI Metric Grid -->
+  <section class="kpi-grid">
+    <div *ngFor="let kpi of kpiMetrics" class="kpi-card" [ngClass]="'kpi-' + kpi.color">
+      <div class="kpi-header">
+        <span class="kpi-title">{{ kpi.title }}</span>
+      </div>
+      <div class="kpi-value">{{ kpi.value }}</div>
+      <div class="kpi-footer">
+        <span class="kpi-subtitle">{{ kpi.subtitle }}</span>
+        <span class="kpi-trend">{{ kpi.trend }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Actions Bar -->
+  <section class="quick-actions-bar">
+    <span class="bar-label">⚡ Routine Operations:</span>
+    <div class="action-buttons">
+      <a routerLink="/products" [queryParams]="{action: 'new'}" class="btn-action">🏷️ Add Product</a>
+      <a routerLink="/inventory" [queryParams]="{action: 'adjust'}" class="btn-action">📋 Adjust Stock</a>
+      <a routerLink="/pricing" class="btn-action">💰 Update Prices</a>
+      <a routerLink="/returns" class="btn-action">🔄 Review Returns (1)</a>
+      <a routerLink="/delivery-settings" class="btn-action">📍 Delivery Settings</a>
+    </div>
+  </section>
+
+  <!-- Dashboard 2-Column Split: Orders Pipeline & System Architecture -->
+  <div class="dashboard-split-grid">
+    <!-- Recent Orders Pipeline -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <h3>Live Orders & Fulfilment Pipeline</h3>
+        <span class="panel-meta">Automated status transitions</span>
+      </div>
+      <div class="table-wrap">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer & Area</th>
+              <th>Items</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let order of recentOrders">
+              <td><strong>{{ order.orderNumber }}</strong></td>
+              <td>{{ order.customer }}</td>
+              <td class="items-cell">{{ order.items }}</td>
+              <td class="amount-cell">{{ order.amount }}</td>
+              <td>
+                <span class="order-status-pill" [ngClass]="order.statusClass">
+                  {{ order.status }}
+                </span>
+              </td>
+              <td class="time-cell">{{ order.time }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- System Architecture & Security Status -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <h3>Platform Foundation & Architecture</h3>
+        <span class="panel-badge-ok">Unified Database</span>
+      </div>
+      <div class="architecture-list">
+        <div class="arch-item">
+          <span class="arch-icon">🚀</span>
+          <div>
+            <strong>Spring Boot 3.3.5 REST API</strong>
+            <p>Single backend serving customer frontend & admin portal</p>
+          </div>
+          <span class="status-ok">Active</span>
+        </div>
+        <div class="arch-item">
+          <span class="arch-icon">🗄️</span>
+          <div>
+            <strong>PostgreSQL & Flyway Migrations</strong>
+            <p>19 core tables initialized via V1__initial_schema.sql</p>
+          </div>
+          <span class="status-ok">Applied</span>
+        </div>
+        <div class="arch-item">
+          <span class="arch-icon">🛡️</span>
+          <div>
+            <strong>Owner-Controlled Return Policies</strong>
+            <p>Product-level overrides with immutable order snapshots</p>
+          </div>
+          <span class="status-ok">Configured</span>
+        </div>
+        <div class="arch-item">
+          <span class="arch-icon">📍</span>
+          <div>
+            <strong>20 km Delivery Haversine Engine</strong>
+            <p>Straight-line geographic radius from Kuravankonam</p>
+          </div>
+          <span class="status-ok">Ready</span>
+        </div>
+        <div class="arch-item">
+          <span class="arch-icon">⭐</span>
+          <div>
+            <strong>Google Business Profile Reviews</strong>
+            <p>Isolated from website product reviews (API compliant)</p>
+          </div>
+          <span class="status-ok">Phase 8</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

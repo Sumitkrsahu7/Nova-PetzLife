@@ -1,0 +1,263 @@
+.tickets-page {
+  padding: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  h1 { font-size: 1.6rem; font-weight: 800; color: #1e293b; margin: 0 0 0.25rem; }
+  .subtitle { font-size: 0.9rem; color: #64748b; margin: 0; }
+
+  .btn-refresh {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    padding: 0.55rem 1.1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    &:hover { background: #e2e8f0; }
+  }
+}
+
+.alert {
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  &.alert-success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+  &.alert-error { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+}
+
+.filter-bar {
+  margin-bottom: 1.25rem;
+  .status-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    .tab-btn {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      &:hover { background: #f1f5f9; }
+      &.active { background: #248b58; color: #fff; border-color: #248b58; }
+    }
+  }
+}
+
+.table-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.tickets-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+
+  thead {
+    background: #f8fafc;
+    th {
+      padding: 0.75rem 1.25rem;
+      color: #475569;
+      font-weight: 700;
+      border-bottom: 1px solid #e2e8f0;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #f1f5f9;
+      &:hover { background: #f8fafc; }
+    }
+
+    td {
+      padding: 1rem 1.25rem;
+      color: #334155;
+      vertical-align: middle;
+    }
+
+    .empty-cell, .loading-cell {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      color: #64748b;
+    }
+  }
+}
+
+.tkt-link { color: #248b58; cursor: pointer; &:hover { text-decoration: underline; } }
+.cust-name { font-weight: 700; color: #1e293b; }
+.cust-contact { font-size: 0.75rem; color: #64748b; }
+.tkt-subj { font-weight: 600; max-width: 280px; }
+.order-ref { font-family: monospace; font-size: 0.8rem; background: #f1f5f9; padding: 0.2rem 0.45rem; border-radius: 4px; }
+.text-muted { color: #94a3b8; font-style: italic; }
+
+.prio-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #475569;
+  &.urgent { background: #fee2e2; color: #b91c1c; }
+  &.high { background: #fef3c7; color: #b45309; }
+}
+
+.status-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  &.open { background: #eff6ff; color: #1d4ed8; }
+  &.progress { background: #fef3c7; color: #b45309; }
+  &.waiting { background: #f3e8ff; color: #7e22ce; }
+  &.resolved { background: #dcfce7; color: #15803d; }
+}
+
+.btn-view {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  &:hover { background: #e2e8f0; }
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+
+  .modal-box {
+    background: #fff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 1.75rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 1rem;
+      .badge-tkt { font-size: 0.8rem; font-weight: 800; color: #248b58; }
+      h2 { font-size: 1.25rem; font-weight: 800; color: #1e293b; margin: 0.2rem 0; }
+      .modal-sub { font-size: 0.8rem; color: #64748b; margin: 0; }
+      .btn-close { background: none; border: none; font-size: 1.2rem; color: #64748b; cursor: pointer; }
+    }
+
+    .chat-thread {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-height: 280px;
+      overflow-y: auto;
+      margin-bottom: 1.25rem;
+      padding-right: 0.5rem;
+
+      .chat-bubble {
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        &.staff { background: #e7f5e9; border: 1px solid #c8ebd1; align-self: flex-start; }
+        &.customer { background: #f8fafc; border: 1px solid #e2e8f0; align-self: flex-end; }
+        .bubble-meta {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.72rem;
+          color: #64748b;
+          margin-bottom: 0.35rem;
+        }
+        .bubble-msg { margin: 0; color: #1e293b; line-height: 1.4; }
+      }
+    }
+
+    .reply-section {
+      border-top: 1px solid #f1f5f9;
+      padding-top: 1rem;
+
+      label { display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem; }
+      textarea {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 0.6rem 0.85rem;
+        font-size: 0.85rem;
+        box-sizing: border-box;
+        margin-bottom: 0.85rem;
+        &:focus { outline: none; border-color: #248b58; }
+      }
+
+      .reply-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .status-actions {
+          display: flex;
+          gap: 0.5rem;
+          .btn-resolve {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #15803d;
+            padding: 0.45rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+          }
+          .btn-close-ticket {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            color: #64748b;
+            padding: 0.45rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+          }
+        }
+
+        .btn-send-reply {
+          background: #248b58;
+          color: #fff;
+          border: none;
+          padding: 0.55rem 1.25rem;
+          border-radius: 8px;
+          font-size: 0.85rem;
+          font-weight: 700;
+          cursor: pointer;
+          &:disabled { opacity: 0.6; }
+        }
+      }
+    }
+  }
+}

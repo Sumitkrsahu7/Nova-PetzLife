@@ -1,0 +1,374 @@
+.top-announcement-bar {
+  background-color: #155C3B;
+  color: #FFFFFF;
+  font-size: 0.8rem;
+  padding: 0.45rem 0;
+
+  .announcement-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .announcement-left {
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .delivery-tag {
+    background: rgba(255, 255, 255, 0.18);
+    padding: 0.1rem 0.6rem;
+    border-radius: 9999px;
+    font-weight: 600;
+  }
+
+  .help-text {
+    color: #C8EBD1;
+  }
+}
+
+.site-header {
+  background: #FFFFFF;
+  border-bottom: 1px solid #DDE7DF;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.25rem;
+  gap: 1.5rem;
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+
+  .brand-badge {
+    width: 44px;
+    height: 44px;
+    background-color: #E7F5E9;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+  }
+
+  .brand-details {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .brand-name {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #155C3B;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+
+  .brand-sub {
+    font-size: 0.75rem;
+    color: #64748B;
+    font-weight: 500;
+  }
+}
+
+.header-search {
+  flex: 1;
+  max-width: 540px;
+
+  .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: #F8FAFC;
+    border: 1.5px solid #DDE7DF;
+    border-radius: 9999px;
+    padding: 0.25rem 0.35rem 0.25rem 1rem;
+    transition: all 0.2s ease;
+
+    &:focus-within {
+      border-color: #248B58;
+      background: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(36, 139, 88, 0.15);
+    }
+  }
+
+  .search-icon {
+    font-size: 0.95rem;
+    margin-right: 0.5rem;
+    color: #64748B;
+  }
+
+  input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.9rem;
+    color: #26352D;
+    outline: none;
+
+    &::placeholder {
+      color: #94A3B8;
+    }
+  }
+
+  .search-submit-btn {
+    background-color: #248B58;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 9999px;
+    padding: 0.45rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background-color: #155C3B;
+    }
+  }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.backend-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94A3B8;
+  background: #F1F5F9;
+  padding: 0.3rem 0.65rem;
+  border-radius: 9999px;
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #CBD5E1;
+  }
+
+  &.connected {
+    color: #155C3B;
+    background: #E7F5E9;
+    .status-dot {
+      background: #248B58;
+      box-shadow: 0 0 4px #248B58;
+    }
+  }
+}
+
+.account-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px solid #DDE7DF;
+  padding: 0.45rem 0.9rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #26352D;
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #E7F5E9;
+    border-color: #248B58;
+    color: #155C3B;
+  }
+
+  &.logout-header-btn:hover {
+    background: #FEE2E2;
+    border-color: #FECACA;
+    color: #991B1B;
+  }
+}
+
+.cart-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #248B58;
+  border: none;
+  padding: 0.45rem 1.1rem;
+  border-radius: 9999px;
+  color: #FFFFFF;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #155C3B;
+    box-shadow: 0 4px 8px rgba(36, 139, 88, 0.25);
+  }
+
+  .cart-badge {
+    background: #FFFFFF;
+    color: #155C3B;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+}
+
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+
+  span {
+    width: 22px;
+    height: 2px;
+    background-color: #26352D;
+    border-radius: 2px;
+  }
+}
+
+.main-nav {
+  background: #F8FAFC;
+  border-top: 1px solid #E2E8F0;
+
+  .nav-container {
+    display: flex;
+    gap: 1.75rem;
+    overflow-x: auto;
+    padding: 0.5rem 1.25rem;
+  }
+
+  .nav-item {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #26352D;
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 0.25rem 0;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+
+    &:hover, &.active {
+      color: #248B58;
+      border-bottom-color: #248B58;
+    }
+
+    &.highlight {
+      color: #155C3B;
+      font-weight: 700;
+    }
+  }
+}
+
+@media (max-width: 992px) {
+  .header-search {
+    max-width: 280px;
+  }
+  .hamburger-btn {
+    display: flex;
+  }
+  .main-nav {
+    display: none;
+    &.mobile-open {
+      display: block;
+      .nav-container {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .header-container {
+    flex-wrap: wrap;
+    padding: 0.65rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .header-search {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    order: 3;
+    margin-top: 0.25rem;
+
+    .search-input-wrapper {
+      padding: 0.2rem 0.35rem 0.2rem 0.75rem;
+      input {
+        font-size: 0.82rem;
+      }
+    }
+  }
+
+  .brand-link {
+    gap: 0.5rem;
+    .brand-badge {
+      width: 36px;
+      height: 36px;
+      font-size: 1.3rem;
+    }
+    .brand-name {
+      font-size: 1.1rem;
+    }
+    .brand-sub {
+      font-size: 0.65rem;
+    }
+  }
+
+  .header-actions {
+    gap: 0.4rem;
+
+    .backend-pill {
+      padding: 0.3rem 0.5rem;
+      .status-text {
+        display: none;
+      }
+    }
+
+    .account-btn {
+      padding: 0.35rem 0.65rem;
+      .account-text {
+        display: none;
+      }
+    }
+
+    .cart-button {
+      padding: 0.35rem 0.75rem;
+      .cart-label {
+        display: none;
+      }
+    }
+  }
+
+  .announcement-left {
+    font-size: 0.72rem;
+  }
+}

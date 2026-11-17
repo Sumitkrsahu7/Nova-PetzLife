@@ -1,0 +1,35 @@
+<header class="admin-topbar">
+  <div class="topbar-left">
+    <button
+      type="button"
+      class="mobile-menu-btn"
+      (click)="toggleDrawer()"
+      aria-label="Open navigation menu"
+      title="Open navigation menu"
+    >
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+    </button>
+    <div class="title-wrap">
+      <h1 class="page-title">{{ pageTitle }}</h1>
+      <div class="store-crumb">
+        <span class="crumb-icon">📍</span>
+        <span>Shop: <strong>Petzlife, Kuravankonam</strong> (20 km Radius)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <!-- Live API Connectivity Pill -->
+    <div class="api-status-pill" [class.online]="isBackendOnline">
+      <span class="pulse-dot"></span>
+      <span class="status-label">{{ isBackendOnline ? 'Spring Boot 3.x API Connected' : 'Backend Disconnected' }}</span>
+    </div>
+
+    <!-- Quick Refresh Button -->
+    <button type="button" class="btn-refresh" (click)="onRefresh()" title="Refresh Data & Backend Status">
+      🔄 Sync
+    </button>
+  </div>
+</header>

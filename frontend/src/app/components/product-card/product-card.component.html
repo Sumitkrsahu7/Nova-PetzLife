@@ -1,0 +1,89 @@
+<article class="product-card" [class.out-of-stock]="!product.inStock">
+  <!-- Card Header Badges -->
+  <div class="card-top-bar">
+    <span class="brand-tag">{{ product.brand }}</span>
+    <button
+      type="button"
+      class="wishlist-btn"
+      [class.active]="isWishlisted"
+      (click)="onToggleWishlist()"
+      aria-label="Save to wishlist"
+    >
+      {{ isWishlisted ? '❤️' : '🤍' }}
+    </button>
+  </div>
+
+  <!-- Product Image Container -->
+  <a [routerLink]="['/product', product.id]" class="product-image-box">
+    <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+    <span class="discount-pill" *ngIf="discountPercent">-{{ discountPercent }}%</span>
+  </a>
+
+  <!-- Body Content -->
+  <div class="card-body">
+    <div class="meta-row">
+      <span class="category-meta">{{ product.category }}</span>
+      <span class="pet-type-tag">
+        <span *ngIf="product.petType === 'Cat'">🐱 Cat</span>
+        <span *ngIf="product.petType === 'Dog'">🐶 Dog</span>
+        <span *ngIf="product.petType !== 'Cat' && product.petType !== 'Dog'">🐾 {{ product.petType }}</span>
+      </span>
+    </div>
+
+    <h3 class="product-title" [title]="product.name">
+      <a [routerLink]="['/product', product.id]" class="title-link">{{ product.name }}</a>
+    </h3>
+
+    <!-- Variant Selector if available -->
+    <div class="variants-row" *ngIf="product.variants && product.variants.length > 0">
+      <button
+        *ngFor="let v of product.variants"
+        type="button"
+        class="variant-chip"
+        [class.selected]="selectedVariant?.id === v.id || (!selectedVariant && v.id === product.variants[0].id)"
+        (click)="selectVariant(v)"
+      >
+        {{ v.name }}
+      </button>
+    </div>
+
+    <!-- Rating & Review Count -->
+    <div class="rating-strip">
+      <span class="stars">★★★★★</span>
+      <span class="score">{{ product.rating.toFixed(1) }}</span>
+      <span class="count">({{ product.reviewCount }})</span>
+    </div>
+
+    <!-- Policy Snapshot Badge -->
+    <div class="policy-pill" [class.returnable]="product.returnAllowed">
+      <span class="icon">{{ product.returnAllowed ? '🔄' : '🚫' }}</span>
+      <span>{{ product.returnAllowed ? '7-Day Return Eligible' : 'Non-Returnable' }}</span>
+    </div>
+
+    <!-- Pricing Row -->
+    <div class="pricing-row">
+      <div class="price-wrap">
+        <span class="current-price">₹{{ currentPrice.toLocaleString('en-IN') }}</span>
+        <span class="original-price" *ngIf="originalPrice">₹{{ originalPrice.toLocaleString('en-IN') }}</span>
+      </div>
+      <span class="stock-status" [class.in-stock]="product.inStock" [class.out]="!product.inStock">
+        {{ product.inStock ? 'In Stock' : 'Out of Stock' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Action Footer -->
+  <div class="card-footer">
+    <button
+      type="button"
+      class="add-to-cart-btn"
+      [disabled]="!product.inStock"
+      [class.added]="addedFeedback"
+      (click)="onAddToCart()"
+    >
+      <span *ngIf="!addedFeedback && product.inStock">🛒 Add to Cart</span>
+      <span *ngIf="addedFeedback">✓ Added to Cart</span>
+      <span *ngIf="!product.inStock">Out of Stock</span>
+    </button>
+  </div>
+</article>

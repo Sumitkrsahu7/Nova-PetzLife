@@ -1,0 +1,11 @@
+package com.novapetzlife.returns;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface ReturnInspectionRepository extends JpaRepository<ReturnInspection, Long> {
+    List<ReturnInspection> findByReturnRequestId(Long returnRequestId);
+}

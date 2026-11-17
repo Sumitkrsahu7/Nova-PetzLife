@@ -1,0 +1,125 @@
+<div class="audit-page">
+  <div class="page-header">
+    <div>
+      <h1>Audit & Security Trail</h1>
+      <p class="subtitle">Immutable record of owner and staff administrative operations, inventory updates, and financial actions</p>
+    </div>
+    <div class="security-badge">
+      <span class="icon">🛡️</span>
+      <span>HSTS Enabled • Nonce Signed</span>
+    </div>
+  </div>
+
+  <!-- Filters & Controls Bar -->
+  <div class="filters-card">
+    <div class="filter-group">
+      <label for="entitySelect">Entity Type:</label>
+      <select id="entitySelect" [(ngModel)]="selectedEntity" (change)="onFilterChange()">
+        <option *ngFor="let ent of entities" [value]="ent">{{ ent }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="actionSelect">Action Type:</label>
+      <select id="actionSelect" [(ngModel)]="selectedAction" (change)="onFilterChange()">
+        <option *ngFor="let act of actions" [value]="act">{{ act }}</option>
+      </select>
+    </div>
+
+    <div class="results-info">
+      <span>Total Log Entries: <strong>{{ totalElements }}</strong></span>
+    </div>
+  </div>
+
+  <!-- Audit Table Container -->
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading-state">Loading audit logs...</div>
+
+    <div *ngIf="!isLoading && logs.length === 0" class="empty-state">
+      <p>No audit trail records found matching the selected filters.</p>
+    </div>
+
+    <table *ngIf="!isLoading && logs.length > 0" class="audit-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Timestamp</th>
+          <th>Entity</th>
+          <th>Entity ID</th>
+          <th>Action</th>
+          <th>Changed By</th>
+          <th>IP Address</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let l of logs" (click)="inspectLog(l)" class="clickable-row">
+          <td>#{{ l.id }}</td>
+          <td class="time-cell">{{ l.createdAt | date:'medium' }}</td>
+          <td>
+            <span class="entity-pill">{{ l.entityName }}</span>
+          </td>
+          <td>
+            <code class="id-tag">{{ l.entityId }}</code>
+          </td>
+          <td>
+            <span class="action-pill" [ngClass]="l.action.toLowerCase()">{{ l.action }}</span>
+          </td>
+          <td>
+            <strong>{{ l.changedBy }}</strong>
+          </td>
+          <td>
+            <span class="ip-tag">{{ l.ipAddress || '127.0.0.1' }}</span>
+          </td>
+          <td>
+            <button type="button" class="btn-inspect" (click)="inspectLog(l); $event.stopPropagation()">
+              Inspect
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div *ngIf="totalPages > 1" class="pagination-bar">
+      <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+      <div class="page-buttons">
+        <button type="button" [disabled]="currentPage === 0" (click)="prevPage()">← Previous</button>
+        <button type="button" [disabled]="currentPage >= totalPages - 1" (click)="nextPage()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Inspection Modal -->
+  <div *ngIf="selectedLog" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Audit Log Inspection: #{{ selectedLog.id }}</h3>
+        <button type="button" class="close-btn" (click)="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="meta-grid">
+          <div><label>Timestamp:</label> <span>{{ selectedLog.createdAt | date:'full' }}</span></div>
+          <div><label>Staff/Admin:</label> <strong>{{ selectedLog.changedBy }}</strong></div>
+          <div><label>Entity:</label> <span>{{ selectedLog.entityName }} (ID: {{ selectedLog.entityId }})</span></div>
+          <div><label>Action:</label> <span class="action-pill">{{ selectedLog.action }}</span></div>
+          <div><label>IP Address:</label> <code>{{ selectedLog.ipAddress || 'Local/Internal' }}</code></div>
+        </div>
+
+        <div class="values-diff">
+          <div class="diff-block">
+            <h4>Previous State (Old Value)</h4>
+            <pre>{{ selectedLog.oldValue || '(Initial Creation / No Previous State)' }}</pre>
+          </div>
+          <div class="diff-block">
+            <h4>Updated State (New Value)</h4>
+            <pre>{{ selectedLog.newValue || '(Removed / Cleared)' }}</pre>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-close" (click)="closeModal()">Close Details</button>
+      </div>
+    </div>
+  </div>
+</div>

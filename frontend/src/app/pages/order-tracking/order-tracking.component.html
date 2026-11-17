@@ -1,0 +1,242 @@
+<div class="tracking-container">
+  <div class="tracking-header">
+    <div class="crumb">
+      <a routerLink="/">Home</a> <span>/</span> <a routerLink="/cart">Cart</a> <span>/</span> Track Order
+    </div>
+    <h1>Live Delivery Tracking</h1>
+    <p class="subtitle">Dispatched directly from Petzlife, Kuravankonam, Thiruvananthapuram</p>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Retrieving real-time order status...</p>
+  </div>
+
+  <div *ngIf="errorMessage && !isLoading" class="error-state">
+    <div class="err-icon">❌</div>
+    <h2>Order Not Found</h2>
+    <p>{{ errorMessage }}</p>
+    <a routerLink="/" class="btn-home">Return to Home</a>
+  </div>
+
+  <div *ngIf="tracking && !isLoading" class="tracking-card">
+    <div class="order-meta-banner">
+      <div class="meta-left">
+        <span class="meta-label">ORDER NUMBER</span>
+        <strong class="order-id">{{ tracking.orderNumber }}</strong>
+      </div>
+      <div class="meta-right">
+        <span class="status-pill" [class]="tracking.orderStatus.toLowerCase()">{{ tracking.orderStatus }}</span>
+        <span class="meta-date">Placed: {{ tracking.orderDate | date:'medium' }}</span>
+      </div>
+    </div>
+
+    <!-- Stepper Progress Bar (Only for non-cancelled orders) -->
+    <div class="stepper-section" *ngIf="tracking.orderStatus !== 'CANCELLED'">
+      <div class="stepper-track">
+        <div *ngFor="let stage of stages; let i = index" class="step-node" [class.completed]="isStageCompleted(stage.key)" [class.active]="isCurrentStage(stage.key)">
+          <div class="node-circle">
+            <span class="icon">{{ stage.icon }}</span>
+          </div>
+          <span class="node-label">{{ stage.label }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cancelled Order Banner -->
+    <div class="cancelled-banner" *ngIf="tracking.orderStatus === 'CANCELLED'">
+      <div class="banner-icon">⚠️</div>
+      <div class="banner-text">
+        <h3>Order Cancelled</h3>
+        <p>This order has been cancelled. Any reserved stock was released back to shop inventory. If payment was made online, your refund has been initiated.</p>
+      </div>
+    </div>
+
+    <div class="details-grid">
+      <!-- Fulfillment & Distance Info -->
+      <div class="detail-tile">
+        <h3>📍 Store Fulfillment Route</h3>
+        <p><strong>From:</strong> Petzlife, Kuravankonam Junction, Trivandrum</p>
+        <p><strong>Store Distance:</strong> {{ tracking.shopDistanceKm }} km away</p>
+        <p><strong>Delivery Window:</strong> {{ tracking.deliverySlot || 'Standard Same-Day' }}</p>
+      </div>
+
+      <!-- Payment & Security Info -->
+      <div class="detail-tile">
+        <h3>💳 Payment & Protection</h3>
+        <p><strong>Payment Method:</strong> {{ tracking.paymentMethod }}</p>
+        <p><strong>Payment Status:</strong> {{ tracking.paymentStatus }}</p>
+        <p class="policy-note">🛡️ Protected by NOVA PETZLIFE Return & Freshness Guarantee</p>
+      </div>
+    </div>
+
+    <!-- Timeline Log -->
+    <div class="timeline-section" *ngIf="tracking.timeline.length > 0">
+      <h3>Order History Timeline</h3>
+      <div class="timeline-items">
+        <div *ngFor="let entry of tracking.timeline" class="timeline-row">
+          <div class="dot"></div>
+          <div class="timeline-content">
+            <div class="status-title">Status changed to: <strong>{{ entry.newStatus }}</strong></div>
+            <span class="time">{{ entry.createdAt | date:'medium' }}</span>
+            <p *ngIf="entry.reason" class="reason">Note: {{ entry.reason }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="action-footer">
+      <a routerLink="/" class="btn-continue">Continue Shopping</a>
+      <a [routerLink]="['/invoice', tracking.orderNumber]" class="btn-invoice">📄 View & Print GST Invoice</a>
+
+      <!-- Cancel Order Button (Pre-Dispatch) -->
+      <button *ngIf="isCancellable" (click)="openCancelModal()" class="btn-cancel-action">
+        ✕ Cancel Order
+      </button>
+
+      <!-- Return / Refund Button (Delivered Orders) -->
+      <button *ngIf="isDelivered" (click)="openReturnModal()" class="btn-return-action">
+        🔄 Request Return / Refund
+      </button>
+    </div>
+  </div>
+
+  <!-- Cancel Order Modal -->
+  <div *ngIf="showCancelModal" class="modal-backdrop" (click)="closeCancelModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Cancel Order {{ orderNumber }}</h2>
+        <button class="btn-close" (click)="closeCancelModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="warning-note">
+          Are you sure you want to cancel this order? Stock reserved for this purchase will be released back to the shop inventory immediately.
+        </p>
+
+        <div class="form-group">
+          <label>Reason for cancellation:</label>
+          <select [(ngModel)]="cancelReason" class="form-control">
+            <option *ngFor="let r of cancelReasons" [value]="r">{{ r }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeCancelModal()" [disabled]="isCancelling">Keep Order</button>
+        <button class="btn btn-danger" (click)="confirmCancelOrder()" [disabled]="isCancelling">
+          {{ isCancelling ? 'Cancelling...' : 'Confirm Cancellation' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Return Request Modal -->
+  <div *ngIf="showReturnModal" class="modal-backdrop" (click)="closeReturnModal()">
+    <div class="modal-dialog return-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Return & Refund Request — {{ orderNumber }}</h2>
+        <button class="btn-close" (click)="closeReturnModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="isLoadingEligibility" class="loading-state">
+          <div class="spinner"></div>
+          <p>Evaluating item return policies and purchase date...</p>
+        </div>
+
+        <div *ngIf="returnErrorMessage" class="alert-error">
+          {{ returnErrorMessage }}
+        </div>
+
+        <!-- Success screen when return submitted -->
+        <div *ngIf="submittedReturn" class="return-success-screen">
+          <div class="success-icon">✅</div>
+          <h3>Return Request Submitted Successfully!</h3>
+          <p class="req-number">Request Number: <strong>{{ submittedReturn.requestNumber }}</strong></p>
+          <p>Our store team at Kuravankonam Junction will review your request. Store pickup or inspection will be scheduled shortly within our 20 km delivery zone.</p>
+          <div class="status-summary">
+            <span>Status: <strong class="badge-requested">{{ submittedReturn.status }}</strong></span>
+            <span>Estimated Refund: <strong>₹{{ submittedReturn.estimatedRefundAmount | number:'1.2-2' }}</strong></span>
+          </div>
+          <button class="btn btn-primary" (click)="closeReturnModal()">Done</button>
+        </div>
+
+        <!-- Return form when eligibility loaded and not yet submitted -->
+        <div *ngIf="eligibility && !submittedReturn && !isLoadingEligibility">
+          <p class="eligibility-notice" [class.warning]="!eligibility.canRequestReturn">
+            {{ eligibility.generalEligibilityMessage }}
+          </p>
+
+          <h3>Select Items to Return:</h3>
+          <div class="return-items-list">
+            <div *ngFor="let it of eligibility.items" class="return-item-card" [class.ineligible]="!it.isEligible">
+              <div class="item-checkbox">
+                <input
+                  type="checkbox"
+                  [id]="'check-' + it.orderItemId"
+                  [(ngModel)]="selectedItems[it.orderItemId].selected"
+                  [disabled]="!it.isEligible"
+                />
+              </div>
+
+              <div class="item-info">
+                <label [for]="'check-' + it.orderItemId" class="item-title">{{ it.productName }}</label>
+                <div class="item-sub">Brand: {{ it.brandName }} | SKU: {{ it.sku }} | Qty Purchased: {{ it.quantity }}</div>
+
+                <div class="item-policy-tags">
+                  <span *ngIf="it.isEligible" class="policy-badge eligible">
+                    ✓ Eligible for return (Window: {{ it.returnWindowDays }} days, until {{ it.returnDeadline }})
+                  </span>
+                  <span *ngIf="!it.isEligible" class="policy-badge ineligible">
+                    ✕ Ineligible: {{ it.reasonIfNotEligible }}
+                  </span>
+                  <span *ngIf="it.originalPackagingRequired" class="req-tag">Original packaging required</span>
+                  <span *ngIf="it.unusedConditionRequired" class="req-tag">Must be unopened/unused</span>
+                </div>
+              </div>
+
+              <div class="item-qty-input" *ngIf="it.isEligible && selectedItems[it.orderItemId]?.selected">
+                <label>Qty:</label>
+                <input
+                  type="number"
+                  min="1"
+                  [max]="it.quantity"
+                  [(ngModel)]="selectedItems[it.orderItemId].quantity"
+                  class="qty-field"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 1.5rem;">
+            <label>Reason for Return:</label>
+            <select [(ngModel)]="returnReason" class="form-control">
+              <option *ngFor="let r of returnReasons" [value]="r">{{ r }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Additional comments or condition description:</label>
+            <textarea
+              [(ngModel)]="returnComments"
+              class="form-control"
+              rows="3"
+              placeholder="e.g. Outer seal is intact, bag is completely unopened..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" *ngIf="eligibility && !submittedReturn && !isLoadingEligibility">
+        <button class="btn btn-secondary" (click)="closeReturnModal()">Cancel</button>
+        <button
+          class="btn btn-primary"
+          (click)="submitReturnRequest()"
+          [disabled]="!hasSelectedEligibleItems() || isSubmittingReturn"
+        >
+          {{ isSubmittingReturn ? 'Submitting Request...' : 'Submit Return Request' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

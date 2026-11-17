@@ -1,0 +1,59 @@
+package com.novapetzlife.payment.dto;
+
+import jakarta.validation.constraints.NotBlank;
+
+public class VerifyPaymentRequest {
+
+    @NotBlank(message = "Order number is required")
+    private String orderNumber;
+
+    @NotBlank(message = "Razorpay order ID is required")
+    private String razorpayOrderId;
+
+    @NotBlank(message = "Razorpay payment ID is required")
+    private String razorpayPaymentId;
+
+    @NotBlank(message = "Razorpay signature is required")
+    private String razorpaySignature;
+
+    public VerifyPaymentRequest() {}
+
+    public VerifyPaymentRequest(String orderNumber, String razorpayOrderId, String razorpayPaymentId, String razorpaySignature) {
+        this.orderNumber = orderNumber;
+        this.razorpayOrderId = razorpayOrderId;
+        this.razorpayPaymentId = razorpayPaymentId;
+        this.razorpaySignature = razorpaySignature;
+    }
+
+    public String getOrderNumber() {
+        return orderNumber;
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
+    }
+
+    public String getRazorpayOrderId() {
+        return razorpayOrderId;
+    }
+
+    public void setRazorpayOrderId(String razorpayOrderId) {
+        this.razorpayOrderId = razorpayOrderId;
+    }
+
+    public String getRazorpayPaymentId() {
+        return razorpayPaymentId;
+    }
+
+    public void setRazorpayPaymentId(String razorpayPaymentId) {
+        this.razorpayPaymentId = razorpayPaymentId;
+    }
+
+    public String getRazorpaySignature() {
+        return razorpaySignature;
+    }
+
+    public void setRazorpaySignature(String razorpaySignature) {
+        this.razorpaySignature = razorpaySignature;
+    }
+}

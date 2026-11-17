@@ -1,0 +1,279 @@
+<div class="reviews-management-page">
+  <div class="page-header">
+    <div>
+      <h1>Customer Reviews & Google Profile</h1>
+      <p class="subtitle">Moderate website product ratings and manage synced Google Business Profile reviews</p>
+    </div>
+    <div *ngIf="actionMessage" class="action-toast">{{ actionMessage }}</div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="tabs-bar">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab === 'product'"
+      (click)="activeTab = 'product'"
+    >
+      🛍️ Product Reviews ({{ totalReviewsCount }})
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab === 'google'"
+      (click)="activeTab = 'google'"
+    >
+      🌐 Google Business Profile Reviews ({{ googleReviews.length }})
+    </button>
+  </div>
+
+  <!-- TAB 1: PRODUCT REVIEWS -->
+  <div *ngIf="activeTab === 'product'" class="tab-content">
+    <!-- KPI Summary Row -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="label">Total Reviews</span>
+        <span class="value">{{ totalReviewsCount }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="label">Approved</span>
+        <span class="value approved">{{ approvedCount }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="label">Pending Moderation</span>
+        <span class="value pending">{{ pendingCount }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="label">Average Rating</span>
+        <span class="value stars">{{ avgRating.toFixed(1) }} ★</span>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <span class="filter-label">Filter by Status:</span>
+      <div class="filter-buttons">
+        <button
+          *ngFor="let s of ['ALL', 'APPROVED', 'PENDING', 'REJECTED']"
+          type="button"
+          class="filter-btn"
+          [class.active]="statusFilter === s"
+          (click)="onFilterChange(s)"
+        >
+          {{ s }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Reviews Table -->
+    <div class="table-container">
+      <div *ngIf="isLoadingReviews" class="loading-state">Loading customer reviews...</div>
+
+      <div *ngIf="!isLoadingReviews && reviews.length === 0" class="empty-state">
+        <p>No product reviews matching status '{{ statusFilter }}'.</p>
+      </div>
+
+      <table *ngIf="!isLoadingReviews && reviews.length > 0" class="admin-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Product</th>
+            <th>Customer</th>
+            <th>Rating</th>
+            <th>Review & Title</th>
+            <th>Verified Buyer</th>
+            <th>Status</th>
+            <th>Store Reply</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of reviews">
+            <td>#{{ r.id }}</td>
+            <td class="product-cell">
+              <strong>{{ r.productName }}</strong>
+            </td>
+            <td>
+              <span>{{ r.customerName }}</span>
+            </td>
+            <td>
+              <div class="stars-cell">
+                <span *ngFor="let s of [1,2,3,4,5]" class="star" [class.filled]="s <= r.rating">★</span>
+                <span class="num">({{ r.rating }})</span>
+              </div>
+            </td>
+            <td class="comment-cell">
+              <strong *ngIf="r.title" class="title">{{ r.title }}</strong>
+              <p class="body">{{ r.comment }}</p>
+              <span class="date">{{ r.createdAt | date:'shortDate' }}</span>
+            </td>
+            <td>
+              <span class="badge" [class.verified]="r.isVerifiedPurchase" [class.unverified]="!r.isVerifiedPurchase">
+                {{ r.isVerifiedPurchase ? '✓ Verified' : 'Standard' }}
+              </span>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="r.status.toLowerCase()">{{ r.status }}</span>
+            </td>
+            <td class="reply-cell">
+              <span *ngIf="r.adminReply" class="has-reply" [title]="r.adminReply">✓ Replied</span>
+              <span *ngIf="!r.adminReply" class="no-reply">—</span>
+            </td>
+            <td class="actions-cell">
+              <div class="btn-group">
+                <button
+                  *ngIf="r.status !== 'APPROVED'"
+                  type="button"
+                  class="btn-approve"
+                  title="Approve Review"
+                  (click)="approveReview(r)"
+                >
+                  ✓
+                </button>
+                <button
+                  *ngIf="r.status !== 'REJECTED'"
+                  type="button"
+                  class="btn-reject"
+                  title="Reject Review"
+                  (click)="rejectReview(r)"
+                >
+                  ✕
+                </button>
+                <button
+                  type="button"
+                  class="btn-reply"
+                  title="Add / Edit Store Reply"
+                  (click)="openReply(r)"
+                >
+                  💬
+                </button>
+                <button
+                  type="button"
+                  class="btn-delete"
+                  title="Delete Review"
+                  (click)="deleteReview(r)"
+                >
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 2: GOOGLE REVIEWS -->
+  <div *ngIf="activeTab === 'google'" class="tab-content">
+    <!-- Google Listing Overview Card -->
+    <div class="google-overview-card">
+      <div class="info">
+        <div class="google-logo">G</div>
+        <div>
+          <h3>Petzlife, Kuravankonam Junction</h3>
+          <p>Kuravankonam Ambalamukku Road, Thiruvananthapuram, Kerala 695003</p>
+          <div class="meta-row">
+            <span class="rating">4.8 ★★★★★</span>
+            <span class="count">Based on 148 verified Google reviews</span>
+            <span class="verified-pill">✓ Verified Business Listing</span>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button
+          type="button"
+          class="sync-btn"
+          [disabled]="isSyncing"
+          (click)="syncGoogle()"
+        >
+          <span>🔄 {{ isSyncing ? 'Syncing...' : 'Sync from Google Places' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="syncMessage" class="sync-toast">{{ syncMessage }}</div>
+
+    <!-- Google Reviews Table -->
+    <div class="table-container">
+      <div *ngIf="isLoadingGoogle" class="loading-state">Loading Google reviews...</div>
+
+      <table *ngIf="!isLoadingGoogle && googleReviews.length > 0" class="admin-table">
+        <thead>
+          <tr>
+            <th>Reviewer</th>
+            <th>Rating</th>
+            <th>Time</th>
+            <th>Review Text</th>
+            <th>Homepage Display</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let gr of googleReviews">
+            <td class="reviewer-cell">
+              <div class="avatar">{{ gr.authorName.charAt(0) }}</div>
+              <strong>{{ gr.authorName }}</strong>
+            </td>
+            <td>
+              <div class="stars-cell">
+                <span *ngFor="let s of [1,2,3,4,5]" class="star" [class.filled]="s <= gr.rating">★</span>
+                <span class="num">({{ gr.rating }})</span>
+              </div>
+            </td>
+            <td>
+              <span class="date">{{ gr.relativeTime || 'Recent' }}</span>
+            </td>
+            <td class="comment-cell">
+              <p class="body">“{{ gr.reviewText }}”</p>
+            </td>
+            <td>
+              <span class="badge" [class.verified]="gr.isFeatured" [class.unverified]="!gr.isFeatured">
+                {{ gr.isFeatured ? '⭐ Featured' : 'Hidden' }}
+              </span>
+            </td>
+            <td>
+              <button
+                type="button"
+                class="btn-toggle-feature"
+                [class.active]="gr.isFeatured"
+                (click)="toggleGoogleFeature(gr)"
+              >
+                {{ gr.isFeatured ? 'Remove from Homepage' : 'Feature on Homepage' }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Store Reply Modal Drawer -->
+  <div *ngIf="replyingReview" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Store Response to Customer Review</h3>
+        <button type="button" class="close-btn" (click)="cancelReply()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="review-context">
+          <strong>{{ replyingReview.customerName }}</strong> on <em>{{ replyingReview.productName }}</em>:
+          <p>“{{ replyingReview.comment }}”</p>
+        </div>
+
+        <div class="form-group">
+          <label for="replyInput">NOVA PETZLIFE Official Reply:</label>
+          <textarea
+            id="replyInput"
+            [(ngModel)]="replyText"
+            rows="4"
+            placeholder="e.g. Thank you for your review! We are delighted that your puppy enjoyed the biscuits..."
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="cancelReply()">Cancel</button>
+        <button type="button" class="btn-save" (click)="saveReply()">Save Store Response</button>
+      </div>
+    </div>
+  </div>
+</div>

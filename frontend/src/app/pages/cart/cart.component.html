@@ -1,0 +1,135 @@
+<div class="cart-container">
+  <div class="cart-header">
+    <div class="crumb">
+      <a routerLink="/">Home</a> <span>/</span> Shopping Cart
+    </div>
+    <h1>Your Pet Shopping Cart</h1>
+    <p class="subtitle">Fresh pet food, treats, and supplies delivered from Kuravankonam, Trivandrum</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!cart || cart.items.length === 0" class="empty-cart-card">
+    <div class="empty-icon">🛒</div>
+    <h2>Your cart is currently empty</h2>
+    <p>Spoil your pet today with our premium kibble, wet gravies, toys, and grooming essentials!</p>
+    <a routerLink="/" class="btn-primary">Browse Pet Catalog</a>
+  </div>
+
+  <!-- Cart with Items -->
+  <div *ngIf="cart && cart.items.length > 0" class="cart-layout">
+    <!-- Items Column -->
+    <div class="items-column">
+      <!-- Free Delivery Progress Tracker -->
+      <div class="delivery-threshold-banner" [class.unlocked]="remainingForFreeDelivery === 0">
+        <div class="banner-content">
+          <span class="icon">{{ remainingForFreeDelivery === 0 ? '🎉' : '🚚' }}</span>
+          <div class="text">
+            <strong *ngIf="remainingForFreeDelivery === 0">Congratulations! You unlocked FREE 20 km Home Delivery!</strong>
+            <span *ngIf="remainingForFreeDelivery > 0">
+              Add <strong>₹{{ remainingForFreeDelivery | number:'1.2-2' }}</strong> more to unlock <strong>FREE Delivery</strong> from Kuravankonam!
+            </span>
+          </div>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" [style.width.%]="(cart.subtotal / freeDeliveryThreshold) * 100 > 100 ? 100 : (cart.subtotal / freeDeliveryThreshold) * 100"></div>
+        </div>
+      </div>
+
+      <!-- Item Card List -->
+      <div class="cart-items-card">
+        <div class="card-header">
+          <span>Items ({{ cart.totalItems }})</span>
+          <button (click)="clearCart()" class="btn-clear-all">Empty Cart</button>
+        </div>
+
+        <div class="items-list">
+          <div *ngFor="let item of cart.items" class="cart-item-row">
+            <div class="item-img-col">
+              <img [src]="item.primaryImageUrl || 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=150&auto=format&fit=crop&q=80'" [alt]="item.productName">
+            </div>
+
+            <div class="item-details-col">
+              <span class="brand-tag">{{ item.brandName }}</span>
+              <h3 class="product-title">{{ item.productName }}</h3>
+              <span *ngIf="item.variantName" class="variant-tag">{{ item.variantName }}</span>
+
+              <!-- Return policy snippet -->
+              <div class="return-snippet" *ngIf="item.returnAllowed">
+                <span class="shield">🛡️</span>
+                <span>{{ item.returnWindowDays }}-Day Return Window (Unused & Original Packaging)</span>
+              </div>
+              <div class="return-snippet non-returnable" *ngIf="!item.returnAllowed">
+                <span>⚠️ Non-Returnable Item (Perishable/Hygienic)</span>
+              </div>
+            </div>
+
+            <div class="item-quantity-col">
+              <div class="quantity-stepper">
+                <button (click)="updateQuantity(item, item.quantity - 1)" [disabled]="item.quantity <= 1">-</button>
+                <span class="qty-display">{{ item.quantity }}</span>
+                <button (click)="updateQuantity(item, item.quantity + 1)" [disabled]="item.quantity >= item.availableStock">+</button>
+              </div>
+              <span class="stock-hint" *ngIf="item.availableStock <= 5">Only {{ item.availableStock }} left in store!</span>
+            </div>
+
+            <div class="item-price-col">
+              <span class="unit-price">₹{{ item.unitPrice | number:'1.2-2' }} each</span>
+              <strong class="total-price">₹{{ item.totalPrice | number:'1.2-2' }}</strong>
+              <button (click)="removeItem(item)" class="btn-remove">Remove</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Summary Column -->
+    <div class="summary-column">
+      <div class="summary-card">
+        <h2>Order Summary</h2>
+
+        <div class="summary-row">
+          <span>Item Subtotal</span>
+          <span>₹{{ cart.subtotal | number:'1.2-2' }}</span>
+        </div>
+
+        <div class="summary-row">
+          <span>
+            Kuravankonam Local Delivery
+            <small *ngIf="deliveryFee === 0" class="free-pill">FREE</small>
+          </span>
+          <span [class.free-text]="deliveryFee === 0">
+            {{ deliveryFee === 0 ? '₹0.00' : ('₹' + (deliveryFee | number:'1.2-2')) }}
+          </span>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <div class="summary-total-row">
+          <span>Total Payable</span>
+          <strong>₹{{ totalPayable | number:'1.2-2' }}</strong>
+        </div>
+
+        <p class="tax-note">Inclusive of all Indian taxes and GST</p>
+
+        <a routerLink="/checkout" class="btn-checkout">
+          Proceed to Checkout ➔
+        </a>
+
+        <div class="trust-features">
+          <div class="feature-item">
+            <span class="feat-icon">📍</span>
+            <span>Local Kuravankonam store dispatch within 20 km</span>
+          </div>
+          <div class="feature-item">
+            <span class="feat-icon">⚡</span>
+            <span>Same-day slots (Morning, Afternoon, Evening)</span>
+          </div>
+          <div class="feature-item">
+            <span class="feat-icon">💳</span>
+            <span>Cash on Delivery (COD) & Razorpay Online</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,169 @@
+<div class="analytics-page">
+  <div class="page-header">
+    <div>
+      <h1>Business Reporting & Analytics</h1>
+      <p class="subtitle">Real-time performance metrics, sales volume, and Kuravankonam inventory health</p>
+    </div>
+    <button (click)="fetchAnalytics()" class="btn-refresh">🔄 Refresh Data</button>
+  </div>
+
+  <!-- Executive KPI Grid -->
+  <div class="kpi-grid" *ngIf="summary">
+    <div class="kpi-card revenue">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Total Net Revenue</span>
+        <strong class="kpi-value">₹{{ summary.totalRevenue | number:'1.2-2' }}</strong>
+        <span class="kpi-sub">Delivered & confirmed orders</span>
+      </div>
+    </div>
+
+    <div class="kpi-card orders">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Total Orders</span>
+        <strong class="kpi-value">{{ summary.totalOrders }}</strong>
+        <span class="kpi-sub">{{ summary.deliveredOrders }} delivered ({{ summary.cancelledOrders }} cancelled)</span>
+      </div>
+    </div>
+
+    <div class="kpi-card aov">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Average Order Value</span>
+        <strong class="kpi-value">₹{{ summary.averageOrderValue | number:'1.2-2' }}</strong>
+        <span class="kpi-sub">Across all customer checkouts</span>
+      </div>
+    </div>
+
+    <div class="kpi-card radius">
+      <div class="kpi-icon">📍</div>
+      <div class="kpi-body">
+        <span class="kpi-label">20 km Radius Fulfillment</span>
+        <strong class="kpi-value">{{ summary.ordersWithin20kmCount }} Orders</strong>
+        <span class="kpi-sub">Local Trivandrum coverage</span>
+      </div>
+    </div>
+
+    <div class="kpi-card stock">
+      <div class="kpi-icon">⚠️</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Low Stock Alerts</span>
+        <strong class="kpi-value" [class.danger]="summary.lowStockCount > 0">{{ summary.lowStockCount }} Items</strong>
+        <span class="kpi-sub">At or below reorder threshold</span>
+      </div>
+    </div>
+
+    <div class="kpi-card refund">
+      <div class="kpi-icon">🔄</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Total Refunded</span>
+        <strong class="kpi-value">₹{{ summary.totalRefunded | number:'1.2-2' }}</strong>
+        <span class="kpi-sub">Processed return reimbursements</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operational Distribution Cards -->
+  <div class="distribution-grid" *ngIf="summary">
+    <!-- Order Status Distribution -->
+    <div class="dist-card">
+      <h2>Order Status Breakdown</h2>
+      <div class="badge-list">
+        <div *ngFor="let s of getStatusKeys()" class="status-row">
+          <span class="status-name">{{ s }}</span>
+          <strong class="status-count">{{ summary.ordersByStatus[s] }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Methods Breakdown -->
+    <div class="dist-card">
+      <h2>Payment Methods Distribution</h2>
+      <div class="badge-list">
+        <div *ngFor="let p of getPaymentKeys()" class="status-row">
+          <span class="status-name">{{ p === 'COD' ? '💵 Cash / UPI on Delivery (COD)' : '💳 Razorpay Online Gateway' }}</span>
+          <strong class="status-count">{{ summary.paymentMethodBreakdown[p] }} orders</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two-Column Tables: Low Stock Warnings & Top Products -->
+  <div class="analytics-tables-grid">
+    <!-- Low Stock Alert Table -->
+    <div class="table-card">
+      <div class="card-toolbar">
+        <h2>⚠️ Kuravankonam Low Stock Warnings ({{ lowStockAlerts.length }})</h2>
+        <span class="tag-warn">Immediate Restock Attention</span>
+      </div>
+
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Product & SKU</th>
+            <th>Category</th>
+            <th>Current Stock</th>
+            <th>Min Threshold</th>
+            <th>Suggested Order</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="lowStockAlerts.length === 0">
+            <td colspan="5" class="empty-cell">All store inventory levels are healthy!</td>
+          </tr>
+          <tr *ngFor="let item of lowStockAlerts">
+            <td>
+              <strong class="item-name">{{ item.productName }}</strong>
+              <span class="item-sku">{{ item.sku }}</span>
+            </td>
+            <td>{{ item.categoryName }}</td>
+            <td>
+              <span class="stock-pill low">{{ item.currentStock }} units</span>
+            </td>
+            <td>{{ item.lowStockThreshold }} units</td>
+            <td>
+              <strong class="reorder-qty">+{{ item.suggestedReorder }} units</strong>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Top Selling Products Table -->
+    <div class="table-card">
+      <div class="card-toolbar">
+        <h2>🏆 Top Selling Pet Supplies</h2>
+        <span class="tag-best">Volume Leaders</span>
+      </div>
+
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Product Name</th>
+            <th>Brand</th>
+            <th>Units Sold</th>
+            <th>Gross Sales</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="topProducts.length === 0">
+            <td colspan="4" class="empty-cell">No order items recorded yet.</td>
+          </tr>
+          <tr *ngFor="let prod of topProducts">
+            <td>
+              <strong class="item-name">{{ prod.productName }}</strong>
+            </td>
+            <td>{{ prod.brandName }}</td>
+            <td>
+              <span class="sold-badge">{{ prod.totalQuantitySold }} units</span>
+            </td>
+            <td>
+              <strong class="revenue-val">₹{{ prod.totalRevenue | number:'1.2-2' }}</strong>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,106 @@
+<footer class="store-footer">
+  <!-- Value Proposition Strip -->
+  <div class="footer-usp-bar">
+    <div class="container usp-grid">
+      <div class="usp-item">
+        <span class="usp-icon">🚚</span>
+        <div>
+          <h4>Local 20 km Delivery</h4>
+          <p>Dispatched direct from Kuravankonam Store</p>
+        </div>
+      </div>
+      <div class="usp-item">
+        <span class="usp-icon">🛡️</span>
+        <div>
+          <h4>100% Genuine Pet Nutrition</h4>
+          <p>Authorized stock from verified brand distributors</p>
+        </div>
+      </div>
+      <div class="usp-item">
+        <span class="usp-icon">🔄</span>
+        <div>
+          <h4>Owner-Controlled Returns</h4>
+          <p>Product-specific return & refund terms</p>
+        </div>
+      </div>
+      <div class="usp-item">
+        <span class="usp-icon">💳</span>
+        <div>
+          <h4>Secure Payments</h4>
+          <p>Razorpay standard checkout with UPI & cards</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Footer Content -->
+  <div class="footer-main">
+    <div class="container footer-cols">
+      <!-- Shop Identity -->
+      <div class="col-identity">
+        <div class="footer-logo">
+          <span class="logo-emoji">🐾</span>
+          <span class="logo-title">NOVA PETZLIFE</span>
+        </div>
+        <p class="store-desc">
+          Premier pet retail destination in Thiruvananthapuram. Specializing in healthy nutrition, treats, toys, and care essentials for cats, dogs, and family pets.
+        </p>
+        <div class="store-address-box">
+          <span class="pin-icon">📍</span>
+          <div>
+            <strong>Physical Store Location:</strong>
+            <p>{{ shopAddress }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="col-links">
+        <h3>Product Categories</h3>
+        <ul>
+          <li><a routerLink="/shop" [queryParams]="{category: 'cat-food'}">Cat Food & Nutrition</a></li>
+          <li><a routerLink="/shop" [queryParams]="{category: 'dog-food'}">Dog Food & Kibble</a></li>
+          <li><a routerLink="/shop" [queryParams]="{category: 'grooming'}">Pet Grooming & Shampoos</a></li>
+          <li><a routerLink="/shop" [queryParams]="{category: 'accessories'}">Collars, Leashes & Beds</a></li>
+          <li><a routerLink="/shop" [queryParams]="{category: 'hygiene'}">Litter, Pads & Hygiene</a></li>
+        </ul>
+      </div>
+
+      <!-- Service Area & Hours -->
+      <div class="col-links">
+        <h3>Store & Delivery Information</h3>
+        <ul class="info-list">
+          <li><strong>Delivery Scope:</strong> Within 20 km of Kuravankonam</li>
+          <li><strong>Mon – Sat:</strong> 09:00 AM – 08:30 PM</li>
+          <li><strong>Sunday:</strong> 10:00 AM – 06:00 PM</li>
+          <li><strong>State:</strong> Kerala, PIN: 695003</li>
+          <li>
+            <a [href]="googleReviewUrl" target="_blank" rel="noopener noreferrer" class="maps-btn">
+              ⭐ View Google Reviews & Directions ↗
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Customer Policies -->
+      <div class="col-links">
+        <h3>Customer Policies</h3>
+        <ul>
+          <li><a routerLink="/policies/shipping">Shipping & 20 km Delivery Policy</a></li>
+          <li><a routerLink="/policies/returns">Return & Refund Policy</a></li>
+          <li><a routerLink="/policies/terms">Terms and Conditions</a></li>
+          <li><a routerLink="/policies/privacy">Privacy Policy</a></li>
+          <li><a routerLink="/contact">Contact & Store Support</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Copyright Bar -->
+  <div class="footer-bottom">
+    <div class="container bottom-inner">
+      <p>© {{ currentYear }} NOVA PETZLIFE (Petzlife). All rights reserved. Kuravankonam, Thiruvananthapuram, Kerala.</p>
+      <p class="commercial-notice">Strictly commercial pet shop e-commerce platform. Medical/veterinary diagnosis is excluded.</p>
+    </div>
+  </div>
+</footer>

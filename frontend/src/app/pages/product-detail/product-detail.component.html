@@ -1,0 +1,257 @@
+<div class="product-detail-page">
+  <div class="container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb-nav">
+      <a routerLink="/">Home</a> &gt;
+      <a routerLink="/">Catalog</a> &gt;
+      <span *ngIf="product">{{ product.name }}</span>
+    </nav>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading product details...</p>
+    </div>
+
+    <!-- Product Main Info -->
+    <div *ngIf="product && !isLoading" class="product-layout">
+      <!-- Left Column: Gallery -->
+      <div class="gallery-column">
+        <div class="main-image-wrap">
+          <img [src]="selectedImageUrl" [alt]="product.name" class="main-image" />
+          <span *ngIf="product.discountedPrice && product.discountedPrice < product.basePrice" class="sale-badge">
+            SAVE ₹{{ (product.basePrice - product.discountedPrice).toFixed(0) }}
+          </span>
+        </div>
+        <div *ngIf="product.images && product.images.length > 1" class="thumbnail-strip">
+          <button
+            *ngFor="let img of product.images"
+            type="button"
+            class="thumbnail-btn"
+            [class.active]="selectedImageUrl === img.imageUrl"
+            (click)="selectImage(img.imageUrl)"
+          >
+            <img [src]="img.imageUrl" [alt]="img.altText || product.name" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Column: Details & Purchase -->
+      <div class="info-column">
+        <div class="brand-meta">{{ product.brandName }} • {{ product.categoryName }}</div>
+        <h1 class="product-title">{{ product.name }}</h1>
+        <div class="sku-meta">SKU: {{ product.sku }} | Pet: {{ product.petType }} ({{ product.lifeStage }})</div>
+
+        <!-- Rating Snapshot -->
+        <div class="rating-snapshot" *ngIf="summary">
+          <div class="stars">
+            <span *ngFor="let s of [1,2,3,4,5]" class="star" [class.filled]="s <= summary.averageRating">★</span>
+          </div>
+          <span class="rating-value">{{ summary.averageRating.toFixed(1) }}</span>
+          <span class="review-count">({{ summary.totalReviews }} Customer Reviews)</span>
+        </div>
+
+        <!-- Pricing -->
+        <div class="price-box">
+          <span class="currency">₹</span>
+          <span class="price">{{ (product.discountedPrice || product.basePrice).toFixed(2) }}</span>
+          <span *ngIf="product.discountedPrice && product.discountedPrice < product.basePrice" class="original-price">
+            ₹{{ product.basePrice.toFixed(2) }}
+          </span>
+          <span class="tax-note">Inclusive of all taxes (CGST + SGST)</span>
+        </div>
+
+        <!-- Stock Status -->
+        <div class="stock-badge" [class.in-stock]="product.availableStock > 0" [class.out-of-stock]="product.availableStock <= 0">
+          <span class="dot"></span>
+          <span>{{ product.availableStock > 0 ? 'In Stock (' + product.availableStock + ' available at Kuravankonam Store)' : 'Out of Stock' }}</span>
+        </div>
+
+        <!-- Variant Options -->
+        <div *ngIf="product.variants && product.variants.length > 0" class="variants-section">
+          <label>Select Size / Variant:</label>
+          <div class="variants-list">
+            <button
+              *ngFor="let v of product.variants"
+              type="button"
+              class="variant-btn"
+              [class.active]="selectedVariantId === v.id"
+              (click)="selectedVariantId = v.id"
+            >
+              {{ v.variantName }} — ₹{{ (v.discountedPrice || v.price).toFixed(2) }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Quantity & Add to Cart -->
+        <div class="actions-row">
+          <div class="quantity-picker">
+            <button type="button" (click)="quantity = quantity > 1 ? quantity - 1 : 1">-</button>
+            <input type="number" [(ngModel)]="quantity" min="1" [max]="product.availableStock || 10" />
+            <button type="button" (click)="quantity = quantity + 1">+</button>
+          </div>
+          <button
+            type="button"
+            class="add-cart-btn"
+            [disabled]="product.availableStock <= 0"
+            (click)="addToCart()"
+          >
+            <span>🛒 Add to Cart</span>
+          </button>
+        </div>
+
+        <div *ngIf="cartMessage" class="cart-toast">{{ cartMessage }}</div>
+
+        <!-- Delivery & Policy Cards -->
+        <div class="policy-cards">
+          <div class="policy-card">
+            <span class="icon">🚚</span>
+            <div>
+              <strong>Local Delivery (20 km Radius)</strong>
+              <p>Free home delivery on orders above ₹500 across Thiruvananthapuram from Kuravankonam Junction.</p>
+            </div>
+          </div>
+          <div class="policy-card">
+            <span class="icon">{{ product.returnPolicy.returnAllowed ? '🔄' : '🚫' }}</span>
+            <div>
+              <strong>{{ product.returnPolicy.returnAllowed ? '7-Day Return Policy' : 'Non-Returnable Item' }}</strong>
+              <p>{{ product.returnPolicy.returnAllowed ? 'Eligible for return within ' + product.returnPolicy.returnWindowDays + ' days in original packaging.' : 'Perishable pet food or hygiene items with opened seal are non-returnable.' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Description -->
+        <div class="description-section">
+          <h3>Product Overview</h3>
+          <p>{{ product.description || 'Nutritious formulation crafted for balanced pet wellbeing. Store in a cool, dry place away from direct sunlight.' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customer Reviews & Ratings Section -->
+    <section class="reviews-section" *ngIf="product && !isLoading">
+      <div class="section-title-wrap">
+        <h2>Customer Reviews & Ratings</h2>
+        <span class="subtitle">Real feedback from pet parents in Thiruvananthapuram</span>
+      </div>
+
+      <div class="reviews-layout">
+        <!-- Summary Box -->
+        <div class="summary-box" *ngIf="summary">
+          <div class="avg-score">{{ summary.averageRating.toFixed(1) }}</div>
+          <div class="stars big">
+            <span *ngFor="let s of [1,2,3,4,5]" class="star" [class.filled]="s <= summary.averageRating">★</span>
+          </div>
+          <p class="count-note">Based on {{ summary.totalReviews }} verified ratings</p>
+
+          <!-- Distribution Bars -->
+          <div class="distribution-bars">
+            <div *ngFor="let star of [5,4,3,2,1]" class="bar-row">
+              <span class="star-label">{{ star }} ★</span>
+              <div class="bar-track">
+                <div
+                  class="bar-fill"
+                  [style.width.%]="summary.totalReviews > 0 ? ((summary.ratingDistribution[star] || 0) / summary.totalReviews * 100) : 0"
+                ></div>
+              </div>
+              <span class="bar-count">{{ summary.ratingDistribution[star] || 0 }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Write a Review Form -->
+        <div class="write-review-box">
+          <h3>Write a Product Review</h3>
+          <p class="form-desc">Share your experience to help fellow pet owners choose the best for their pets.</p>
+
+          <div *ngIf="reviewSuccessMessage" class="alert-success">{{ reviewSuccessMessage }}</div>
+          <div *ngIf="reviewErrorMessage" class="alert-error">{{ reviewErrorMessage }}</div>
+
+          <form (ngSubmit)="submitReview()" class="review-form">
+            <div class="form-group">
+              <label>Overall Rating *</label>
+              <div class="star-picker">
+                <button
+                  *ngFor="let s of [1,2,3,4,5]"
+                  type="button"
+                  class="star-btn"
+                  [class.active]="s <= newRating"
+                  (click)="setRating(s)"
+                >
+                  ★
+                </button>
+                <span class="rating-text">({{ newRating }} out of 5 stars)</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reviewTitle">Review Headline (Optional)</label>
+              <input
+                id="reviewTitle"
+                type="text"
+                [(ngModel)]="newTitle"
+                name="newTitle"
+                placeholder="e.g. My Labrador loves this flavor!"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="reviewComment">Detailed Review *</label>
+              <textarea
+                id="reviewComment"
+                [(ngModel)]="newComment"
+                name="newComment"
+                rows="4"
+                placeholder="How did your pet like the food/accessory? Share details about quality, packaging, and results..."
+                required
+              ></textarea>
+            </div>
+
+            <button type="submit" class="submit-review-btn" [disabled]="isSubmittingReview || !newComment.trim()">
+              {{ isSubmittingReview ? 'Submitting Review...' : 'Submit Review' }}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Customer Reviews List -->
+      <div class="reviews-list">
+        <h3>Customer Feedback ({{ reviews.length }})</h3>
+
+        <div *ngIf="isLoadingReviews" class="loading-reviews">Loading customer reviews...</div>
+
+        <div *ngIf="!isLoadingReviews && reviews.length === 0" class="empty-reviews">
+          <p>No customer reviews yet for this product. Be the first to leave a review!</p>
+        </div>
+
+        <div *ngFor="let rev of reviews" class="review-item-card">
+          <div class="rev-top">
+            <div class="reviewer-meta">
+              <div class="avatar">{{ rev.customerName.charAt(0) }}</div>
+              <div>
+                <strong class="name">{{ rev.customerName }}</strong>
+                <span *ngIf="rev.isVerifiedPurchase" class="verified-pill">✓ Verified Buyer</span>
+                <span class="date">{{ rev.createdAt | date:'mediumDate' }}</span>
+              </div>
+            </div>
+            <div class="stars">
+              <span *ngFor="let s of [1,2,3,4,5]" class="star" [class.filled]="s <= rev.rating">★</span>
+            </div>
+          </div>
+
+          <h4 *ngIf="rev.title" class="rev-title">{{ rev.title }}</h4>
+          <p class="rev-body">{{ rev.comment }}</p>
+
+          <!-- Store Owner Reply -->
+          <div *ngIf="rev.adminReply" class="admin-reply-box">
+            <div class="reply-header">
+              <span class="badge">Store Response</span>
+              <strong>NOVA PETZLIFE (Kuravankonam Desk)</strong>
+            </div>
+            <p>{{ rev.adminReply }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

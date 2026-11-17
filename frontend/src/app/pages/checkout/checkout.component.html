@@ -1,0 +1,240 @@
+<div class="checkout-container">
+  <div class="checkout-header">
+    <div class="crumb">
+      <a routerLink="/">Home</a> <span>/</span> <a routerLink="/cart">Cart</a> <span>/</span> Secure Checkout
+    </div>
+    <h1>Express Checkout</h1>
+    <p class="subtitle">Direct local fulfillment from NOVA PETZLIFE Kuravankonam store</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-banner">
+    ⚠️ {{ errorMessage }}
+  </div>
+
+  <div class="checkout-layout">
+    <!-- Form Steps Column -->
+    <div class="form-column">
+      <!-- Step 1: Customer & Address Details -->
+      <div class="step-card">
+        <div class="step-badge">1</div>
+        <div class="step-content">
+          <h2>Delivery Address & Contact</h2>
+          <p class="step-desc">Enter your Trivandrum delivery location to confirm 20 km eligibility</p>
+
+          <div class="preset-pills">
+            <span class="preset-label">Quick Locations:</span>
+            <button *ngFor="let loc of trivandrumLocations"
+                    type="button"
+                    (click)="selectPreset(loc)"
+                    [class.active]="latitude === loc.lat && longitude === loc.lon"
+                    class="preset-btn">
+              {{ loc.name }}
+            </button>
+          </div>
+
+          <div class="form-grid">
+            <div class="field-group">
+              <label>Full Name *</label>
+              <input type="text" [(ngModel)]="recipientName" placeholder="e.g. Suresh Kumar" required>
+            </div>
+
+            <div class="field-group">
+              <label>Phone Number (for delivery rider) *</label>
+              <input type="tel" [(ngModel)]="phone" placeholder="+91 94471 23456" required>
+            </div>
+
+            <div class="field-group full-width">
+              <label>Email (for order invoice & tracking)</label>
+              <input type="email" [(ngModel)]="email" placeholder="youremail@example.com">
+            </div>
+
+            <div class="field-group full-width">
+              <label>Street Address / House Name / Flat No. *</label>
+              <input type="text" [(ngModel)]="addressLine1" placeholder="House/Flat No, Street, Road" required>
+            </div>
+
+            <div class="field-group">
+              <label>Landmark (optional)</label>
+              <input type="text" [(ngModel)]="landmark" placeholder="Near Temple / Opposite Bank">
+            </div>
+
+            <div class="field-group">
+              <label>PIN Code *</label>
+              <input type="text" [(ngModel)]="postalCode" (change)="runDeliveryCheck()" placeholder="695004" required>
+            </div>
+          </div>
+
+          <!-- Live 20 km Delivery Eligibility Feedback -->
+          <div *ngIf="eligibility" class="delivery-status-box" [class.eligible]="eligibility.isEligible" [class.ineligible]="!eligibility.isEligible">
+            <div class="status-icon">{{ eligibility.isEligible ? '✅' : '❌' }}</div>
+            <div class="status-details">
+              <strong>{{ eligibility.isEligible ? 'Delivery Available to this Address' : 'Address Outside 20 km Store Radius' }}</strong>
+              <p>{{ eligibility.message }}</p>
+              <div class="metrics" *ngIf="eligibility.distanceKm > 0">
+                <span>Straight-line distance: <strong>{{ eligibility.distanceKm }} km</strong> from Kuravankonam Junction</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Delivery Slot Selection -->
+      <div class="step-card">
+        <div class="step-badge">2</div>
+        <div class="step-content">
+          <h2>Select Delivery Window</h2>
+          <p class="step-desc">Pick a convenient delivery slot for same-day delivery</p>
+
+          <div class="slots-grid">
+            <label *ngFor="let slot of slots" class="slot-tile" [class.selected]="selectedSlot === slot.slotName">
+              <input type="radio" name="deliverySlot" [value]="slot.slotName" [(ngModel)]="selectedSlot">
+              <div class="slot-body">
+                <span class="slot-title">{{ slot.slotName }}</span>
+                <span class="slot-time">{{ slot.startTime }} - {{ slot.endTime }}</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Payment Method -->
+      <div class="step-card">
+        <div class="step-badge">3</div>
+        <div class="step-content">
+          <h2>Payment Method</h2>
+          <p class="step-desc">Select how you prefer to pay for your pet supplies</p>
+
+          <div class="payment-methods">
+            <label class="payment-tile" [class.selected]="paymentMethod === 'COD'">
+              <input type="radio" name="paymentMethod" value="COD" [(ngModel)]="paymentMethod">
+              <div class="method-body">
+                <div class="method-title">
+                  <span class="method-icon">💵</span>
+                  <strong>Cash on Delivery (COD) / UPI on Delivery</strong>
+                </div>
+                <p>Pay upon delivery at your doorstep via cash or GooglePay / PhonePe / Paytm QR.</p>
+              </div>
+            </label>
+
+            <label class="payment-tile" [class.selected]="paymentMethod === 'RAZORPAY'">
+              <input type="radio" name="paymentMethod" value="RAZORPAY" [(ngModel)]="paymentMethod">
+              <div class="method-body">
+                <div class="method-title">
+                  <span class="method-icon">💳</span>
+                  <strong>Online Payment (Razorpay - UPI / Cards / NetBanking)</strong>
+                  <span class="test-pill">Instant Confirmation</span>
+                </div>
+                <p>Pay securely via Razorpay payment gateway.</p>
+              </div>
+            </label>
+          </div>
+
+          <div class="field-group full-width notes-group">
+            <label>Order Notes / Special Delivery Instructions (optional)</label>
+            <textarea [(ngModel)]="orderNotes" rows="2" placeholder="e.g. Call before arrival, leave package with security guard..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review & Checkout Summary Column -->
+    <div class="order-summary-column">
+      <div class="summary-card">
+        <h2>Items in Order</h2>
+
+        <div *ngIf="cart" class="checkout-items-list">
+          <div *ngFor="let item of cart.items" class="mini-item-row">
+            <div class="mini-img">
+              <img [src]="item.primaryImageUrl || 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=100&auto=format&fit=crop&q=80'" [alt]="item.productName">
+            </div>
+            <div class="mini-info">
+              <span class="mini-name">{{ item.productName }}</span>
+              <span class="mini-qty">Qty: {{ item.quantity }} × ₹{{ item.unitPrice | number:'1.2-2' }}</span>
+              <span *ngIf="item.returnAllowed" class="mini-return">🛡️ {{ item.returnWindowDays }}-day return</span>
+            </div>
+            <strong class="mini-price">₹{{ item.totalPrice | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <!-- Coupon / Promotion Code Section -->
+        <div class="coupon-section">
+          <label class="coupon-label">Promo / Coupon Code</label>
+          <div *ngIf="!appliedCouponCode" class="coupon-input-group">
+            <input type="text"
+                   [(ngModel)]="couponCodeInput"
+                   placeholder="e.g. WELCOME100"
+                   (keyup.enter)="applyCoupon()"
+                   class="coupon-input">
+            <button type="button"
+                    (click)="applyCoupon()"
+                    [disabled]="isApplyingCoupon || !couponCodeInput.trim()"
+                    class="btn-apply-coupon">
+              {{ isApplyingCoupon ? '...' : 'Apply' }}
+            </button>
+          </div>
+
+          <div *ngIf="appliedCouponCode" class="applied-coupon-pill">
+            <div class="pill-info">
+              <span class="pill-icon">🏷️</span>
+              <span class="pill-code">{{ appliedCouponCode }}</span>
+              <span class="pill-discount">-₹{{ discountAmount | number:'1.2-2' }}</span>
+            </div>
+            <button type="button" (click)="removeCoupon()" class="btn-remove-coupon" title="Remove coupon">✕</button>
+          </div>
+
+          <p *ngIf="couponSuccessMessage" class="coupon-msg-success">✓ {{ couponSuccessMessage }}</p>
+          <p *ngIf="couponValidationMessage" class="coupon-msg-error">⚠️ {{ couponValidationMessage }}</p>
+
+          <!-- Available Active Coupons -->
+          <div *ngIf="activeCoupons.length > 0 && !appliedCouponCode" class="available-coupons">
+            <span class="avail-title">Available Offers:</span>
+            <div class="coupon-chips">
+              <button *ngFor="let c of activeCoupons"
+                      type="button"
+                      (click)="applyCoupon(c.code)"
+                      class="coupon-chip"
+                      [title]="c.description">
+                <strong>{{ c.code }}</strong>: {{ c.discountType === 'PERCENTAGE' ? (c.discountValue + '% OFF') : ('₹' + c.discountValue + ' OFF') }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <div class="calc-row">
+          <span>Subtotal</span>
+          <span>₹{{ cart?.subtotal || 0 | number:'1.2-2' }}</span>
+        </div>
+
+        <div *ngIf="discountAmount > 0" class="calc-row discount-row">
+          <span>Promotional Discount ({{ appliedCouponCode }})</span>
+          <span class="discount-val">-₹{{ discountAmount | number:'1.2-2' }}</span>
+        </div>
+
+        <div class="calc-row">
+          <span>Delivery Charge (Kuravankonam)</span>
+          <span [class.free]="deliveryFee === 0">{{ deliveryFee === 0 ? 'FREE' : ('₹' + (deliveryFee | number:'1.2-2')) }}</span>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <div class="total-row">
+          <span>Final Payable</span>
+          <strong>₹{{ totalPayable | number:'1.2-2' }}</strong>
+        </div>
+
+        <button (click)="placeOrder()" [disabled]="isSubmitting || (eligibility && !eligibility.isEligible)" class="btn-confirm-order">
+          <span *ngIf="!isSubmitting">Place Order ➔</span>
+          <span *ngIf="isSubmitting">Placing Order...</span>
+        </button>
+
+        <p class="guarantee-text">
+          🔒 100% Guaranteed Pet-Safe Products & Verified Local Dispatch
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

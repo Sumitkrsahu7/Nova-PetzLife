@@ -1,0 +1,168 @@
+<div class="shop-page">
+  <div class="container">
+    <!-- Breadcrumb & Header -->
+    <div class="shop-header">
+      <div>
+        <nav class="breadcrumb">
+          <a routerLink="/">Home</a> &gt; <span>Shop Catalog</span>
+        </nav>
+        <h1>All Pet Products & Essentials</h1>
+        <p class="subtitle">
+          In stock at <strong>Petzlife, Kuravankonam Junction</strong>. Serving Trivandrum within 20 km straight-line delivery radius.
+        </p>
+      </div>
+
+      <div *ngIf="cartMessage" class="cart-toast">{{ cartMessage }}</div>
+    </div>
+
+    <!-- Layout: Sidebar Filters + Main Product Grid -->
+    <div class="shop-layout">
+      <!-- Left Filters Sidebar -->
+      <aside class="filters-sidebar">
+        <div class="filter-card">
+          <div class="filter-header">
+            <h3>Filters</h3>
+            <button type="button" class="reset-link" (click)="resetFilters()">Reset All</button>
+          </div>
+
+          <!-- Pet Type Filter -->
+          <div class="filter-group">
+            <label>Pet Type</label>
+            <div class="pill-group">
+              <button
+                *ngFor="let pt of petTypes"
+                type="button"
+                class="pill-btn"
+                [class.active]="selectedPetType === pt"
+                (click)="selectedPetType = pt; loadProducts()"
+              >
+                {{ pt }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Category Filter -->
+          <div class="filter-group">
+            <label>Category</label>
+            <div class="radio-list">
+              <label *ngFor="let cat of categories" class="radio-label">
+                <input
+                  type="radio"
+                  name="category"
+                  [value]="cat"
+                  [(ngModel)]="selectedCategory"
+                  (change)="loadProducts()"
+                />
+                <span>{{ cat }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Brand Filter -->
+          <div class="filter-group">
+            <label>Brand</label>
+            <div class="radio-list">
+              <label *ngFor="let b of brands" class="radio-label">
+                <input
+                  type="radio"
+                  name="brand"
+                  [value]="b"
+                  [(ngModel)]="selectedBrand"
+                  (change)="loadProducts()"
+                />
+                <span>{{ b }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- In-Stock Filter -->
+          <div class="filter-group checkbox-group">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                [(ngModel)]="inStockOnly"
+                (change)="loadProducts()"
+              />
+              <span>In Stock Only</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Kuravankonam Store Delivery Note -->
+        <div class="delivery-notice-box">
+          <span class="icon">📍</span>
+          <div>
+            <strong>Kuravankonam Storefront</strong>
+            <p>Free local delivery on orders above ₹500 across Thiruvananthapuram.</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Products Content -->
+      <main class="products-main">
+        <!-- Top Controls: Search & Sort -->
+        <div class="controls-bar">
+          <div class="search-box">
+            <span class="icon">🔍</span>
+            <input
+              type="text"
+              [(ngModel)]="searchQuery"
+              (keyup.enter)="loadProducts()"
+              placeholder="Search by product name or brand..."
+            />
+            <button type="button" (click)="loadProducts()">Filter</button>
+          </div>
+
+          <div class="sort-box">
+            <label for="sortBySelect">Sort By:</label>
+            <select id="sortBySelect" [(ngModel)]="sortBy" (change)="loadProducts()">
+              <option value="id,desc">Newest First</option>
+              <option value="basePrice,asc">Price: Low to High</option>
+              <option value="basePrice,desc">Price: High to Low</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Active Results Count -->
+        <div class="results-meta">
+          <span>Showing <strong>{{ products.length }}</strong> of <strong>{{ totalElements }}</strong> products</span>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading products from Kuravankonam inventory...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="!isLoading && products.length === 0" class="empty-state">
+          <span class="empty-icon">🐾</span>
+          <h3>No matching products found</h3>
+          <p>Try clearing your filters or searching with a different term.</p>
+          <button type="button" class="btn-reset" (click)="resetFilters()">Clear All Filters</button>
+        </div>
+
+        <!-- Products Grid -->
+        <div *ngIf="!isLoading && products.length > 0" class="products-grid">
+          <app-product-card
+            *ngFor="let p of products"
+            [product]="p"
+            (addToCart)="handleAddToCart($event)"
+          ></app-product-card>
+        </div>
+
+        <!-- Show More Button -->
+        <div *ngIf="!isLoading && hasMore" class="show-more-wrapper">
+          <button type="button" class="btn-show-more" [disabled]="isLoadingMore" (click)="loadMore()">
+            <span *ngIf="!isLoadingMore">
+              Show More Products ({{ totalElements - products.length }} remaining)
+            </span>
+            <span *ngIf="isLoadingMore" class="loading-inline">
+              <span class="spinner-sm"></span> Loading more products...
+            </span>
+          </button>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,82 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1>Brand Catalog Isolation</h1>
+      <p>Manage verified pet food and supply manufacturers</p>
+    </div>
+    <button class="btn btn-primary" (click)="openCreateModal()">+ Add Brand</button>
+  </div>
+
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading">Loading brands...</div>
+    <table *ngIf="!isLoading && brands.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>Brand Name</th>
+          <th>Slug</th>
+          <th>Description</th>
+          <th>Website</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let b of brands">
+          <td><strong>{{ b.name }}</strong></td>
+          <td><code>{{ b.slug }}</code></td>
+          <td>{{ b.description || '—' }}</td>
+          <td>
+            <a *ngIf="b.websiteUrl" [href]="b.websiteUrl" target="_blank">{{ b.websiteUrl }}</a>
+            <span *ngIf="!b.websiteUrl">—</span>
+          </td>
+          <td>
+            <span class="status-pill" [class.active]="b.isActive" [class.inactive]="!b.isActive">
+              {{ b.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            <button
+              class="btn-sm"
+              [class.btn-danger]="b.isActive"
+              [class.btn-success]="!b.isActive"
+              (click)="toggleStatus(b)"
+            >
+              {{ b.isActive ? 'Deactivate' : 'Activate' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Create Modal -->
+  <div *ngIf="showModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Add Brand</h2>
+        <button (click)="showModal = false" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="modalErrorMessage" class="alert alert-danger">{{ modalErrorMessage }}</div>
+        <form (ngSubmit)="saveBrand()">
+          <div class="form-group">
+            <label>Brand Name *</label>
+            <input type="text" [(ngModel)]="brandForm.name" name="name" required placeholder="e.g. Royal Canin" />
+          </div>
+          <div class="form-group">
+            <label>Official Website URL</label>
+            <input type="url" [(ngModel)]="brandForm.websiteUrl" name="websiteUrl" placeholder="https://..." />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea [(ngModel)]="brandForm.description" name="description" rows="3"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary">Save Brand</button>
+            <button type="button" (click)="showModal = false" class="btn btn-outline">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

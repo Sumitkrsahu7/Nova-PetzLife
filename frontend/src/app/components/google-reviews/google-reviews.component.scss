@@ -1,0 +1,248 @@
+.google-reviews-section {
+  padding: 4rem 0;
+  background-color: #FFFFFF;
+  border-top: 1px solid #DDE7DF;
+  border-bottom: 1px solid #DDE7DF;
+}
+
+.section-header {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 2.5rem;
+
+  .google-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    padding: 0.3rem 0.85rem;
+    border-radius: 9999px;
+    margin-bottom: 0.85rem;
+
+    .g-icon {
+      font-weight: 800;
+      color: #4285F4;
+      font-size: 0.95rem;
+    }
+
+    .g-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #334155;
+    }
+  }
+
+  h2 {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #155C3B;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.95rem;
+    color: #64748B;
+  }
+}
+
+.rating-overview-card {
+  background: #FFFDF5;
+  border: 1px solid #FFE8A3;
+  border-radius: 12px;
+  padding: 1.75rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+
+  .overview-left {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .score-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .big-score {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #155C3B;
+      line-height: 1;
+    }
+
+    .stars-wrap {
+      display: flex;
+      flex-direction: column;
+
+      .stars {
+        color: #F59E0B;
+        font-size: 1.25rem;
+        letter-spacing: 1px;
+      }
+
+      .review-count {
+        font-size: 0.8rem;
+        color: #64748B;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .verified-shop-info {
+    border-left: 2px solid #E2E8F0;
+    padding-left: 1.5rem;
+
+    .badge-store {
+      font-size: 0.85rem;
+      color: #155C3B;
+      font-weight: 700;
+    }
+
+    .store-address {
+      font-size: 0.8rem;
+      color: #64748B;
+      margin-top: 0.2rem;
+    }
+  }
+
+  .overview-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+
+    .read-all-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: #248B58;
+      color: #FFFFFF;
+      padding: 0.75rem 1.4rem;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: background 0.2s;
+
+      &:hover {
+        background-color: #155C3B;
+      }
+
+      .arrow {
+        font-size: 1.1rem;
+      }
+    }
+
+    .attribution-note {
+      font-size: 0.7rem;
+      color: #94A3B8;
+    }
+  }
+}
+
+.review-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.review-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  .rev-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .author-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #C8EBD1;
+      color: #155C3B;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .author-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1E293B;
+    }
+
+    .rev-date {
+      font-size: 0.75rem;
+      color: #94A3B8;
+      .via-google {
+        color: #4285F4;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .rev-stars {
+    color: #F59E0B;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+  }
+
+  .rev-text {
+    font-size: 0.875rem;
+    color: #475569;
+    line-height: 1.5;
+    font-style: italic;
+  }
+}
+
+.integration-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: #F1F5F9;
+  border-radius: 8px;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.4;
+
+  .notice-icon {
+    font-size: 1.1rem;
+  }
+
+  strong {
+    color: #1E293B;
+  }
+}
+
+@media (max-width: 900px) {
+  .rating-overview-card {
+    flex-direction: column;
+    align-items: flex-start;
+    .verified-shop-info {
+      border-left: none;
+      padding-left: 0;
+      border-top: 1px solid #E2E8F0;
+      padding-top: 0.75rem;
+    }
+    .overview-right {
+      align-items: flex-start;
+    }
+  }
+}

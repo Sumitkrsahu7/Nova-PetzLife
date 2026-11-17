@@ -1,0 +1,85 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1>Inventory & Stock Control</h1>
+      <p>Real-time stock balance, reservations, and re-order thresholds at Kuravankonam store</p>
+    </div>
+    <button class="btn btn-primary" (click)="fetchInventory()">🔄 Refresh Stock</button>
+  </div>
+
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading">Loading stock levels...</div>
+    <table *ngIf="!isLoading && inventoryList.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>Product / SKU</th>
+          <th>Brand</th>
+          <th>Available Units</th>
+          <th>Reserved Units</th>
+          <th>Min Alert Threshold</th>
+          <th>Inventory State</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of inventoryList">
+          <td>
+            <strong>{{ item.productName }}</strong>
+            <div class="sku-tag">{{ item.sku }}</div>
+          </td>
+          <td>{{ item.brandName }}</td>
+          <td>
+            <span class="stock-num" [class.critical]="item.availableStock <= item.minThreshold">
+              {{ item.availableStock }} units
+            </span>
+          </td>
+          <td>{{ item.reservedStock }} units</td>
+          <td>{{ item.minThreshold }} units</td>
+          <td>
+            <span class="stock-pill" [class.low]="item.isLowStock" [class.healthy]="!item.isLowStock">
+              {{ item.isLowStock ? '⚠️ Low Stock' : '✅ In Stock' }}
+            </span>
+          </td>
+          <td>
+            <button class="btn-sm btn-action" (click)="openAdjustModal(item)">Adjust Stock</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!isLoading && inventoryList.length === 0" class="empty-state">
+      <p>No inventory records found.</p>
+    </div>
+  </div>
+
+  <!-- Adjust Stock Modal -->
+  <div *ngIf="showModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Adjust Stock: {{ selectedItem?.productName }}</h2>
+        <button (click)="showModal = false" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="modalErrorMessage" class="alert alert-danger">{{ modalErrorMessage }}</div>
+        <p class="curr-stock">Current Available Stock: <strong>{{ selectedItem?.availableStock }} units</strong></p>
+
+        <form (ngSubmit)="saveAdjustment()">
+          <div class="form-group">
+            <label>Stock Adjustment Quantity (Use positive to restock, negative to write-off) *</label>
+            <input type="number" [(ngModel)]="adjustmentQty" name="adjustmentQty" required />
+          </div>
+
+          <div class="form-group">
+            <label>Adjustment Reason *</label>
+            <input type="text" [(ngModel)]="adjustReason" name="adjustReason" required />
+          </div>
+
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary">Confirm Stock Adjustment</button>
+            <button type="button" (click)="showModal = false" class="btn btn-outline">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

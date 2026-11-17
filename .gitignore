@@ -1,0 +1,74 @@
+﻿# ==========================================
+# NOVA PETZLIFE - ROOT GITIGNORE
+# ==========================================
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Node dependencies
+node_modules/
+
+# Angular generated files and caches
+.angular/
+**/.angular/
+dist/
+build/
+out-tsc/
+tmp/
+coverage/
+
+# Java / Maven generated files
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+logs/
+
+# IDE files
+.idea/
+.history/
+*.iml
+.project
+.classpath
+.settings/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary and backup files
+*.tmp
+*.temp
+*.bak
+*.old
+*.swp
+*.swo
+*~
+
+# Local database runtime files
+mysql-data/
+docker-data/
+volumes/
+
+# Database backup files
+*.dump
+
+# Test reports
+surefire-reports/
+failsafe-reports/
+
+# Build caches
+.gradle/
+.cache/
+.sass-cache/
+
+# Local project prompt / working notes
+/user_prompt_full.txt

@@ -1,0 +1,124 @@
+<div class="tickets-page">
+  <div class="page-header">
+    <div>
+      <h1>Customer Inquiries & Support Tickets</h1>
+      <p class="subtitle">Direct communication desk with NOVA PETZLIFE shoppers across Trivandrum</p>
+    </div>
+    <button (click)="fetchTickets()" class="btn-refresh">🔄 Refresh Tickets</button>
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    ✓ {{ successMessage }}
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-error">
+    ⚠️ {{ errorMessage }}
+  </div>
+
+  <!-- Status Tabs -->
+  <div class="filter-bar">
+    <div class="status-tabs">
+      <button *ngFor="let tab of statusTabs"
+              (click)="setTab(tab)"
+              [class.active]="activeStatusTab === tab"
+              class="tab-btn">
+        {{ tab }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Tickets Table -->
+  <div class="table-card">
+    <table class="tickets-table">
+      <thead>
+        <tr>
+          <th>Ticket Number</th>
+          <th>Customer</th>
+          <th>Subject / Issue</th>
+          <th>Order #</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Last Update</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="isLoading">
+          <td colspan="8" class="loading-cell">Loading customer inquiries...</td>
+        </tr>
+        <tr *ngIf="!isLoading && tickets.length === 0">
+          <td colspan="8" class="empty-cell">No support tickets found in this filter category.</td>
+        </tr>
+        <tr *ngFor="let t of tickets">
+          <td>
+            <strong class="tkt-link" (click)="viewTicket(t)">#{{ t.ticketNumber }}</strong>
+          </td>
+          <td>
+            <div class="cust-name">{{ t.customerName }}</div>
+            <div class="cust-contact">{{ t.customerEmail }} | {{ t.customerPhone }}</div>
+          </td>
+          <td>
+            <div class="tkt-subj">{{ t.subject }}</div>
+          </td>
+          <td>
+            <span *ngIf="t.orderNumber" class="order-ref">{{ t.orderNumber }}</span>
+            <span *ngIf="!t.orderNumber" class="text-muted">General</span>
+          </td>
+          <td>
+            <span class="prio-tag" [class.urgent]="t.priority === 'URGENT'" [class.high]="t.priority === 'HIGH'">{{ t.priority }}</span>
+          </td>
+          <td>
+            <span class="status-tag" [class.open]="t.status === 'OPEN'" [class.progress]="t.status === 'IN_PROGRESS'" [class.waiting]="t.status === 'WAITING_FOR_CUSTOMER'" [class.resolved]="t.status === 'RESOLVED'">
+              {{ t.status }}
+            </span>
+          </td>
+          <td>{{ t.updatedAt | date:'short' }}</td>
+          <td>
+            <button (click)="viewTicket(t)" class="btn-view">View Thread ➔</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Thread Modal / Drawer -->
+  <div *ngIf="selectedTicket" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <span class="badge-tkt">#{{ selectedTicket.ticketNumber }}</span>
+          <h2>{{ selectedTicket.subject }}</h2>
+          <p class="modal-sub">Customer: {{ selectedTicket.customerName }} ({{ selectedTicket.customerEmail }})</p>
+        </div>
+        <button (click)="closeDrawer()" class="btn-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Message History -->
+        <div class="chat-thread">
+          <div *ngFor="let msg of selectedTicket.messages" class="chat-bubble" [class.staff]="msg.senderType === 'STAFF'" [class.customer]="msg.senderType === 'CUSTOMER'">
+            <div class="bubble-meta">
+              <strong>{{ msg.senderType === 'STAFF' ? 'Store Staff' : selectedTicket.customerName }}</strong>
+              <span>{{ msg.createdAt | date:'short' }}</span>
+            </div>
+            <p class="bubble-msg">{{ msg.message }}</p>
+          </div>
+        </div>
+
+        <!-- Staff Reply Form -->
+        <div class="reply-section">
+          <label>Reply to Customer as Store Desk:</label>
+          <textarea [(ngModel)]="replyText" rows="3" placeholder="Type your response to the customer..."></textarea>
+          <div class="reply-actions">
+            <div class="status-actions">
+              <button (click)="updateStatus('RESOLVED')" class="btn-resolve">✓ Mark Resolved</button>
+              <button (click)="updateStatus('CLOSED')" class="btn-close-ticket">Close Ticket</button>
+            </div>
+            <button (click)="sendReply()" [disabled]="isSendingReply || !replyText.trim()" class="btn-send-reply">
+              {{ isSendingReply ? 'Sending...' : 'Send Staff Reply ➔' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

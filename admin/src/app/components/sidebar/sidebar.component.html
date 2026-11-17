@@ -1,0 +1,82 @@
+<!-- Mobile Drawer Backdrop -->
+<div
+  class="sidebar-backdrop"
+  *ngIf="adminUi.isMobileDrawerOpen$ | async"
+  (click)="adminUi.closeDrawer()"
+  aria-hidden="true"
+></div>
+
+<aside
+  class="sidebar-wrapper"
+  [class.collapsed]="isCollapsed"
+  [class.mobile-open]="adminUi.isMobileDrawerOpen$ | async"
+  aria-label="Administrative Navigation"
+>
+  <!-- Brand Header -->
+  <div class="sidebar-brand">
+    <div class="brand-paw" [title]="isCollapsed ? 'NOVA PETZLIFE Admin' : ''">🐾</div>
+    <div class="brand-titles" *ngIf="!isCollapsed">
+      <span class="shop-name">NOVA PETZLIFE</span>
+      <span class="portal-badge">ADMIN CONTROL</span>
+    </div>
+    <!-- Desktop Collapse Button -->
+    <button
+      type="button"
+      class="sidebar-toggle-btn desktop-only"
+      (click)="toggleSidebar()"
+      [title]="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+      aria-label="Toggle sidebar"
+    >
+      {{ isCollapsed ? '▶' : '◀' }}
+    </button>
+    <!-- Mobile Close Button -->
+    <button
+      type="button"
+      class="sidebar-close-btn mobile-only"
+      (click)="adminUi.closeDrawer()"
+      title="Close navigation menu"
+      aria-label="Close navigation menu"
+    >
+      ✕
+    </button>
+  </div>
+
+  <!-- Navigation Groups -->
+  <nav class="sidebar-menu">
+    <div *ngFor="let group of navGroups" class="menu-group">
+      <span class="group-title" *ngIf="!isCollapsed">{{ group.title }}</span>
+      <div class="group-items">
+        <a
+          *ngFor="let item of group.items"
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          (click)="adminUi.closeDrawer()"
+          class="menu-link"
+          [title]="item.label"
+        >
+          <span class="link-icon">{{ item.icon }}</span>
+          <span class="link-label" *ngIf="!isCollapsed">{{ item.label }}</span>
+          <span
+            *ngIf="item.badge && !isCollapsed"
+            class="link-badge"
+            [ngClass]="'badge-' + item.badgeType"
+          >
+            {{ item.badge }}
+          </span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- User Profile Section -->
+  <div class="sidebar-user">
+    <div class="avatar-circle" [title]="currentUserName + ' (' + currentUserRole + ')'">
+      {{ currentUserRole === 'ROLE_SUPER_ADMIN' ? '👑' : '👤' }}
+    </div>
+    <div class="user-info" *ngIf="!isCollapsed">
+      <span class="name">{{ currentUserName }}</span>
+      <span class="role">{{ currentUserRole === 'ROLE_SUPER_ADMIN' ? 'SUPER ADMIN' : 'STAFF ADMIN' }}</span>
+    </div>
+    <button type="button" (click)="logout()" class="logout-link" title="Logout" *ngIf="!isCollapsed">🚪</button>
+  </div>
+</aside>

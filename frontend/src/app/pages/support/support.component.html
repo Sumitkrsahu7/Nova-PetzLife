@@ -1,0 +1,182 @@
+<div class="support-container">
+  <div class="support-header">
+    <div class="crumb">
+      <a routerLink="/">Home</a> <span>/</span> Customer Support & FAQs
+    </div>
+    <h1>Store Desk & Help Center 💬</h1>
+    <p class="subtitle">
+      Direct assistance from the Petzlife team at Kuravankonam Junction, Thiruvananthapuram.
+    </p>
+  </div>
+
+  <div class="support-grid">
+    <!-- Left Column: Store Details & FAQs -->
+    <div class="info-faq-column">
+      <!-- Store Location Card -->
+      <div class="store-card" *ngIf="storeInfo">
+        <div class="store-badge">📍 Store Identity & Location</div>
+        <h2>{{ storeInfo.shopName }} ({{ storeInfo.listingName }})</h2>
+        <p class="store-address">{{ storeInfo.address }}, {{ storeInfo.city }}, {{ storeInfo.state }} - {{ storeInfo.postalCode }}</p>
+
+        <div class="meta-row">
+          <div class="meta-item">
+            <span class="icon">🕒</span>
+            <div>
+              <strong>Store Opening Hours</strong>
+              <p>{{ storeInfo.openingHours }}</p>
+            </div>
+          </div>
+
+          <div class="meta-item">
+            <span class="icon">⚡</span>
+            <div>
+              <strong>Delivery Radius</strong>
+              <p>Strict {{ storeInfo.deliveryRadiusKm }} km straight-line radius from Kuravankonam store</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-pills">
+          <a [href]="'tel:' + storeInfo.phone" class="pill-btn phone">
+            📞 {{ storeInfo.phone }}
+          </a>
+          <a [href]="'https://wa.me/' + storeInfo.whatsapp.replace('+', '').replace(' ', '')" target="_blank" class="pill-btn whatsapp">
+            💬 WhatsApp Desk
+          </a>
+          <a [href]="'mailto:' + storeInfo.email" class="pill-btn email">
+            ✉️ {{ storeInfo.email }}
+          </a>
+        </div>
+      </div>
+
+      <!-- Interactive FAQs Accordion -->
+      <div class="faqs-card">
+        <h2>Frequently Asked Questions</h2>
+        <p class="faq-sub">Essential details regarding orders, local delivery, returns, and payment options</p>
+
+        <div class="faq-list">
+          <div *ngFor="let faq of faqs; let i = index" class="faq-item" [class.open]="openFaqIndex === i">
+            <button
+              type="button"
+              class="faq-question"
+              (click)="toggleFaq(i)"
+              [attr.aria-expanded]="openFaqIndex === i"
+            >
+              <span>{{ faq.question }}</span>
+              <span class="faq-toggle" [class.rotated]="openFaqIndex === i" aria-hidden="true">{{ openFaqIndex === i ? '−' : '+' }}</span>
+            </button>
+            <div class="faq-answer-wrapper" [class.is-expanded]="openFaqIndex === i">
+              <div class="faq-answer-inner">
+                <p>{{ faq.answer }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ticket Tracking Card -->
+      <div class="track-ticket-card">
+        <h3>Track an Existing Support Ticket</h3>
+        <p class="track-sub">Check replies and progress for an existing ticket reference</p>
+
+        <div class="ticket-search-box">
+          <input type="text"
+                 [(ngModel)]="searchTicketNumber"
+                 placeholder="e.g. TKT-20261114-A1B2C3"
+                 (keyup.enter)="trackTicket()">
+          <button (click)="trackTicket()" [disabled]="isTrackingTicket">
+            {{ isTrackingTicket ? '...' : 'Track Ticket' }}
+          </button>
+        </div>
+
+        <p *ngIf="ticketSearchError" class="track-error">⚠️ {{ ticketSearchError }}</p>
+
+        <div *ngIf="trackedTicket" class="tracked-result">
+          <div class="ticket-header-row">
+            <div>
+              <span class="tkt-num">#{{ trackedTicket.ticketNumber }}</span>
+              <h4 class="tkt-sub">{{ trackedTicket.subject }}</h4>
+            </div>
+            <span class="status-pill" [class.open]="trackedTicket.status === 'OPEN'" [class.progress]="trackedTicket.status === 'IN_PROGRESS'" [class.resolved]="trackedTicket.status === 'RESOLVED'">
+              {{ trackedTicket.status }}
+            </span>
+          </div>
+
+          <!-- Message Thread -->
+          <div class="message-thread">
+            <div *ngFor="let m of trackedTicket.messages" class="thread-bubble" [class.staff]="m.senderType === 'STAFF'" [class.customer]="m.senderType === 'CUSTOMER'">
+              <div class="bubble-header">
+                <strong>{{ m.senderType === 'STAFF' ? 'Store Desk (Staff)' : m.senderId }}</strong>
+                <span class="bubble-time">{{ m.createdAt | date:'short' }}</span>
+              </div>
+              <p class="bubble-text">{{ m.message }}</p>
+            </div>
+          </div>
+
+          <!-- Reply Box -->
+          <div *ngIf="trackedTicket.status !== 'CLOSED'" class="reply-input-box">
+            <input type="text" [(ngModel)]="replyMessageText" placeholder="Write a reply to store desk..." (keyup.enter)="sendTicketReply()">
+            <button (click)="sendTicketReply()" [disabled]="isSendingReply || !replyMessageText.trim()">
+              {{ isSendingReply ? '...' : 'Send' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Inquiry Form -->
+    <div class="form-column">
+      <div class="inquiry-card">
+        <h2>Submit an Inquiry</h2>
+        <p class="card-desc">Have a question about product availability, order fulfillment, or returns? Send us a message.</p>
+
+        <div *ngIf="successMessage" class="alert alert-success">
+          ✓ {{ successMessage }}
+        </div>
+        <div *ngIf="errorMessage" class="alert alert-error">
+          ⚠️ {{ errorMessage }}
+        </div>
+
+        <form (ngSubmit)="submitInquiry()" class="inquiry-form">
+          <div class="field-group">
+            <label>Your Full Name *</label>
+            <input type="text" [(ngModel)]="inquiryForm.name" name="name" placeholder="e.g. Suresh Kumar" required>
+          </div>
+
+          <div class="field-group">
+            <label>Email Address *</label>
+            <input type="email" [(ngModel)]="inquiryForm.email" name="email" placeholder="youremail&#64;example.com" required>
+          </div>
+
+          <div class="field-group">
+            <label>Phone Number *</label>
+            <input type="tel" [(ngModel)]="inquiryForm.phone" name="phone" placeholder="+91 94471 23456" required>
+          </div>
+
+          <div class="field-group">
+            <label>Order Number (optional)</label>
+            <input type="text" [(ngModel)]="inquiryForm.orderNumber" name="orderNumber" placeholder="e.g. ORD-20261114-XXXX">
+          </div>
+
+          <div class="field-group">
+            <label>Subject *</label>
+            <input type="text" [(ngModel)]="inquiryForm.subject" name="subject" placeholder="e.g. Question on Royal Canin stock or delivery time" required>
+          </div>
+
+          <div class="field-group">
+            <label>Your Message / Details *</label>
+            <textarea [(ngModel)]="inquiryForm.message" name="message" rows="4" placeholder="Tell us how we can help your pet..." required></textarea>
+          </div>
+
+          <button type="submit" [disabled]="isSubmitting" class="btn-submit-inquiry">
+            {{ isSubmitting ? 'Submitting...' : 'Send Inquiry to Store Desk ➔' }}
+          </button>
+
+          <p class="safety-note">
+            ℹ️ <strong>Notice:</strong> We provide commercial pet care, nutritional, and product information only. For emergency veterinary medical diagnosis, please visit a licensed animal clinic.
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

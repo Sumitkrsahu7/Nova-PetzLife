@@ -1,0 +1,65 @@
+<section class="google-reviews-section">
+  <div class="container">
+    <!-- Header Block -->
+    <div class="section-header">
+      <div class="google-badge">
+        <span class="g-icon">G</span>
+        <span class="g-title">Google Business Profile Reviews</span>
+      </div>
+      <h2>What Pet Parents in Trivandrum Say About Us</h2>
+      <p class="section-subtitle">
+        Customer feedback for our physical store at <strong>Kuravankonam Junction, Thiruvananthapuram</strong>.
+      </p>
+    </div>
+
+    <!-- Rating Summary Box -->
+    <div class="rating-overview-card">
+      <div class="overview-left">
+        <div class="score-display">
+          <span class="big-score">{{ businessInfo.overallRating.toFixed(1) }}</span>
+          <div class="stars-wrap">
+            <span class="stars">★★★★★</span>
+            <span class="review-count">Based on {{ businessInfo.totalReviewCount }}+ Google Reviews</span>
+          </div>
+        </div>
+        <div class="verified-shop-info">
+          <span class="badge-store">📍 Verified Store Listing: <strong>{{ businessInfo.businessName }}</strong></span>
+          <p class="store-address">{{ businessInfo.formattedAddress }}</p>
+        </div>
+      </div>
+
+      <div class="overview-right">
+        <a [href]="businessInfo.googleMapsUrl" target="_blank" rel="noopener noreferrer" class="read-all-btn">
+          <span>Read All Reviews on Google</span>
+          <span class="arrow">↗</span>
+        </a>
+        <span class="attribution-note">Reviews are independently submitted on Google Maps</span>
+      </div>
+    </div>
+
+    <!-- Review Cards Grid -->
+    <div class="review-cards-grid">
+      <div *ngFor="let rev of sampleReviews" class="review-card">
+        <div class="rev-header">
+          <div class="author-avatar">{{ rev.authorName.charAt(0) }}</div>
+          <div class="author-meta">
+            <h4 class="author-name">{{ rev.authorName }}</h4>
+            <span class="rev-date">{{ rev.relativeTime }} • <span class="via-google">via Google</span></span>
+          </div>
+        </div>
+        <div class="rev-stars">
+          <span *ngFor="let s of [1,2,3,4,5]" class="star" [class.filled]="s <= rev.rating">★</span>
+        </div>
+        <p class="rev-text">“{{ rev.text }}”</p>
+      </div>
+    </div>
+
+    <!-- Distinction & Compliance Notice -->
+    <div class="integration-notice">
+      <span class="notice-icon">ℹ️</span>
+      <p>
+        <strong>Google Reviews vs. Website Product Reviews:</strong> The reviews above reflect ratings for our Kuravankonam retail shop listing on Google. Individual product reviews submitted on this website are separate and verified via order purchase history.
+      </p>
+    </div>
+  </div>
+</section>

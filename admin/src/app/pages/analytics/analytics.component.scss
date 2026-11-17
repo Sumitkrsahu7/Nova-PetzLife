@@ -1,0 +1,182 @@
+.analytics-page {
+  padding: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  h1 { font-size: 1.6rem; font-weight: 800; color: #1e293b; margin: 0 0 0.25rem; }
+  .subtitle { font-size: 0.9rem; color: #64748b; margin: 0; }
+
+  .btn-refresh {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    padding: 0.55rem 1.1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    &:hover { background: #e2e8f0; }
+  }
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+
+  .kpi-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+
+    .kpi-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      background: #f8fafc;
+    }
+
+    &.revenue .kpi-icon { background: #dcfce7; }
+    &.orders .kpi-icon { background: #eff6ff; }
+    &.aov .kpi-icon { background: #fef3c7; }
+    &.radius .kpi-icon { background: #e0e7ff; }
+    &.stock .kpi-icon { background: #fee2e2; }
+    &.refund .kpi-icon { background: #f3e8ff; }
+
+    .kpi-body {
+      .kpi-label { display: block; font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+      .kpi-value { display: block; font-size: 1.35rem; font-weight: 800; color: #1e293b; margin: 0.2rem 0; }
+      .danger { color: #dc2626; }
+      .kpi-sub { display: block; font-size: 0.72rem; color: #94a3b8; }
+    }
+  }
+}
+
+.distribution-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  @media (max-width: 800px) { grid-template-columns: 1fr; }
+
+  .dist-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+
+    h2 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 0 0 1rem; }
+
+    .badge-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+
+      .status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        background: #f8fafc;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        .status-name { color: #334155; font-weight: 600; }
+        .status-count { color: #248b58; font-weight: 800; }
+      }
+    }
+  }
+}
+
+.analytics-tables-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+  @media (max-width: 1000px) { grid-template-columns: 1fr; }
+
+  .table-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+
+    .card-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.1rem 1.25rem;
+      border-bottom: 1px solid #e2e8f0;
+      h2 { font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0; }
+      .tag-warn { font-size: 0.7rem; font-weight: 700; background: #fee2e2; color: #b91c1c; padding: 0.2rem 0.5rem; border-radius: 4px; }
+      .tag-best { font-size: 0.7rem; font-weight: 700; background: #dcfce7; color: #15803d; padding: 0.2rem 0.5rem; border-radius: 4px; }
+    }
+  }
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+
+  thead {
+    background: #f8fafc;
+    th {
+      padding: 0.65rem 1rem;
+      color: #475569;
+      font-weight: 700;
+      border-bottom: 1px solid #e2e8f0;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #f1f5f9;
+      &:hover { background: #f8fafc; }
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      color: #334155;
+      vertical-align: middle;
+    }
+
+    .empty-cell {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: #64748b;
+    }
+  }
+
+  .item-name { display: block; font-size: 0.85rem; color: #1e293b; }
+  .item-sku { display: block; font-size: 0.72rem; color: #64748b; font-family: monospace; }
+  .stock-pill {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.2rem 0.45rem;
+    border-radius: 6px;
+    &.low { background: #fee2e2; color: #b91c1c; }
+  }
+  .reorder-qty { color: #b91c1c; font-size: 0.85rem; font-weight: 800; }
+  .sold-badge { background: #e7f5e9; color: #155c3b; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700; }
+  .revenue-val { color: #248b58; font-weight: 800; }
+}
