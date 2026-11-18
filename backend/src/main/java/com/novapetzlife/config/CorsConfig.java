@@ -44,7 +44,9 @@ public class CorsConfig {
                 "http://localhost:[*]",
                 "http://127.0.0.1:[*]",
                 "https://*.novapetzlife.com",
-                "http://*.novapetzlife.com"
+                "http://*.novapetzlife.com",
+                "https://*.onrender.com",
+                "http://*.onrender.com"
         ));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
