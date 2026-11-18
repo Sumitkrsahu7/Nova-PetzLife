@@ -44,6 +44,7 @@ export interface CustomerOrderSummary {
 export class AccountComponent implements OnInit {
   user: UserProfile | null = null;
   activeTab: 'profile' | 'addresses' | 'orders' = 'profile';
+  showLogoutConfirm = false;
 
   // Addresses
   addresses: Address[] = [];
@@ -64,14 +65,14 @@ export class AccountComponent implements OnInit {
   };
   addressSaveMessage = '';
 
-  // Popular Trivandrum neighbourhoods
+  // Popular Trivandrum neighbourhoods (clean names without exposing internal distance)
   trivandrumLocations = [
-    { name: 'Pattom Junction (1.1 km)', lat: 8.5244, lon: 76.9442, pin: '695004' },
-    { name: 'Kowdiar Palace (0.9 km)', lat: 8.5241, lon: 76.9602, pin: '695003' },
-    { name: 'Ambalamukku (0.7 km)', lat: 8.5320, lon: 76.9550, pin: '695005' },
-    { name: 'Palayam / Statue (3.2 km)', lat: 8.5020, lon: 76.9500, pin: '695001' },
-    { name: 'Sasthamangalam (2.8 km)', lat: 8.5140, lon: 76.9740, pin: '695010' },
-    { name: 'Technopark / Kazhakkoottam (8.6 km)', lat: 8.5583, lon: 76.8812, pin: '695581' }
+    { name: 'Pattom Junction', lat: 8.5244, lon: 76.9442, pin: '695004' },
+    { name: 'Kowdiar Palace', lat: 8.5241, lon: 76.9602, pin: '695003' },
+    { name: 'Ambalamukku', lat: 8.5320, lon: 76.9550, pin: '695005' },
+    { name: 'Palayam / Statue', lat: 8.5020, lon: 76.9500, pin: '695001' },
+    { name: 'Sasthamangalam', lat: 8.5140, lon: 76.9740, pin: '695010' },
+    { name: 'Technopark / Kazhakkoottam', lat: 8.5583, lon: 76.8812, pin: '695581' }
   ];
 
   // Orders
@@ -91,6 +92,14 @@ export class AccountComponent implements OnInit {
     }
 
     this.user = this.authService.getCurrentUser();
+
+    // Fetch fresh profile from backend
+    this.authService.fetchCurrentProfile().subscribe({
+      next: () => {
+        this.user = this.authService.getCurrentUser();
+      }
+    });
+
     this.loadAddresses();
     this.loadOrders();
   }
@@ -120,7 +129,7 @@ export class AccountComponent implements OnInit {
       this.addressForm.latitude = selected.lat;
       this.addressForm.longitude = selected.lon;
       this.addressForm.postalCode = selected.pin;
-      this.addressForm.landmark = selected.name.split(' (')[0];
+      this.addressForm.landmark = selected.name;
     }
   }
 
@@ -167,8 +176,21 @@ export class AccountComponent implements OnInit {
     });
   }
 
-  logout(): void {
+  requestLogout(): void {
+    this.showLogoutConfirm = true;
+  }
+
+  cancelLogout(): void {
+    this.showLogoutConfirm = false;
+  }
+
+  confirmLogout(): void {
+    this.showLogoutConfirm = false;
     this.authService.logout();
-    this.router.navigate(['/']);
+    this.router.navigate(['/login']);
+  }
+
+  logout(): void {
+    this.requestLogout();
   }
 }

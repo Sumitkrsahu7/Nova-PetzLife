@@ -25,8 +25,11 @@ public class JwtTokenProvider {
     private final long jwtExpirationMs;
 
     public JwtTokenProvider(
-            @Value("${app.jwt.secret:NovaPetzlifeSuperSecretKeyForJwtTokenSigningMustBe256BitsMinimumLength2026}") String secret,
-            @Value("${app.jwt.expiration-ms:86400000}") long jwtExpirationMs) {
+            @Value("${app.jwt.secret:${JWT_SECRET:}}") String secret,
+            @Value("${app.jwt.expiration-ms:${JWT_EXPIRATION_MS:86400000}}") long jwtExpirationMs) {
+        if (secret == null || secret.trim().isEmpty()) {
+            throw new IllegalStateException("JWT signing secret is not configured. Please set the JWT_SECRET environment variable (minimum 256 bits / 32 characters).");
+        }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.jwtExpirationMs = jwtExpirationMs;
     }

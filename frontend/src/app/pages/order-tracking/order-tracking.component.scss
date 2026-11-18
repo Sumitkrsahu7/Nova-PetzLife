@@ -550,3 +550,72 @@
     }
   }
 }
+
+@media (max-width: 600px) {
+  .tracking-container {
+    padding: 1rem 0.75rem 3rem;
+  }
+
+  .tracking-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .tracking-card {
+    .stepper-section {
+      padding: 1.5rem 0.5rem 1rem;
+
+      .stepper-track {
+        &::before {
+          top: 18px;
+          left: 10px;
+          right: 10px;
+        }
+
+        .step-node {
+          width: auto;
+          flex: 1;
+
+          .node-circle {
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+          }
+
+          .node-label {
+            font-size: 0.7rem;
+            word-break: break-word;
+          }
+        }
+      }
+    }
+
+    .action-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      padding: 1.25rem 1rem;
+
+      .btn-continue, .btn-invoice, .btn-cancel-action, .btn-return-action {
+        width: 100%;
+        margin-right: 0;
+        text-align: center;
+        padding: 0.65rem 1rem;
+        box-sizing: border-box;
+      }
+    }
+
+    .cancelled-banner {
+      flex-direction: column;
+      align-items: flex-start;
+      margin: 1rem;
+      padding: 1rem;
+      gap: 0.5rem;
+    }
+  }
+
+  .return-item-card {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

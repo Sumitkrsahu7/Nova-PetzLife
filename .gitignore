@@ -1,4 +1,4 @@
-﻿# ==========================================
+# ==========================================
 # NOVA PETZLIFE - ROOT GITIGNORE
 # ==========================================
 
@@ -7,6 +7,16 @@
 .env.*
 !.env.example
 !**/.env.example
+
+# Private keys, certificates, and keystores
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.der
 
 # Node dependencies
 node_modules/
@@ -34,6 +44,7 @@ logs/
 # IDE files
 .idea/
 .history/
+.vscode/
 *.iml
 .project
 .classpath
@@ -60,6 +71,10 @@ volumes/
 
 # Database backup files
 *.dump
+*.dmp
+*.sql.bak
+*.sql.gz
+*.sql.tar
 
 # Test reports
 surefire-reports/

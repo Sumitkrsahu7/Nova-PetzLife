@@ -22,7 +22,7 @@ export class GoogleReviewsComponent implements OnInit {
     statusMessage: 'Google Business Profile synchronized'
   };
 
-  @Input() sampleReviews: GoogleReviewItem[] = [
+  @Input() featuredReviews: GoogleReviewItem[] = [
     {
       id: 'g-rev-1',
       authorName: 'Anoop Nair',
@@ -49,7 +49,7 @@ export class GoogleReviewsComponent implements OnInit {
     }
   ];
 
-  constructor(private googleBusinessService: GoogleBusinessService) {}
+  constructor(private googleBusinessService: GoogleBusinessService) { }
 
   ngOnInit(): void {
     this.googleBusinessService.getProfile().subscribe({
@@ -66,7 +66,7 @@ export class GoogleReviewsComponent implements OnInit {
             statusMessage: 'Synced from Google Business Profile'
           };
           if (profile.featuredReviews && profile.featuredReviews.length > 0) {
-            this.sampleReviews = profile.featuredReviews.map(r => ({
+            this.featuredReviews = profile.featuredReviews.map(r => ({
               id: 'g-rev-' + r.id,
               authorName: r.authorName,
               rating: r.rating,

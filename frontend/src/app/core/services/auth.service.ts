@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, catchError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface AuthResponse {
@@ -16,6 +16,7 @@ export interface UserProfile {
   email: string;
   firstName: string;
   lastName: string;
+  phone?: string;
   roles: string[];
 }
 
@@ -51,14 +52,49 @@ export class AuthService {
     );
   }
 
+  fetchCurrentProfile(): Observable<any> {
+    if (!this.getToken()) {
+      return of(null);
+    }
+    return this.http.get<any>(`${environment.apiUrl}/customer/profile`).pipe(
+      tap(res => {
+        if (res?.success && res.data) {
+          const current = this.currentUserSubject.value;
+          const updated: UserProfile = {
+            email: res.data.email,
+            firstName: res.data.firstName || current?.firstName || '',
+            lastName: res.data.lastName || current?.lastName || '',
+            phone: res.data.phone || current?.phone || '',
+            roles: current?.roles || ['ROLE_CUSTOMER']
+          };
+          localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
+          this.currentUserSubject.next(updated);
+        }
+      }),
+      catchError(err => {
+        if (err.status === 401) {
+          this.logout();
+        }
+        return of(null);
+      })
+    );
+  }
+
   logout(): void {
+    this.http.post(`${environment.apiUrl}/auth/logout`, {}).pipe(catchError(() => of(null))).subscribe();
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.currentUserSubject.next(null);
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    const token = localStorage.getItem(this.TOKEN_KEY);
+    if (!token) return null;
+    if (this.isTokenExpired(token)) {
+      this.logout();
+      return null;
+    }
+    return token;
   }
 
   isAuthenticated(): boolean {
@@ -88,6 +124,22 @@ export class AuthService {
       return JSON.parse(raw);
     } catch {
       return null;
+    }
+  }
+
+  private isTokenExpired(token: string): boolean {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return false;
+      const payloadBase64 = parts[1];
+      const payloadJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+      const payload = JSON.parse(payloadJson);
+      if (payload.exp) {
+        return payload.exp * 1000 < Date.now();
+      }
+      return false;
+    } catch {
+      return false;
     }
   }
 }

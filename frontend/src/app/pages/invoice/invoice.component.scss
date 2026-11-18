@@ -223,9 +223,13 @@
 
 .items-section {
   margin-bottom: 1.75rem;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 
   .items-table {
     width: 100%;
+    min-width: 650px;
     border-collapse: collapse;
     font-size: 0.85rem;
 
@@ -374,6 +378,60 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .invoice-page-container {
+    padding: 0 0.5rem;
+    margin: 1rem auto;
+  }
+
+  .actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+
+    .actions-left, .actions-right {
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .btn {
+      flex: 1;
+      text-align: center;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  .invoice-sheet {
+    padding: 1.25rem 0.85rem;
+  }
+
+  .invoice-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.25rem;
+
+    .meta-block {
+      text-align: left;
+
+      .meta-table {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
+  }
+
+  .parties-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .totals-section {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
 }
 
 @media print {

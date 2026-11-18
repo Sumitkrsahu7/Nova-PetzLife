@@ -15,6 +15,7 @@ export class AnalyticsComponent implements OnInit {
   lowStockAlerts: LowStockAlert[] = [];
   topProducts: TopProduct[] = [];
   isLoading = false;
+  errorMessage = '';
 
   constructor(private analyticsService: AdminAnalyticsService) {}
 
@@ -24,17 +25,19 @@ export class AnalyticsComponent implements OnInit {
 
   fetchAnalytics(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
     this.analyticsService.getSummary().subscribe({
       next: res => {
         if (res?.success && res.data) {
           this.summary = res.data;
         } else {
-          this.loadDemoSummary();
+          this.summary = null;
         }
       },
-      error: () => {
-        this.loadDemoSummary();
+      error: (err) => {
+        this.summary = null;
+        this.errorMessage = err?.error?.message || 'Unable to connect to analytics service. Please verify backend connection.';
       }
     });
 
@@ -42,7 +45,12 @@ export class AnalyticsComponent implements OnInit {
       next: res => {
         if (res?.success && res.data) {
           this.lowStockAlerts = res.data;
+        } else {
+          this.lowStockAlerts = [];
         }
+      },
+      error: () => {
+        this.lowStockAlerts = [];
       }
     });
 
@@ -51,37 +59,15 @@ export class AnalyticsComponent implements OnInit {
         this.isLoading = false;
         if (res?.success && res.data) {
           this.topProducts = res.data;
+        } else {
+          this.topProducts = [];
         }
       },
       error: () => {
         this.isLoading = false;
+        this.topProducts = [];
       }
     });
-  }
-
-  loadDemoSummary(): void {
-    this.summary = {
-      totalRevenue: 84650.00,
-      totalOrders: 64,
-      deliveredOrders: 48,
-      cancelledOrders: 2,
-      averageOrderValue: 1322.65,
-      totalRefunded: 1798.00,
-      activeCouponsCount: 2,
-      lowStockCount: 4,
-      ordersWithin20kmCount: 62,
-      ordersByStatus: {
-        'DELIVERED': 48,
-        'CONFIRMED': 8,
-        'OUT_FOR_DELIVERY': 4,
-        'PROCESSING': 2,
-        'CANCELLED': 2
-      },
-      paymentMethodBreakdown: {
-        'COD': 38,
-        'RAZORPAY': 26
-      }
-    };
   }
 
   getStatusKeys(): string[] {

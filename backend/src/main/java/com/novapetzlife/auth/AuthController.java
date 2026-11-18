@@ -38,4 +38,11 @@ public class AuthController {
         AuthResponse response = authService.getCurrentUser();
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Log out user and clear security context")
+    public ResponseEntity<ApiResponse<Void>> logout() {
+        authService.logout();
+        return ResponseEntity.ok(ApiResponse.ok("Logout successful", null));
+    }
 }

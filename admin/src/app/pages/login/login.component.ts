@@ -15,7 +15,6 @@ export class LoginComponent {
   identifier = '';
   password = '';
   showPassword = false;
-  selectedRole: 'ROLE_SUPER_ADMIN' | 'ROLE_STAFF_ADMIN' = 'ROLE_SUPER_ADMIN';
   errorMessage = '';
   isLoading = false;
 
@@ -25,18 +24,6 @@ export class LoginComponent {
   ) {
     if (this.adminAuthService.isAuthenticated()) {
       this.router.navigate(['/dashboard']);
-    }
-  }
-
-  fillDemoCredentials(role: 'ROLE_SUPER_ADMIN' | 'ROLE_STAFF_ADMIN'): void {
-    this.selectedRole = role;
-    this.errorMessage = '';
-    if (role === 'ROLE_SUPER_ADMIN') {
-      this.identifier = 'test@gmail.com';
-      this.password = 'Test@123';
-    } else {
-      this.identifier = 'staff@novapetzlife.com';
-      this.password = 'Test@123';
     }
   }
 

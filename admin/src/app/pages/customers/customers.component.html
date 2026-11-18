@@ -49,5 +49,8 @@
         </tr>
       </tbody>
     </table>
+    <div *ngIf="!isLoading && customers.length === 0" class="empty-state" style="text-align: center; padding: 2.5rem; color: #64748B;">
+      No customer records found. Registered customers and guest shoppers will be listed here.
+    </div>
   </div>
 </div>

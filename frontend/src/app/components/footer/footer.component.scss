@@ -1,27 +1,42 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
 .store-footer {
   background-color: #15221B;
   color: #E2E8F0;
   margin-top: auto;
+  width: 100%;
 }
 
 .footer-usp-bar {
   background-color: #1F362A;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 1.5rem 0;
+  padding: 1.75rem 0;
 
   .usp-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     gap: 1.5rem;
+    justify-content: center;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
   .usp-item {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.9rem;
+    max-width: 280px;
+    margin: 0 auto;
+    width: 100%;
 
     .usp-icon {
-      font-size: 1.8rem;
+      font-size: 1.9rem;
+      flex-shrink: 0;
     }
 
     h4 {
@@ -34,17 +49,20 @@
     p {
       font-size: 0.8rem;
       color: #94A3B8;
+      line-height: 1.35;
     }
   }
 }
 
 .footer-main {
-  padding: 3rem 0;
+  padding: 3.5rem 0 3rem;
 
   .footer-cols {
     display: grid;
-    grid-template-columns: 1.5fr 1fr 1.2fr 1fr;
+    grid-template-columns: 1.4fr 1fr 1.2fr 1fr;
     gap: 2.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 }
 
@@ -84,6 +102,7 @@
 
     .pin-icon {
       font-size: 1.2rem;
+      flex-shrink: 0;
     }
 
     strong {
@@ -107,6 +126,7 @@
     font-weight: 700;
     color: #C8EBD1;
     margin-bottom: 1.25rem;
+    letter-spacing: -0.2px;
   }
 
   ul {
@@ -134,15 +154,16 @@
 
   .maps-btn {
     display: inline-block;
-    margin-top: 0.5rem;
+    margin-top: 0.65rem;
     background: rgba(36, 139, 88, 0.25);
     color: #C8EBD1;
-    padding: 0.4rem 0.75rem;
+    padding: 0.45rem 0.85rem;
     border-radius: 6px;
     text-decoration: none;
     font-size: 0.8rem;
     font-weight: 600;
     border: 1px solid rgba(36, 139, 88, 0.4);
+    transition: all 0.2s ease;
 
     &:hover {
       background: #248B58;
@@ -153,36 +174,113 @@
 
 .footer-bottom {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 1.25rem 0;
+  padding: 1.5rem 0;
 
   .bottom-inner {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    font-size: 0.8rem;
-    color: #64748B;
+    justify-content: center;
+    text-align: center;
+    gap: 0.45rem;
+    font-size: 0.825rem;
+    color: #94A3B8;
+    max-width: 1000px;
+    margin: 0 auto;
   }
 
   .commercial-notice {
     font-style: italic;
+    font-size: 0.775rem;
+    color: #64748B;
   }
 }
 
 @media (max-width: 992px) {
   .footer-main .footer-cols {
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2.5rem;
+    max-width: 760px;
+    margin: 0 auto;
   }
 }
 
-@media (max-width: 600px) {
-  .footer-main .footer-cols {
-    grid-template-columns: 1fr;
+@media (max-width: 768px) {
+  .footer-usp-bar {
+    padding: 1.5rem 0;
+
+    .usp-grid {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    .usp-item {
+      justify-content: center;
+      text-align: left;
+      max-width: 320px;
+      margin: 0 auto;
+    }
   }
-  .footer-bottom .bottom-inner {
-    flex-direction: column;
-    text-align: center;
+
+  .footer-main {
+    padding: 2.5rem 0;
+
+    .footer-cols {
+      grid-template-columns: 1fr;
+      gap: 2.25rem;
+      text-align: center;
+    }
+  }
+
+  .col-identity {
+    .footer-logo {
+      justify-content: center;
+    }
+
+    .store-desc {
+      max-width: 440px;
+      margin: 0 auto 1.25rem;
+    }
+
+    .store-address-box {
+      max-width: 380px;
+      margin: 0 auto;
+      text-align: left;
+    }
+  }
+
+  .col-links {
+    h3 {
+      text-align: center;
+    }
+
+    ul {
+      align-items: center;
+
+      li a {
+        text-align: center;
+      }
+    }
+
+    .info-list {
+      align-items: center;
+
+      li {
+        text-align: center;
+      }
+    }
+
+    .maps-btn {
+      margin: 0.65rem auto 0;
+    }
+  }
+
+  .footer-bottom {
+    padding: 1.25rem 0;
+
+    .bottom-inner {
+      text-align: center;
+      gap: 0.4rem;
+    }
   }
 }

@@ -6,7 +6,8 @@
         <span class="hero-pill">🌿 Trivandrum's Trusted Neighborhood Pet Shop</span>
         <h1>Healthy Food, Treats & Care for Happy Pets</h1>
         <p class="hero-desc">
-          Located at <strong>Kuravankonam Junction, Thiruvananthapuram</strong>. We deliver genuine pet food, hygiene supplies, and accessories across Trivandrum within a <strong>20 km radius</strong>.
+          Located at <strong>Kuravankonam Junction, Thiruvananthapuram</strong>. We deliver genuine pet food, hygiene
+          supplies, and accessories across Trivandrum with reliable same-day local delivery.
         </p>
 
         <div class="hero-cta-group">
@@ -14,8 +15,8 @@
             <span>Shop Pet Essentials</span>
             <span class="btn-arrow">→</span>
           </a>
-          <a href="#delivery-checker" class="btn btn-outline btn-large">
-            <span>Check 20 km Delivery Area</span>
+          <a routerLink="/check-delivery" class="btn btn-outline btn-large">
+            <span>Check Delivery Area</span>
           </a>
         </div>
 
@@ -26,7 +27,7 @@
           </div>
           <div class="trust-pill">
             <span class="pill-icon">⚡</span>
-            <span>20 km Local Delivery</span>
+            <span>Fast Local Delivery</span>
           </div>
           <div class="trust-pill">
             <span class="pill-icon">⭐</span>
@@ -48,68 +49,13 @@
               <p>Kuravankonam Ambalamukku Rd, TVM 695003</p>
             </div>
           </div>
-          <img
-            src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=700&auto=format&fit=crop&q=80"
-            alt="Happy golden retriever dog at Nova Petzlife Kuravankonam"
-            class="hero-main-img"
-          />
+          <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=700&auto=format&fit=crop&q=80"
+            alt="Happy golden retriever dog at Nova Petzlife Kuravankonam" class="hero-main-img" />
           <div class="quick-delivery-chip">
             <span class="chip-dot"></span>
             <span>Same-Day Local Delivery Available</span>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Categories Section -->
-  <section class="section-categories">
-    <div class="container">
-      <div class="section-heading-row">
-        <div>
-          <span class="sub-heading">Explore By Pet Need</span>
-          <h2>Popular Pet Categories</h2>
-        </div>
-        <a routerLink="/shop" class="view-all-link">View All Categories →</a>
-      </div>
-
-      <div class="categories-grid">
-        <a
-          *ngFor="let cat of categories"
-          routerLink="/shop"
-          [queryParams]="{category: cat.slug}"
-          class="category-tile"
-        >
-          <div class="cat-icon-wrap">{{ cat.icon }}</div>
-          <h3 class="cat-title">{{ cat.name }}</h3>
-          <p class="cat-desc">{{ cat.description }}</p>
-          <div class="cat-footer">
-            <span class="cat-count">{{ cat.itemCount }} items</span>
-            <span class="cat-arrow">→</span>
-          </div>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Featured Brands Strip -->
-  <section class="section-brands" id="brands">
-    <div class="container">
-      <div class="brands-header">
-        <span class="brands-sub">Authentic Distribution Only</span>
-        <h3>Leading Pet Nutrition & Wellness Brands</h3>
-      </div>
-      <div class="brands-flex">
-        <a
-          *ngFor="let b of featuredBrands"
-          [routerLink]="['/shop']"
-          [queryParams]="{brand: b.name}"
-          class="brand-item clickable"
-        >
-          <span class="brand-dot">●</span>
-          <span class="b-name">{{ b.name }}</span>
-          <span class="b-tag">{{ b.tag }}</span>
-        </a>
       </div>
     </div>
   </section>
@@ -126,67 +72,73 @@
       </div>
 
       <div class="products-grid">
-        <app-product-card
-          *ngFor="let p of featuredProducts"
-          [product]="p"
-          (addToCart)="handleAddToCart($event)"
-        ></app-product-card>
+        <app-product-card *ngFor="let p of displayedFeaturedProducts" [product]="p"
+          (addToCart)="handleAddToCart($event)"></app-product-card>
+      </div>
+
+      <!-- Action Button after 2 rows -->
+      <div class="browse-catalog-row" *ngIf="featuredProducts.length > 0">
+        <a routerLink="/shop" class="btn btn-primary btn-browse-catalog">
+          <span>Browse Full Catalog</span>
+          <span class="btn-arrow">→</span>
+        </a>
       </div>
     </div>
   </section>
 
-  <!-- 20 km Delivery Radius Checker Section -->
+  <!-- Delivery Availability Checker Section -->
   <section class="section-delivery-checker" id="delivery-checker">
     <div class="container">
       <div class="checker-card">
         <div class="checker-content">
           <span class="checker-tag">Local Delivery Verification</span>
-          <h2>Are You Within Our 20 km Delivery Radius?</h2>
+          <h2>Check Delivery Availability in Your Area</h2>
           <p class="checker-desc">
-            NOVA PETZLIFE operates out of <strong>Kuravankonam Junction, Thiruvananthapuram</strong>. Orders within a 20 km straight-line radius qualify for prompt local delivery. Check your locality below:
+            NOVA PETZLIFE operates out of <strong>Kuravankonam Junction, Thiruvananthapuram</strong>. Enter your
+            neighborhood or pincode below to check if express local delivery is available to your location:
           </p>
 
           <div class="checker-input-row">
-            <input
-              type="text"
-              [(ngModel)]="customerPincodeOrArea"
-              (keyup.enter)="checkDeliveryArea()"
-              placeholder="Enter your area or pincode (e.g. Kowdiar, Pattom, 695003)"
-              class="area-input"
-            />
-            <button type="button" class="btn btn-secondary btn-gps" (click)="useCurrentLocation()" title="Use Current GPS">
+            <input type="text" [(ngModel)]="customerPincodeOrArea" (keyup.enter)="checkDeliveryArea()"
+              placeholder="Enter your area or pincode (e.g. Kowdiar, Pattom, 695003)" class="area-input" />
+            <button type="button" class="btn btn-secondary btn-gps" (click)="useCurrentLocation()"
+              title="Use Current GPS">
               <span>📍 Use GPS</span>
             </button>
             <button type="button" class="btn btn-primary" [disabled]="isCheckingDelivery" (click)="checkDeliveryArea()">
-              <span *ngIf="!isCheckingDelivery">Verify Radius</span>
+              <span *ngIf="!isCheckingDelivery">Check Serviceability</span>
               <span *ngIf="isCheckingDelivery">Checking...</span>
             </button>
           </div>
 
-          <!-- Result Card -->
-          <div *ngIf="deliveryEligibilityResult" class="checker-result" [class.eligible]="deliveryEligibilityResult.isEligible" [class.ineligible]="!deliveryEligibilityResult.isEligible">
-            <span class="result-icon">{{ deliveryEligibilityResult.isEligible ? '✅' : '❌' }}</span>
+          <!-- Clean Binary Result Card -->
+          <div *ngIf="deliveryEligibilityResult" class="checker-result"
+            [class.eligible]="deliveryEligibilityResult.isEligible"
+            [class.ineligible]="!deliveryEligibilityResult.isEligible">
+            <span class="result-icon">{{ deliveryEligibilityResult.isEligible ? '✓' : '✕' }}</span>
             <div class="result-text">
-              <strong>{{ deliveryEligibilityResult.isEligible ? 'Delivery Serviceable!' : 'Outside Delivery Scope' }}</strong>
-              <p>{{ deliveryEligibilityResult.message }}</p>
-              <div *ngIf="deliveryEligibilityResult.isEligible && deliveryEligibilityResult.distanceKm !== undefined" class="result-meta">
-                <span>Distance from Kuravankonam Store: <strong>{{ deliveryEligibilityResult.distanceKm | number:'1.1-1' }} km</strong></span>
-                <span *ngIf="deliveryEligibilityResult.deliveryCharge !== undefined"> • Local Delivery Fee: ₹{{ deliveryEligibilityResult.deliveryCharge }}</span>
-                <span *ngIf="deliveryEligibilityResult.freeDeliveryThreshold !== undefined"> (Free on ₹{{ deliveryEligibilityResult.freeDeliveryThreshold }}+)</span>
-              </div>
+              <strong>{{ deliveryEligibilityResult.message }}</strong>
+              <p *ngIf="deliveryEligibilityResult.isEligible">
+                Order today for prompt, careful doorstep delivery dispatched from our Kuravankonam store!
+              </p>
+              <p *ngIf="!deliveryEligibilityResult.isEligible">
+                We currently service locations within our Thiruvananthapuram delivery boundary. In-store pickup is
+                always welcome at Kuravankonam Junction.
+              </p>
             </div>
           </div>
 
           <div class="sample-localities">
-            <span class="sample-label">Quick-Check Localities (click to test):</span>
+            <span class="sample-label">Quick-Check Localities:</span>
             <div class="chips">
-              <button type="button" class="chip-btn" (click)="selectLocality('Kowdiar')">Kowdiar (1.2 km)</button>
-              <button type="button" class="chip-btn" (click)="selectLocality('Pattom')">Pattom (1.6 km)</button>
-              <button type="button" class="chip-btn" (click)="selectLocality('Ambalamukku')">Ambalamukku (1.1 km)</button>
-              <button type="button" class="chip-btn" (click)="selectLocality('Sasthamangalam')">Sasthamangalam (3.2 km)</button>
-              <button type="button" class="chip-btn" (click)="selectLocality('Technopark')">Technopark (11.2 km)</button>
-              <button type="button" class="chip-btn" (click)="selectLocality('Kazhakoottam')">Kazhakoottam (12.5 km)</button>
-              <button type="button" class="chip-btn outside" (click)="selectLocality('Neyyattinkara')">Neyyattinkara (24.5 km - Outside)</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Kowdiar')">Kowdiar</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Pattom')">Pattom</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Ambalamukku')">Ambalamukku</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Sasthamangalam')">Sasthamangalam</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Technopark')">Technopark</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Kazhakoottam')">Kazhakoottam</button>
+              <button type="button" class="chip-btn outside"
+                (click)="selectLocality('Neyyattinkara')">Neyyattinkara</button>
             </div>
           </div>
         </div>
@@ -194,18 +146,14 @@
         <div class="checker-map-card">
           <div class="map-indicator-box">
             <div class="pin-marker">📍</div>
-            <div class="map-shop-title">Petzlife Shop Location</div>
-            <div class="map-shop-coords">Kuravankonam Junction • 8.5284° N, 76.9533° E</div>
+            <div class="map-shop-title">Petzlife Store Location</div>
+            <div class="map-shop-coords">Kuravankonam Junction, Thiruvananthapuram</div>
             <div class="radius-circle-note">
               <span class="circle-legend"></span>
-              <span>20 km Maximum Delivery Radius Boundary</span>
+              <span>Local Service Area Coverage</span>
             </div>
-            <a
-              href="https://www.google.com/search?q=petzlife+reviews"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="btn-maps-link"
-            >
+            <a href="https://www.google.com/search?q=petzlife+reviews" target="_blank" rel="noopener noreferrer"
+              class="btn-maps-link">
               Open in Google Maps ↗
             </a>
           </div>

@@ -28,6 +28,8 @@ export class InventoryComponent implements OnInit {
   inventoryList: InventoryRecord[] = [];
   isLoading = false;
   showLowStockOnly = false;
+  searchQuery = '';
+  sortBy: 'stock-asc' | 'stock-desc' | 'name-asc' | 'name-desc' = 'stock-asc';
 
   // Adjust Modal
   showModal = false;
@@ -35,6 +37,33 @@ export class InventoryComponent implements OnInit {
   adjustmentQty = 0;
   adjustReason = 'Stock shipment arrival';
   modalErrorMessage = '';
+
+  get displayedInventory(): InventoryRecord[] {
+    let list = [...this.inventoryList];
+    if (this.showLowStockOnly) {
+      list = list.filter(i => i.isLowStock);
+    }
+    if (this.searchQuery.trim()) {
+      const q = this.searchQuery.toLowerCase().trim();
+      list = list.filter(i =>
+        (i.productName && i.productName.toLowerCase().includes(q)) ||
+        (i.sku && i.sku.toLowerCase().includes(q)) ||
+        (i.brandName && i.brandName.toLowerCase().includes(q))
+      );
+    }
+    switch (this.sortBy) {
+      case 'stock-asc':
+        return list.sort((a, b) => a.availableStock - b.availableStock);
+      case 'stock-desc':
+        return list.sort((a, b) => b.availableStock - a.availableStock);
+      case 'name-asc':
+        return list.sort((a, b) => (a.productName || '').localeCompare(b.productName || ''));
+      case 'name-desc':
+        return list.sort((a, b) => (b.productName || '').localeCompare(a.productName || ''));
+      default:
+        return list;
+    }
+  }
 
   constructor(
     private http: HttpClient,
@@ -91,12 +120,12 @@ export class InventoryComponent implements OnInit {
           }));
           this.checkAdjustActionParam();
         } else {
-          this.loadDefaultDemo();
+          this.inventoryList = [];
         }
       },
       error: () => {
         this.isLoading = false;
-        this.loadDefaultDemo();
+        this.inventoryList = [];
       }
     });
   }
@@ -138,13 +167,5 @@ export class InventoryComponent implements OnInit {
         this.modalErrorMessage = err.error?.message || 'Failed to adjust stock';
       }
     });
-  }
-
-  private loadDefaultDemo(): void {
-    this.inventoryList = [
-      { id: 1, productId: 1, productName: 'Royal Canin Kitten Wet Food 85g', sku: 'RC-KIT-WET', brandName: 'Royal Canin', availableStock: 3, reservedStock: 1, minThreshold: 5, isLowStock: true },
-      { id: 2, productId: 2, productName: 'Pedigree Puppy Chicken & Rice 3kg', sku: 'PED-PUP-3KG', brandName: 'Pedigree', availableStock: 2, reservedStock: 0, minThreshold: 5, isLowStock: true },
-      { id: 3, productId: 3, productName: 'Cat Bentonite Clumping Litter 10L', sku: 'LIT-BENT-10L', brandName: 'Petzlife', availableStock: 4, reservedStock: 2, minThreshold: 5, isLowStock: true }
-    ];
   }
 }

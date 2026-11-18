@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, map, tap } from 'rxjs';
+import { BehaviorSubject, Observable, map, tap, catchError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface AdminAuthResponse {
@@ -51,6 +51,7 @@ export class AdminAuthService {
   }
 
   logout(): void {
+    this.http.post(`${environment.apiUrl}/auth/logout`, {}).pipe(catchError(() => of(null))).subscribe();
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.currentUserSubject.next(null);

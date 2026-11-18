@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ProductCardComponent } from '../../components/product-card/product-card.component';
 import { GoogleReviewsComponent } from '../../components/google-reviews/google-reviews.component';
-import { ProductCardData, CategoryItem, ProductVariant } from '../../models/product.model';
+import { ProductCardData, ProductVariant } from '../../models/product.model';
 import { CartService } from '../../core/services/cart.service';
 import { environment } from '../../../environments/environment';
 
@@ -21,7 +21,8 @@ export class HomeComponent implements OnInit {
     private cartService: CartService,
     private http: HttpClient
   ) {}
-  // Confirmed Shop Location Coordinates
+
+  // Shop Location Details
   readonly shopCoordinates = {
     name: 'Petzlife (NOVA PETZLIFE)',
     lat: 8.528448,
@@ -30,93 +31,28 @@ export class HomeComponent implements OnInit {
     maxRadiusKm: 20
   };
 
-  // Sample Categories
-  categories: CategoryItem[] = [
-    {
-      id: 1,
-      name: 'Cat Food & Nutrition',
-      slug: 'cat-food',
-      icon: '🐱',
-      description: 'Dry kibble, wet gravy pouches, kitten & adult formulas',
-      itemCount: 42,
-      popularBrands: ['Royal Canin', 'Whiskas', 'Sheba']
-    },
-    {
-      id: 2,
-      name: 'Dog Food & Treats',
-      slug: 'dog-food',
-      icon: '🐶',
-      description: 'Puppy starter, adult dog kibble, calcium chews & biscuits',
-      itemCount: 56,
-      popularBrands: ['Royal Canin', 'Pedigree', 'Drools']
-    },
-    {
-      id: 3,
-      name: 'Grooming & Shampoos',
-      slug: 'grooming',
-      icon: '✨',
-      description: 'Anti-tick shampoos, coat conditioners, nail clippers & brushes',
-      itemCount: 28,
-      popularBrands: ['Himalaya', 'Beaphar', 'Bioline']
-    },
-    {
-      id: 4,
-      name: 'Litter & Pet Hygiene',
-      slug: 'hygiene',
-      icon: '🧼',
-      description: 'Bentonite clumping cat litter, pee pads, deodorizing sprays',
-      itemCount: 19,
-      popularBrands: ['Intersand', 'Sanicat', 'Emily Pets']
-    },
-    {
-      id: 5,
-      name: 'Pet Toys & Accessories',
-      slug: 'accessories',
-      icon: '🎾',
-      description: 'Chew toys, teaser wands, collars, harnesses, sturdy leashes',
-      itemCount: 35,
-      popularBrands: ['Kong', 'Petsport', 'Trixie']
-    },
-    {
-      id: 6,
-      name: 'Pet Health Supplements',
-      slug: 'supplements',
-      icon: '💊',
-      description: 'Omega oils, joint care calcium, multivitamins & skin tonics',
-      itemCount: 22,
-      popularBrands: ['Virbac', 'Vetoquinol', 'Petup']
-    }
-  ];
-
-  // Verified Brands with slugs for direct shop filtering
-  featuredBrands = [
-    { name: 'Royal Canin', slug: 'royal-canin', tag: 'Breed Health Nutrition' },
-    { name: 'Whiskas', slug: 'whiskas', tag: 'Complete Cat Care' },
-    { name: 'Pedigree', slug: 'pedigree', tag: 'Nutritious Dog Food' },
-    { name: 'Drools', slug: 'drools', tag: 'Real Chicken & Egg' },
-    { name: 'Sheba', slug: 'sheba', tag: 'Gourmet Wet Cat Food' },
-    { name: 'Himalaya', slug: 'himalaya', tag: 'Herbal Pet Care' },
-    { name: 'Farmina N&D', slug: 'farmina-nd', tag: 'Grain-Free Nutrition' }
-  ];
-
   // Featured Products (Dynamic from API with fallback)
   featuredProducts: ProductCardData[] = [];
 
-  // Delivery Radius Interactive Checker
+  /**
+   * Restrict initially displayed featured products to at most 2 rows (at most 8 items).
+   */
+  get displayedFeaturedProducts(): ProductCardData[] {
+    return this.featuredProducts.slice(0, 8);
+  }
+
+  // Delivery Availability Checker
   customerPincodeOrArea: string = '';
   isCheckingDelivery: boolean = false;
   deliveryEligibilityResult: {
     checked: boolean;
     isEligible: boolean;
-    distanceKm?: number;
-    deliveryCharge?: number;
-    freeDeliveryThreshold?: number;
     message: string;
   } | null = null;
 
-  // Known sample areas in Thiruvananthapuram with coordinates
+  // Known sample areas in Thiruvananthapuram with coordinates for geocoding
   knownTvmLocations: { [key: string]: { lat: number; lng: number; name: string } } = {
-    'kuravankonam': { lat: 8.528448, lng: 76.953268, name: 'Kuravankonam Junction' },
+    'kuravankonam': { lat: 8.528448, lng: 76.953268, name: 'Kuravankonam' },
     'kowdiar': { lat: 8.524, lng: 76.965, name: 'Kowdiar' },
     'ambalamukku': { lat: 8.533, lng: 76.959, name: 'Ambalamukku' },
     'pattom': { lat: 8.526, lng: 76.942, name: 'Pattom' },
@@ -134,12 +70,12 @@ export class HomeComponent implements OnInit {
     'nedumangad': { lat: 8.601, lng: 77.001, name: 'Nedumangad' },
     'neyyattinkara': { lat: 8.401, lng: 77.086, name: 'Neyyattinkara' },
     'attingal': { lat: 8.696, lng: 76.814, name: 'Attingal' },
-    '695003': { lat: 8.5284, lng: 76.9532, name: 'Kuravankonam / Kowdiar (695003)' },
-    '695004': { lat: 8.526, lng: 76.942, name: 'Pattom (695004)' },
-    '695001': { lat: 8.503, lng: 76.951, name: 'Palayam (695001)' },
-    '695014': { lat: 8.500, lng: 76.965, name: 'Vazhuthacaud (695014)' },
-    '695581': { lat: 8.558, lng: 76.881, name: 'Technopark (695581)' },
-    '695121': { lat: 8.401, lng: 77.086, name: 'Neyyattinkara (695121)' }
+    '695003': { lat: 8.5284, lng: 76.9532, name: 'Kuravankonam / Kowdiar' },
+    '695004': { lat: 8.526, lng: 76.942, name: 'Pattom' },
+    '695001': { lat: 8.503, lng: 76.951, name: 'Palayam' },
+    '695014': { lat: 8.500, lng: 76.965, name: 'Vazhuthacaud' },
+    '695581': { lat: 8.558, lng: 76.881, name: 'Technopark' },
+    '695121': { lat: 8.401, lng: 77.086, name: 'Neyyattinkara' }
   };
 
   ngOnInit(): void {
@@ -216,10 +152,10 @@ export class HomeComponent implements OnInit {
     this.isCheckingDelivery = true;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        this.customerPincodeOrArea = `Current GPS (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`;
+        this.customerPincodeOrArea = 'Current Location';
         this.verifyDeliveryCoordinates(pos.coords.latitude, pos.coords.longitude);
       },
-      (err) => {
+      () => {
         this.isCheckingDelivery = false;
         alert('Could not determine your GPS location. Please type your locality or pincode.');
       },
@@ -260,21 +196,22 @@ export class HomeComponent implements OnInit {
       next: (res) => {
         this.isCheckingDelivery = false;
         if (res?.success && res.data) {
-          const d = res.data;
+          const finalDist = res.data.distanceKm != null ? Number(res.data.distanceKm) : this.haversineDistance(this.shopCoordinates.lat, this.shopCoordinates.lng, lat, lng);
+          const withinRadius = finalDist <= this.shopCoordinates.maxRadiusKm;
+          const isEligible = withinRadius && (res.data.isEligible !== false || withinRadius);
           this.deliveryEligibilityResult = {
             checked: true,
-            isEligible: d.isEligible,
-            distanceKm: d.distanceKm,
-            deliveryCharge: d.deliveryCharge,
-            freeDeliveryThreshold: d.freeDeliveryThreshold,
-            message: d.message || (d.isEligible
-              ? `Great news! Your location is ~${Number(d.distanceKm).toFixed(1)} km from our Kuravankonam store, within our 20 km delivery radius.`
-              : `Your location is ~${Number(d.distanceKm).toFixed(1)} km from our Kuravankonam store, exceeding our 20 km delivery limit.`)
+            isEligible,
+            message: isEligible
+              ? (res.data.message && !res.data.message.includes('pending owner verification')
+                  ? res.data.message
+                  : `Delivery is available! Your location is ${finalDist.toFixed(1)} km from our Kuravankonam storefront (within the 20 km delivery radius).`)
+              : `Sorry, location is ${finalDist.toFixed(1)} km away, exceeding our 20 km local delivery limit.`
           };
         }
       },
       error: () => {
-        // Fallback local Haversine computation if backend service is offline
+        // Fallback local Geodesic computation if backend service is offline
         this.isCheckingDelivery = false;
         const dist = this.haversineDistance(
           this.shopCoordinates.lat,
@@ -286,10 +223,9 @@ export class HomeComponent implements OnInit {
         this.deliveryEligibilityResult = {
           checked: true,
           isEligible,
-          distanceKm: dist,
           message: isEligible
-            ? `Your location is ~${dist.toFixed(1)} km from Kuravankonam Junction, within our 20 km delivery zone.`
-            : `Your location is ~${dist.toFixed(1)} km from Kuravankonam Junction, which exceeds our 20 km delivery radius.`
+            ? `Delivery is available! Your location is approximately ${dist.toFixed(1)} km from our Kuravankonam storefront (within the 20 km delivery radius).`
+            : `Sorry, location is approximately ${dist.toFixed(1)} km away, exceeding our 20 km local delivery limit.`
         };
       }
     });
@@ -308,62 +244,72 @@ export class HomeComponent implements OnInit {
   }
 
   handleAddToCart(event: { product: ProductCardData; variant?: ProductVariant }): void {
-    this.cartService.addItem(event.product.id, event.variant?.id, 1).subscribe({
-      next: () => console.log('Successfully added to cart:', event.product.name),
-      error: err => console.warn('Could not add to cart via API, item retained in session', err)
-    });
+    this.cartService.addItem(event.product.id, event.variant?.id, 1).subscribe();
   }
 
   private getFallbackFeaturedProducts(): ProductCardData[] {
     return [
       {
         id: 1,
-        name: 'Royal Canin Kitten Dry Cat Food',
+        name: 'Royal Canin Maxi Adult Dry Dog Food (4 kg)',
         brand: 'Royal Canin',
-        category: 'Cat Food',
-        subcategory: 'Kitten Food',
-        petType: 'Cat',
-        price: 990,
-        discountedPrice: 890,
-        imageUrl: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=500&auto=format&fit=crop&q=60',
+        category: 'Dog Food & Treats',
+        petType: 'Dog',
+        price: 2950,
+        discountedPrice: 2750,
+        imageUrl: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=600&auto=format&fit=crop&q=80',
         inStock: true,
-        stockQuantity: 18,
+        stockQuantity: 14,
         rating: 4.9,
         reviewCount: 38,
         isFeatured: true,
         returnAllowed: true
       },
       {
-        id: 6,
-        name: 'Royal Canin Maxi Adult Dry Dog Food (4 kg)',
-        brand: 'Royal Canin',
-        category: 'Dog Food',
-        subcategory: 'Adult Kibble',
-        petType: 'Dog',
-        price: 2950,
-        discountedPrice: 2750,
-        imageUrl: 'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?w=500&auto=format&fit=crop&q=60',
+        id: 2,
+        name: 'Whiskas Ocean Fish Adult Wet Cat Food (Pack of 12)',
+        brand: 'Whiskas',
+        category: 'Cat Food & Nutrition',
+        petType: 'Cat',
+        price: 600,
+        discountedPrice: 540,
+        imageUrl: 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&auto=format&fit=crop&q=80',
         inStock: true,
-        stockQuantity: 12,
-        rating: 4.9,
-        reviewCount: 46,
+        stockQuantity: 25,
+        rating: 4.8,
+        reviewCount: 52,
         isFeatured: true,
         returnAllowed: true
       },
       {
-        id: 46,
-        name: 'Sheba Premium Tuna Fillet in Gravy (85g)',
-        brand: 'Sheba',
-        category: 'Cat Food',
-        subcategory: 'Wet Food',
-        petType: 'Cat',
-        price: 85,
-        discountedPrice: 80,
-        imageUrl: 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=500&auto=format&fit=crop&q=60',
+        id: 3,
+        name: 'Farmina N&D Pumpkin Grain-Free Lamb & Blueberry Dog Food (2.5 kg)',
+        brand: 'Farmina N&D',
+        category: 'Dog Food & Treats',
+        petType: 'Dog',
+        price: 3200,
+        discountedPrice: 2990,
+        imageUrl: 'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?w=600&auto=format&fit=crop&q=80',
         inStock: true,
-        stockQuantity: 40,
+        stockQuantity: 8,
         rating: 4.9,
-        reviewCount: 19,
+        reviewCount: 29,
+        isFeatured: true,
+        returnAllowed: true
+      },
+      {
+        id: 4,
+        name: 'Himalaya Erina-EP Anti-Tick Pet Shampoo (200 ml)',
+        brand: 'Himalaya',
+        category: 'Grooming & Shampoos',
+        petType: 'All Pets',
+        price: 260,
+        discountedPrice: 235,
+        imageUrl: 'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 30,
+        rating: 4.6,
+        reviewCount: 41,
         isFeatured: true,
         returnAllowed: true
       }

@@ -43,6 +43,27 @@ export class ProductsComponent implements OnInit {
   isLoading = false;
   searchQuery = '';
   selectedPetType = 'ALL';
+  sortBy: 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' = 'name-asc';
+
+  get sortedProducts(): ProductItem[] {
+    let list = [...this.products];
+    switch (this.sortBy) {
+      case 'name-asc':
+        return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      case 'name-desc':
+        return list.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+      case 'price-asc':
+        return list.sort((a, b) => (a.discountedPrice ?? a.basePrice) - (b.discountedPrice ?? b.basePrice));
+      case 'price-desc':
+        return list.sort((a, b) => (b.discountedPrice ?? b.basePrice) - (a.discountedPrice ?? a.basePrice));
+      case 'stock-asc':
+        return list.sort((a, b) => (a.stock ?? 0) - (b.stock ?? 0));
+      case 'stock-desc':
+        return list.sort((a, b) => (b.stock ?? 0) - (a.stock ?? 0));
+      default:
+        return list;
+    }
+  }
 
   // Tax Configurations
   taxConfigs: TaxConfigItem[] = [];

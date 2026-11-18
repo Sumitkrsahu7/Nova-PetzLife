@@ -1,9 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
-import { HealthService } from './core/services/health.service';
 
 @Component({
   selector: 'app-root',
@@ -13,7 +12,6 @@ import { HealthService } from './core/services/health.service';
     <div class="app-layout">
       <app-header
         [cartCount]="cartItemCount"
-        [isBackendOnline]="isBackendOnline"
         (searchSubmitted)="handleSearch($event)"
       ></app-header>
       <main class="app-main">
@@ -27,33 +25,23 @@ import { HealthService } from './core/services/health.service';
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
     }
     .app-main {
       flex: 1;
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
     }
   `]
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
   title = 'NOVA PETZLIFE';
   cartItemCount = 0;
-  isBackendOnline = false;
 
-  constructor(private healthService: HealthService) {}
-
-  ngOnInit(): void {
-    this.checkHealth();
-  }
-
-  checkHealth(): void {
-    this.healthService.checkHealth().subscribe({
-      next: (res) => {
-        this.isBackendOnline = res.online;
-      },
-      error: () => {
-        this.isBackendOnline = false;
-      }
-    });
-  }
+  constructor() { }
 
   handleSearch(query: string): void {
     console.log('Search initiated for:', query);

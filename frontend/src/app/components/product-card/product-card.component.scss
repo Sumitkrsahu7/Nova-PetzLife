@@ -268,3 +268,37 @@
     }
   }
 }
+
+@media (max-width: 600px) {
+  .product-image-box {
+    height: 145px;
+    padding: 0.5rem;
+  }
+
+  .card-body {
+    padding: 0.65rem;
+  }
+
+  .product-title {
+    font-size: 0.85rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .pricing-row {
+    .current-price {
+      font-size: 0.95rem;
+    }
+    .original-price {
+      font-size: 0.72rem;
+    }
+  }
+
+  .card-footer {
+    padding: 0.45rem 0.65rem 0.65rem;
+
+    .add-to-cart-btn {
+      padding: 0.45rem 0.5rem;
+      font-size: 0.78rem;
+    }
+  }
+}

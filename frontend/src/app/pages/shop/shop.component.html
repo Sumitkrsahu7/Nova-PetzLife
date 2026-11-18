@@ -8,83 +8,141 @@
         </nav>
         <h1>All Pet Products & Essentials</h1>
         <p class="subtitle">
-          In stock at <strong>Petzlife, Kuravankonam Junction</strong>. Serving Trivandrum within 20 km straight-line delivery radius.
+          In stock at <strong>Petzlife, Kuravankonam Junction</strong>. Fast local fulfillment across Thiruvananthapuram.
         </p>
       </div>
 
       <div *ngIf="cartMessage" class="cart-toast">{{ cartMessage }}</div>
     </div>
 
+    <!-- Mobile Filter Toggle Button -->
+    <div class="mobile-filter-bar">
+      <button type="button" class="btn-toggle-filters" (click)="toggleMobileFilter()">
+        <span>🌪️ Filters & Categories</span>
+        <span class="filter-badge" *ngIf="selectedCategory !== 'All' || selectedBrand !== 'All' || selectedPetType !== 'All' || inStockOnly">Active</span>
+      </button>
+      <span class="mobile-results-count">{{ totalElements }} Products</span>
+    </div>
+
     <!-- Layout: Sidebar Filters + Main Product Grid -->
     <div class="shop-layout">
-      <!-- Left Filters Sidebar -->
-      <aside class="filters-sidebar">
+      <!-- Backdrop for mobile drawer -->
+      <div class="mobile-filter-backdrop" *ngIf="isMobileFilterOpen" (click)="closeMobileFilter()"></div>
+
+      <!-- Left Filters Sidebar (Exclusive Accordion) -->
+      <aside class="filters-sidebar" [class.mobile-open]="isMobileFilterOpen">
         <div class="filter-card">
           <div class="filter-header">
             <h3>Filters</h3>
-            <button type="button" class="reset-link" (click)="resetFilters()">Reset All</button>
-          </div>
-
-          <!-- Pet Type Filter -->
-          <div class="filter-group">
-            <label>Pet Type</label>
-            <div class="pill-group">
-              <button
-                *ngFor="let pt of petTypes"
-                type="button"
-                class="pill-btn"
-                [class.active]="selectedPetType === pt"
-                (click)="selectedPetType = pt; loadProducts()"
-              >
-                {{ pt }}
-              </button>
+            <div class="filter-header-actions">
+              <button type="button" class="reset-link" (click)="resetFilters()">Reset All</button>
+              <button type="button" class="mobile-close-btn" (click)="closeMobileFilter()">✕</button>
             </div>
           </div>
 
-          <!-- Category Filter -->
-          <div class="filter-group">
-            <label>Category</label>
-            <div class="radio-list">
-              <label *ngFor="let cat of categories" class="radio-label">
-                <input
-                  type="radio"
-                  name="category"
-                  [value]="cat"
-                  [(ngModel)]="selectedCategory"
-                  (change)="loadProducts()"
-                />
-                <span>{{ cat }}</span>
-              </label>
+          <!-- 1. Category Filter Accordion (Expanded by default) -->
+          <div class="accordion-item" [class.open]="expandedSection === 'category'">
+            <button
+              type="button"
+              class="accordion-header"
+              (click)="toggleSection('category')"
+              [attr.aria-expanded]="expandedSection === 'category'"
+            >
+              <span class="header-title">Product Category</span>
+              <span class="accordion-icon">{{ expandedSection === 'category' ? '▲' : '▼' }}</span>
+            </button>
+            <div class="accordion-body" *ngIf="expandedSection === 'category'">
+              <div class="radio-list">
+                <label *ngFor="let cat of categories" class="radio-label">
+                  <input
+                    type="radio"
+                    name="category"
+                    [value]="cat"
+                    [(ngModel)]="selectedCategory"
+                    (change)="onFilterChange()"
+                  />
+                  <span>{{ cat }}</span>
+                </label>
+              </div>
             </div>
           </div>
 
-          <!-- Brand Filter -->
-          <div class="filter-group">
-            <label>Brand</label>
-            <div class="radio-list">
-              <label *ngFor="let b of brands" class="radio-label">
-                <input
-                  type="radio"
-                  name="brand"
-                  [value]="b"
-                  [(ngModel)]="selectedBrand"
-                  (change)="loadProducts()"
-                />
-                <span>{{ b }}</span>
-              </label>
+          <!-- 2. Brand Filter Accordion -->
+          <div class="accordion-item" [class.open]="expandedSection === 'brand'">
+            <button
+              type="button"
+              class="accordion-header"
+              (click)="toggleSection('brand')"
+              [attr.aria-expanded]="expandedSection === 'brand'"
+            >
+              <span class="header-title">Brand / Manufacturer</span>
+              <span class="accordion-icon">{{ expandedSection === 'brand' ? '▲' : '▼' }}</span>
+            </button>
+            <div class="accordion-body" *ngIf="expandedSection === 'brand'">
+              <div class="radio-list">
+                <label *ngFor="let b of brands" class="radio-label">
+                  <input
+                    type="radio"
+                    name="brand"
+                    [value]="b"
+                    [(ngModel)]="selectedBrand"
+                    (change)="onFilterChange()"
+                  />
+                  <span>{{ b }}</span>
+                </label>
+              </div>
             </div>
           </div>
 
-          <!-- In-Stock Filter -->
-          <div class="filter-group checkbox-group">
-            <label class="checkbox-label">
-              <input
-                type="checkbox"
-                [(ngModel)]="inStockOnly"
-                (change)="loadProducts()"
-              />
-              <span>In Stock Only</span>
-            </label>
+          <!-- 3. Pet Type Filter Accordion -->
+          <div class="accordion-item" [class.open]="expandedSection === 'petType'">
+            <button
+              type="button"
+              class="accordion-header"
+              (click)="toggleSection('petType')"
+              [attr.aria-expanded]="expandedSection === 'petType'"
+            >
+              <span class="header-title">Pet Type</span>
+              <span class="accordion-icon">{{ expandedSection === 'petType' ? '▲' : '▼' }}</span>
+            </button>
+            <div class="accordion-body" *ngIf="expandedSection === 'petType'">
+              <div class="pill-group">
+                <button
+                  *ngFor="let pt of petTypes"
+                  type="button"
+                  class="pill-btn"
+                  [class.active]="selectedPetType === pt"
+                  (click)="selectedPetType = pt; onFilterChange()"
+                >
+                  {{ pt }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Availability / Stock Filter Accordion -->
+          <div class="accordion-item" [class.open]="expandedSection === 'availability'">
+            <button
+              type="button"
+              class="accordion-header"
+              (click)="toggleSection('availability')"
+              [attr.aria-expanded]="expandedSection === 'availability'"
+            >
+              <span class="header-title">Stock Availability</span>
+              <span class="accordion-icon">{{ expandedSection === 'availability' ? '▲' : '▼' }}</span>
+            </button>
+            <div class="accordion-body" *ngIf="expandedSection === 'availability'">
+              <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="inStockOnly"
+                    (change)="onFilterChange()"
+                  />
+                  <span>In Stock Only</span>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -93,7 +151,7 @@
           <span class="icon">📍</span>
           <div>
             <strong>Kuravankonam Storefront</strong>
-            <p>Free local delivery on orders above ₹500 across Thiruvananthapuram.</p>
+            <p>Fast, direct delivery across Thiruvananthapuram from our physical store.</p>
           </div>
         </div>
       </aside>
@@ -107,15 +165,15 @@
             <input
               type="text"
               [(ngModel)]="searchQuery"
-              (keyup.enter)="loadProducts()"
+              (keyup.enter)="onFilterChange()"
               placeholder="Search by product name or brand..."
             />
-            <button type="button" (click)="loadProducts()">Filter</button>
+            <button type="button" (click)="onFilterChange()">Filter</button>
           </div>
 
           <div class="sort-box">
             <label for="sortBySelect">Sort By:</label>
-            <select id="sortBySelect" [(ngModel)]="sortBy" (change)="loadProducts()">
+            <select id="sortBySelect" [(ngModel)]="sortBy" (change)="onFilterChange()">
               <option value="id,desc">Newest First</option>
               <option value="basePrice,asc">Price: Low to High</option>
               <option value="basePrice,desc">Price: High to Low</option>
@@ -125,7 +183,10 @@
 
         <!-- Active Results Count -->
         <div class="results-meta">
-          <span>Showing <strong>{{ products.length }}</strong> of <strong>{{ totalElements }}</strong> products</span>
+          <span>
+            Showing <strong>{{ products.length }}</strong> of <strong>{{ totalElements }}</strong> products
+            <span *ngIf="totalPages > 1"> &bull; Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+          </span>
         </div>
 
         <!-- Loading State -->
@@ -137,8 +198,8 @@
         <!-- Empty State -->
         <div *ngIf="!isLoading && products.length === 0" class="empty-state">
           <span class="empty-icon">🐾</span>
-          <h3>No matching products found</h3>
-          <p>Try clearing your filters or searching with a different term.</p>
+          <h3>No products found</h3>
+          <p>No products match your selected filter criteria. Try clearing or modifying your filters.</p>
           <button type="button" class="btn-reset" (click)="resetFilters()">Clear All Filters</button>
         </div>
 
@@ -151,17 +212,47 @@
           ></app-product-card>
         </div>
 
-        <!-- Show More Button -->
-        <div *ngIf="!isLoading && hasMore" class="show-more-wrapper">
-          <button type="button" class="btn-show-more" [disabled]="isLoadingMore" (click)="loadMore()">
-            <span *ngIf="!isLoadingMore">
-              Show More Products ({{ totalElements - products.length }} remaining)
-            </span>
-            <span *ngIf="isLoadingMore" class="loading-inline">
-              <span class="spinner-sm"></span> Loading more products...
-            </span>
-          </button>
-        </div>
+        <!-- True Page-Based Pagination Controls (Visible only when totalPages > 1) -->
+        <nav class="pagination-wrapper" *ngIf="!isLoading && totalPages > 1" aria-label="Product Catalog Pagination">
+          <div class="pagination-controls">
+            <button
+              type="button"
+              class="page-btn page-arrow"
+              [disabled]="currentPage === 0"
+              (click)="prevPage()"
+              aria-label="Previous Page"
+            >
+              ← Previous
+            </button>
+
+            <div class="page-numbers">
+              <button
+                *ngFor="let p of pageNumbers"
+                type="button"
+                class="page-btn page-num"
+                [class.active]="currentPage === p"
+                [attr.aria-current]="currentPage === p ? 'page' : null"
+                (click)="goToPage(p)"
+              >
+                {{ p + 1 }}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              class="page-btn page-arrow"
+              [disabled]="currentPage >= totalPages - 1"
+              (click)="nextPage()"
+              aria-label="Next Page"
+            >
+              Next →
+            </button>
+          </div>
+
+          <div class="pagination-meta">
+            <span>Page <strong>{{ currentPage + 1 }}</strong> of <strong>{{ totalPages }}</strong></span>
+          </div>
+        </nav>
       </main>
     </div>
   </div>

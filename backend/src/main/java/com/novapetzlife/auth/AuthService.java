@@ -121,4 +121,8 @@ public class AuthService {
 
         return AuthResponse.of(jwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles);
     }
+
+    public void logout() {
+        SecurityContextHolder.clearContext();
+    }
 }

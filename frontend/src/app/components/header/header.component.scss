@@ -3,6 +3,7 @@
   color: #FFFFFF;
   font-size: 0.8rem;
   padding: 0.45rem 0;
+  width: 100%;
 
   .announcement-content {
     display: flex;
@@ -14,8 +15,9 @@
 
   .announcement-left {
     display: flex;
-    gap: 1.25rem;
+    gap: 1rem;
     flex-wrap: wrap;
+    align-items: center;
   }
 
   .delivery-tag {
@@ -35,8 +37,9 @@
   border-bottom: 1px solid #DDE7DF;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  width: 100%;
 }
 
 .header-container {
@@ -44,24 +47,26 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.85rem 1.25rem;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  width: 100%;
 }
 
 .brand-link {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   text-decoration: none;
+  flex-shrink: 0;
 
   .brand-badge {
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     background-color: #E7F5E9;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
+    font-size: 1.5rem;
   }
 
   .brand-details {
@@ -70,7 +75,7 @@
   }
 
   .brand-name {
-    font-size: 1.35rem;
+    font-size: 1.3rem;
     font-weight: 800;
     color: #155C3B;
     letter-spacing: -0.5px;
@@ -78,7 +83,7 @@
   }
 
   .brand-sub {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: #64748B;
     font-weight: 500;
   }
@@ -86,7 +91,8 @@
 
 .header-search {
   flex: 1;
-  max-width: 540px;
+  max-width: 520px;
+  min-width: 0;
 
   .search-input-wrapper {
     display: flex;
@@ -94,8 +100,9 @@
     background: #F8FAFC;
     border: 1.5px solid #DDE7DF;
     border-radius: 9999px;
-    padding: 0.25rem 0.35rem 0.25rem 1rem;
+    padding: 0.25rem 0.35rem 0.25rem 0.85rem;
     transition: all 0.2s ease;
+    width: 100%;
 
     &:focus-within {
       border-color: #248B58;
@@ -105,16 +112,18 @@
   }
 
   .search-icon {
-    font-size: 0.95rem;
-    margin-right: 0.5rem;
+    font-size: 0.9rem;
+    margin-right: 0.4rem;
     color: #64748B;
+    flex-shrink: 0;
   }
 
   input {
     flex: 1;
+    min-width: 0;
     border: none;
     background: transparent;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     color: #26352D;
     outline: none;
 
@@ -128,10 +137,11 @@
     color: #FFFFFF;
     border: none;
     border-radius: 9999px;
-    padding: 0.45rem 1rem;
-    font-size: 0.85rem;
+    padding: 0.45rem 0.95rem;
+    font-size: 0.825rem;
     font-weight: 600;
     cursor: pointer;
+    flex-shrink: 0;
     transition: background 0.2s;
 
     &:hover {
@@ -143,46 +153,19 @@
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
-}
-
-.backend-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #94A3B8;
-  background: #F1F5F9;
-  padding: 0.3rem 0.65rem;
-  border-radius: 9999px;
-
-  .status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #CBD5E1;
-  }
-
-  &.connected {
-    color: #155C3B;
-    background: #E7F5E9;
-    .status-dot {
-      background: #248B58;
-      box-shadow: 0 0 4px #248B58;
-    }
-  }
+  gap: 0.65rem;
+  flex-shrink: 0;
 }
 
 .account-btn {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   background: transparent;
   border: 1px solid #DDE7DF;
-  padding: 0.45rem 0.9rem;
+  padding: 0.4rem 0.75rem;
   border-radius: 9999px;
-  font-size: 0.85rem;
+  font-size: 0.825rem;
   font-weight: 600;
   font-family: inherit;
   color: #26352D;
@@ -190,11 +173,24 @@
   cursor: pointer;
   outline: none;
   transition: all 0.2s;
+  white-space: nowrap;
 
   &:hover {
     background: #E7F5E9;
     border-color: #248B58;
     color: #155C3B;
+  }
+
+  &.login-btn-single {
+    background: #E7F5E9;
+    border-color: #248B58;
+    color: #155C3B;
+    font-weight: 700;
+
+    &:hover {
+      background: #248B58;
+      color: #FFFFFF;
+    }
   }
 
   &.logout-header-btn:hover {
@@ -207,16 +203,17 @@
 .cart-button {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   background: #248B58;
   border: none;
-  padding: 0.45rem 1.1rem;
+  padding: 0.4rem 0.95rem;
   border-radius: 9999px;
   color: #FFFFFF;
-  font-size: 0.85rem;
+  font-size: 0.825rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
 
   &:hover {
     background: #155C3B;
@@ -227,12 +224,12 @@
     background: #FFFFFF;
     color: #155C3B;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: 19px;
+    height: 19px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 800;
   }
 }
@@ -240,42 +237,69 @@
 .hamburger-btn {
   display: none;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
   gap: 4px;
   background: transparent;
-  border: none;
+  border: 1px solid #DDE7DF;
+  border-radius: 8px;
   cursor: pointer;
-  padding: 0.25rem;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  flex-shrink: 0;
 
   span {
-    width: 22px;
+    width: 18px;
     height: 2px;
     background-color: #26352D;
     border-radius: 2px;
+    transition: all 0.2s;
   }
+
+  &:hover {
+    background: #F1F5F9;
+  }
+}
+
+.mobile-only-auth-box {
+  display: none;
 }
 
 .main-nav {
   background: #F8FAFC;
   border-top: 1px solid #E2E8F0;
+  width: 100%;
+  position: relative;
+  z-index: 1005;
 
   .nav-container {
     display: flex;
-    gap: 1.75rem;
-    overflow-x: auto;
-    padding: 0.5rem 1.25rem;
+    align-items: center;
+    gap: 1.25rem;
+    overflow: visible;
+    padding: 0.45rem 1.25rem;
+    position: relative;
   }
 
   .nav-item {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: #26352D;
     text-decoration: none;
     white-space: nowrap;
-    padding: 0.25rem 0;
+    padding: 0.35rem 0;
     border-bottom: 2px solid transparent;
     transition: all 0.2s ease;
+    background: transparent;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    cursor: pointer;
+    font-family: inherit;
 
-    &:hover, &.active {
+    &:hover,
+    &.active {
       color: #248B58;
       border-bottom-color: #248B58;
     }
@@ -285,36 +309,278 @@
       font-weight: 700;
     }
   }
+
+  /* Help Dropdown */
+  .nav-dropdown {
+    position: relative;
+    display: inline-block;
+    z-index: 1050;
+
+    .dropdown-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+
+      .dropdown-caret {
+        font-size: 0.75rem;
+        transition: transform 0.2s ease;
+      }
+    }
+
+    &.dropdown-active .dropdown-toggle .dropdown-caret {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-menu {
+      display: block;
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      left: auto;
+      min-width: 280px;
+      background: #FFFFFF;
+      border-radius: 10px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16), 0 4px 10px rgba(0, 0, 0, 0.06);
+      border: 1px solid #E2E8F0;
+      padding: 0.5rem;
+      z-index: 1100;
+      margin-top: 0;
+
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.65rem 0.85rem;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #1E293B;
+        transition: background 0.15s;
+
+        &:hover {
+          background: #F1F5F9;
+        }
+
+        .item-icon {
+          font-size: 1.2rem;
+        }
+
+        strong {
+          display: block;
+          font-size: 0.85rem;
+          color: #155C3B;
+        }
+
+        small {
+          display: block;
+          font-size: 0.75rem;
+          color: #64748B;
+        }
+      }
+    }
+  }
 }
 
+/* ==========================================================================
+   Header Mobile Breakpoints
+   ========================================================================== */
+
 @media (max-width: 992px) {
-  .header-search {
-    max-width: 280px;
-  }
   .hamburger-btn {
     display: flex;
   }
+
   .main-nav {
     display: none;
+
     &.mobile-open {
       display: block;
+      background: #FFFFFF;
+      border-bottom: 2px solid #E2E8F0;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+
       .nav-container {
         flex-direction: column;
-        gap: 0.75rem;
+        align-items: stretch;
+        gap: 0.35rem;
+        padding: 1rem 1.25rem;
+      }
+
+      .mobile-only-auth-box {
+        display: block;
+        padding-bottom: 0.85rem;
+        margin-bottom: 0.5rem;
+        border-bottom: 1px solid #E2E8F0;
+
+        .mobile-user-greeting {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-bottom: 0.65rem;
+
+          .user-avatar {
+            font-size: 1.4rem;
+          }
+
+          .user-info {
+            strong {
+              display: block;
+              font-size: 0.9rem;
+              color: #155C3B;
+            }
+
+            small {
+              font-size: 0.75rem;
+              color: #64748B;
+            }
+          }
+        }
+
+        .mobile-auth-actions {
+          display: flex;
+          gap: 0.5rem;
+
+          .mobile-sub-btn {
+            flex: 1;
+            text-align: center;
+            padding: 0.45rem;
+            background: #E7F5E9;
+            color: #155C3B;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 6px;
+            text-decoration: none;
+            border: 1px solid #C8EBD1;
+
+            &.logout {
+              background: #FEE2E2;
+              color: #991B1B;
+              border-color: #FECACA;
+              cursor: pointer;
+            }
+          }
+        }
+
+        .mobile-login-entry {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.65rem 0.85rem;
+          background: #E7F5E9;
+          color: #155C3B;
+          font-weight: 700;
+          font-size: 0.875rem;
+          border-radius: 8px;
+          text-decoration: none;
+          border: 1px solid #C8EBD1;
+        }
+      }
+
+      .nav-item {
+        padding: 0.55rem 0.25rem;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 0.9rem;
+        text-align: left;
+        width: 100%;
+      }
+
+      .nav-dropdown {
+        width: 100%;
+
+        .dropdown-toggle {
+          width: 100%;
+          justify-content: space-between;
+          padding: 0.55rem 0.25rem;
+        }
+
+        .dropdown-menu {
+          display: block;
+          position: static;
+          box-shadow: none;
+          border: 1px solid #E2E8F0;
+          background: #F8FAFC;
+          margin: 0.35rem 0;
+          border-radius: 8px;
+        }
       }
     }
   }
 }
 
 @media (max-width: 768px) {
+  .top-announcement-bar {
+    font-size: 0.72rem;
+    padding: 0.35rem 0;
+
+    .announcement-content {
+      justify-content: center;
+      text-align: center;
+    }
+
+    .announcement-left {
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .help-text {
+      display: none; // Hide store phone in tiny header top bar on mobile
+    }
+  }
+
   .header-container {
     flex-wrap: wrap;
     padding: 0.65rem 1rem;
     gap: 0.5rem;
   }
 
+  .brand-link {
+    gap: 0.45rem;
+
+    .brand-badge {
+      width: 34px;
+      height: 34px;
+      font-size: 1.2rem;
+      border-radius: 8px;
+    }
+
+    .brand-name {
+      font-size: 1.05rem;
+    }
+
+    .brand-sub {
+      font-size: 0.65rem;
+    }
+  }
+
+  .header-actions {
+    gap: 0.35rem;
+
+    .header-pets-btn {
+      display: none; // Kept in mobile navigation drawer to save header space
+    }
+
+    .account-btn {
+      padding: 0.35rem 0.55rem;
+
+      .account-text {
+        display: none;
+      }
+    }
+
+    .cart-button {
+      padding: 0.35rem 0.65rem;
+
+      .cart-label {
+        display: none;
+      }
+    }
+
+    .hamburger-btn {
+      width: 34px;
+      height: 34px;
+    }
+  }
+
   .header-search {
-    display: block;
     width: 100%;
     max-width: 100%;
     order: 3;
@@ -322,53 +588,117 @@
 
     .search-input-wrapper {
       padding: 0.2rem 0.35rem 0.2rem 0.75rem;
+
       input {
-        font-size: 0.82rem;
+        font-size: 0.825rem;
+      }
+
+      .search-submit-btn {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.78rem;
       }
     }
   }
+}
 
-  .brand-link {
-    gap: 0.5rem;
-    .brand-badge {
-      width: 36px;
-      height: 36px;
-      font-size: 1.3rem;
+/* Logout Confirmation Modal */
+.logout-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1.25rem;
+  box-sizing: border-box;
+
+  .logout-modal-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 2rem 1.75rem;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
+    animation: modalPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+    .modal-badge-icon {
+      font-size: 2.25rem;
+      width: 58px;
+      height: 58px;
+      background: #FEE2E2;
+      color: #DC2626;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem auto;
     }
-    .brand-name {
-      font-size: 1.1rem;
+
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #0F172A;
+      margin: 0 0 0.5rem 0;
     }
-    .brand-sub {
-      font-size: 0.65rem;
+
+    p {
+      font-size: 0.88rem;
+      color: #64748B;
+      margin: 0 0 1.5rem 0;
+      line-height: 1.45;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+
+      button {
+        flex: 1;
+        padding: 0.7rem 1rem;
+        font-size: 0.88rem;
+        font-weight: 700;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .btn-cancel {
+        background: #F1F5F9;
+        color: #475569;
+        border: 1px solid #CBD5E1;
+
+        &:hover {
+          background: #E2E8F0;
+          color: #1E293B;
+        }
+      }
+
+      .btn-confirm {
+        background: #DC2626;
+        color: #FFFFFF;
+        border: 1px solid #DC2626;
+
+        &:hover {
+          background: #B91C1C;
+        }
+      }
     }
   }
+}
 
-  .header-actions {
-    gap: 0.4rem;
-
-    .backend-pill {
-      padding: 0.3rem 0.5rem;
-      .status-text {
-        display: none;
-      }
-    }
-
-    .account-btn {
-      padding: 0.35rem 0.65rem;
-      .account-text {
-        display: none;
-      }
-    }
-
-    .cart-button {
-      padding: 0.35rem 0.75rem;
-      .cart-label {
-        display: none;
-      }
-    }
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
   }
-
-  .announcement-left {
-    font-size: 0.72rem;
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }

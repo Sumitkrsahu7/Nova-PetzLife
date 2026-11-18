@@ -2,15 +2,46 @@
   <div class="auth-card">
     <div class="auth-header">
       <div class="logo-icon">🐾</div>
-      <h2>Welcome Back</h2>
-      <p>Log in to access your NOVA PETZLIFE account and orders</p>
+      <h2>{{ mode === 'login' ? 'Welcome Back' : 'Create Your Account' }}</h2>
+      <p>{{ mode === 'login' ? 'Log in to access your NOVA PETZLIFE account and orders' : 'Join NOVA PETZLIFE for fast local delivery & order tracking' }}</p>
     </div>
 
-    <div *ngIf="errorMessage" class="alert alert-danger">
+    <!-- Mode Switcher Tabs -->
+    <div class="auth-tabs" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        [class.active]="mode === 'login'"
+        [attr.aria-selected]="mode === 'login'"
+        (click)="setMode('login')"
+      >
+        🔑 Log In
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        [class.active]="mode === 'register'"
+        [attr.aria-selected]="mode === 'register'"
+        (click)="setMode('register')"
+      >
+        ✨ Register
+      </button>
+    </div>
+
+    <!-- Error Alert -->
+    <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
       {{ errorMessage }}
     </div>
 
-    <form (ngSubmit)="onSubmit()" class="auth-form">
+    <!-- Success Alert -->
+    <div *ngIf="successMessage" class="alert alert-success" role="alert">
+      {{ successMessage }}
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form *ngIf="mode === 'login'" (ngSubmit)="onLoginSubmit()" class="auth-form">
       <div class="form-group">
         <label for="identifier">Email Address or 10-Digit Mobile Number</label>
         <input
@@ -19,7 +50,7 @@
           name="identifier"
           [(ngModel)]="identifier"
           (input)="onInputChange()"
-          placeholder="e.g. anand@example.com or 9847012345"
+          placeholder="name@example.com or 10-digit mobile"
           required
           autofocus
         />
@@ -43,7 +74,7 @@
           name="password"
           [(ngModel)]="password"
           (input)="onInputChange()"
-          placeholder="••••••••"
+          placeholder="Enter your password"
           required
         />
       </div>
@@ -52,10 +83,144 @@
         <span *ngIf="isLoading" class="spinner"></span>
         <span *ngIf="!isLoading">Log In</span>
       </button>
+
+      <div class="auth-footer">
+        <p>Don't have an account yet? <button type="button" class="link-btn" (click)="setMode('register')">Register here</button></p>
+      </div>
     </form>
 
-    <div class="auth-footer">
-      <p>Don't have an account? <a routerLink="/register">Register here</a></p>
+    <!-- REGISTER FORM -->
+    <form *ngIf="mode === 'register'" (ngSubmit)="onRegisterSubmit()" class="auth-form">
+      <div class="form-row">
+        <div class="form-group col">
+          <label for="regFirstName">First Name *</label>
+          <input
+            type="text"
+            id="regFirstName"
+            name="regFirstName"
+            [(ngModel)]="regFirstName"
+            (input)="onInputChange()"
+            placeholder="Enter your first name"
+            required
+          />
+        </div>
+        <div class="form-group col">
+          <label for="regLastName">Last Name</label>
+          <input
+            type="text"
+            id="regLastName"
+            name="regLastName"
+            [(ngModel)]="regLastName"
+            (input)="onInputChange()"
+            placeholder="Enter your last name"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="regEmail">Email Address *</label>
+        <input
+          type="email"
+          id="regEmail"
+          name="regEmail"
+          [(ngModel)]="regEmail"
+          (input)="onInputChange()"
+          placeholder="name@example.com"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="regPhone">Mobile Number (Optional)</label>
+        <input
+          type="tel"
+          id="regPhone"
+          name="regPhone"
+          [(ngModel)]="regPhone"
+          (input)="onInputChange()"
+          placeholder="Enter your 10-digit mobile number"
+        />
+      </div>
+
+      <div class="form-group">
+        <div class="password-label-row">
+          <label for="regPassword">Password *</label>
+          <button
+            type="button"
+            class="toggle-pwd-btn"
+            (click)="toggleRegPasswordVisibility()"
+          >
+            {{ showRegPassword ? '👁️ Hide' : '👁️ Show' }}
+          </button>
+        </div>
+        <input
+          [type]="showRegPassword ? 'text' : 'password'"
+          id="regPassword"
+          name="regPassword"
+          [(ngModel)]="regPassword"
+          (input)="onInputChange()"
+          placeholder="Enter your password"
+          required
+        />
+
+        <!-- Password Checklist -->
+        <div class="password-checklist" *ngIf="regPassword">
+          <div class="check-item" [class.valid]="hasMinLength">
+            <span>{{ hasMinLength ? '✓' : '○' }} At least 8 characters</span>
+          </div>
+          <div class="check-item" [class.valid]="hasUpperCase">
+            <span>{{ hasUpperCase ? '✓' : '○' }} One uppercase letter (A-Z)</span>
+          </div>
+          <div class="check-item" [class.valid]="hasLowerCase">
+            <span>{{ hasLowerCase ? '✓' : '○' }} One lowercase letter (a-z)</span>
+          </div>
+          <div class="check-item" [class.valid]="hasNumber">
+            <span>{{ hasNumber ? '✓' : '○' }} One number (0-9)</span>
+          </div>
+          <div class="check-item" [class.valid]="hasSpecialChar">
+            <span>{{ hasSpecialChar ? '✓' : '○' }} One special character</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="password-label-row">
+          <label for="regConfirmPassword">Confirm Password *</label>
+          <button
+            type="button"
+            class="toggle-pwd-btn"
+            (click)="toggleRegConfirmVisibility()"
+          >
+            {{ showRegConfirm ? '👁️ Hide' : '👁️ Show' }}
+          </button>
+        </div>
+        <input
+          [type]="showRegConfirm ? 'text' : 'password'"
+          id="regConfirmPassword"
+          name="regConfirmPassword"
+          [(ngModel)]="regConfirmPassword"
+          (input)="onInputChange()"
+          placeholder="Re-enter your password"
+          required
+        />
+        <div class="match-indicator" *ngIf="regConfirmPassword">
+          <span [class.matched]="regPasswordsMatch" [class.unmatched]="!regPasswordsMatch">
+            {{ regPasswordsMatch ? '✓ Passwords match' : '✕ Passwords do not match' }}
+          </span>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="isLoading">
+        <span *ngIf="isLoading" class="spinner"></span>
+        <span *ngIf="!isLoading">Create Account</span>
+      </button>
+
+      <div class="auth-footer">
+        <p>Already have an account? <button type="button" class="link-btn" (click)="setMode('login')">Log in here</button></p>
+      </div>
+    </form>
+
+    <div class="store-hint-wrapper">
       <p class="store-hint">Store pickup & delivery: Kuravankonam Junction, Thiruvananthapuram</p>
     </div>
   </div>

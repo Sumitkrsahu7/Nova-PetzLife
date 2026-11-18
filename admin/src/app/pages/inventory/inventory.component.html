@@ -8,8 +8,34 @@
   </div>
 
   <div class="table-card">
+    <div class="inventory-toolbar">
+      <div class="search-wrap">
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          placeholder="Search inventory by product name, SKU, or brand..."
+          class="search-input"
+        />
+      </div>
+      <div class="toolbar-controls">
+        <div class="sort-control">
+          <label for="sortSelect">Sort By:</label>
+          <select id="sortSelect" [(ngModel)]="sortBy" class="sort-select">
+            <option value="stock-asc">Stock: Low to High (Critical First)</option>
+            <option value="stock-desc">Stock: High to Low</option>
+            <option value="name-asc">Product Name: A to Z</option>
+            <option value="name-desc">Product Name: Z to A</option>
+          </select>
+        </div>
+        <label class="checkbox-filter">
+          <input type="checkbox" [(ngModel)]="showLowStockOnly" />
+          <span>Low Stock Only</span>
+        </label>
+      </div>
+    </div>
+
     <div *ngIf="isLoading" class="loading">Loading stock levels...</div>
-    <table *ngIf="!isLoading && inventoryList.length > 0" class="data-table">
+    <table *ngIf="!isLoading && displayedInventory.length > 0" class="data-table">
       <thead>
         <tr>
           <th>Product / SKU</th>
@@ -22,7 +48,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let item of inventoryList">
+        <tr *ngFor="let item of displayedInventory">
           <td>
             <strong>{{ item.productName }}</strong>
             <div class="sku-tag">{{ item.sku }}</div>
@@ -47,8 +73,8 @@
       </tbody>
     </table>
 
-    <div *ngIf="!isLoading && inventoryList.length === 0" class="empty-state">
-      <p>No inventory records found.</p>
+    <div *ngIf="!isLoading && displayedInventory.length === 0" class="empty-state">
+      <p>No inventory records matching your filter or search criteria.</p>
     </div>
   </div>
 

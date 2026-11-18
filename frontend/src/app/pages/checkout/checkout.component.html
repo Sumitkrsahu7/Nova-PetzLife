@@ -19,7 +19,7 @@
         <div class="step-badge">1</div>
         <div class="step-content">
           <h2>Delivery Address & Contact</h2>
-          <p class="step-desc">Enter your Trivandrum delivery location to confirm 20 km eligibility</p>
+          <p class="step-desc">Enter your Trivandrum delivery location to confirm delivery availability</p>
 
           <div class="preset-pills">
             <span class="preset-label">Quick Locations:</span>
@@ -35,44 +35,42 @@
           <div class="form-grid">
             <div class="field-group">
               <label>Full Name *</label>
-              <input type="text" [(ngModel)]="recipientName" placeholder="e.g. Suresh Kumar" required>
+              <input type="text" [(ngModel)]="recipientName" placeholder="Enter your full name" required>
             </div>
 
             <div class="field-group">
               <label>Phone Number (for delivery rider) *</label>
-              <input type="tel" [(ngModel)]="phone" placeholder="+91 94471 23456" required>
+              <input type="tel" [(ngModel)]="phone" placeholder="Enter your 10-digit mobile number" required>
             </div>
 
             <div class="field-group full-width">
               <label>Email (for order invoice & tracking)</label>
-              <input type="email" [(ngModel)]="email" placeholder="youremail@example.com">
+              <input type="email" [(ngModel)]="email" placeholder="name@example.com">
             </div>
 
             <div class="field-group full-width">
               <label>Street Address / House Name / Flat No. *</label>
-              <input type="text" [(ngModel)]="addressLine1" placeholder="House/Flat No, Street, Road" required>
+              <input type="text" [(ngModel)]="addressLine1" placeholder="Enter your house number, street or locality" required>
             </div>
 
             <div class="field-group">
               <label>Landmark (optional)</label>
-              <input type="text" [(ngModel)]="landmark" placeholder="Near Temple / Opposite Bank">
+              <input type="text" [(ngModel)]="landmark" placeholder="Enter a nearby landmark (optional)">
             </div>
 
             <div class="field-group">
               <label>PIN Code *</label>
-              <input type="text" [(ngModel)]="postalCode" (change)="runDeliveryCheck()" placeholder="695004" required>
+              <input type="text" [(ngModel)]="postalCode" (change)="runDeliveryCheck()" placeholder="Enter your 6-digit PIN code" required>
             </div>
           </div>
 
-          <!-- Live 20 km Delivery Eligibility Feedback -->
+          <!-- Live Delivery Eligibility Feedback -->
           <div *ngIf="eligibility" class="delivery-status-box" [class.eligible]="eligibility.isEligible" [class.ineligible]="!eligibility.isEligible">
-            <div class="status-icon">{{ eligibility.isEligible ? '✅' : '❌' }}</div>
+            <div class="status-icon">{{ eligibility.isEligible ? '✓' : '✕' }}</div>
             <div class="status-details">
-              <strong>{{ eligibility.isEligible ? 'Delivery Available to this Address' : 'Address Outside 20 km Store Radius' }}</strong>
-              <p>{{ eligibility.message }}</p>
-              <div class="metrics" *ngIf="eligibility.distanceKm > 0">
-                <span>Straight-line distance: <strong>{{ eligibility.distanceKm }} km</strong> from Kuravankonam Junction</span>
-              </div>
+              <strong>{{ eligibility.isEligible ? 'Delivery is available at this location.' : 'Sorry, delivery is not currently available at this location.' }}</strong>
+              <p *ngIf="eligibility.isEligible">Local express delivery will be dispatched directly from our Kuravankonam storefront.</p>
+              <p *ngIf="!eligibility.isEligible">This address falls outside our current local delivery area. Please enter a serviceable address or contact store support.</p>
             </div>
           </div>
         </div>

@@ -33,7 +33,7 @@
         <div class="form-row">
           <div class="field-group">
             <label>Pet Name *</label>
-            <input type="text" [(ngModel)]="petForm.petName" name="petName" placeholder="e.g. Bruno, Bella" required>
+            <input type="text" [(ngModel)]="petForm.petName" name="petName" placeholder="Enter your pet's name" required>
           </div>
 
           <div class="field-group">
@@ -47,7 +47,7 @@
         <div class="form-row">
           <div class="field-group">
             <label>Breed</label>
-            <input type="text" [(ngModel)]="petForm.breed" name="breed" placeholder="e.g. Golden Retriever, Persian">
+            <input type="text" [(ngModel)]="petForm.breed" name="breed" placeholder="Enter breed (e.g. Golden Retriever, Persian)">
           </div>
 
           <div class="field-group">
@@ -68,21 +68,21 @@
 
           <div class="field-group">
             <label>Weight (in kg)</label>
-            <input type="number" step="0.1" [(ngModel)]="petForm.weightKg" name="weightKg" placeholder="e.g. 14.5">
+            <input type="number" step="0.1" [(ngModel)]="petForm.weightKg" name="weightKg" placeholder="Enter weight in kg">
           </div>
         </div>
 
         <div class="form-row">
           <div class="field-group full-width">
             <label>Dietary Preferences / Favorite Flavors</label>
-            <input type="text" [(ngModel)]="petForm.dietaryPreferences" name="dietaryPreferences" placeholder="e.g. Chicken & Rice, Salmon, Grain-Free Kibble">
+            <input type="text" [(ngModel)]="petForm.dietaryPreferences" name="dietaryPreferences" placeholder="Enter favorite flavors or dietary preferences">
           </div>
         </div>
 
         <div class="form-row">
           <div class="field-group full-width">
             <label>Food Sensitivities / Allergies (if any)</label>
-            <input type="text" [(ngModel)]="petForm.foodSensitivities" name="foodSensitivities" placeholder="e.g. Sensitive stomach, Chicken allergy, Soy-free">
+            <input type="text" [(ngModel)]="petForm.foodSensitivities" name="foodSensitivities" placeholder="Enter any food allergies or sensitivities (optional)">
           </div>
         </div>
 

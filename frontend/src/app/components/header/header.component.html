@@ -3,7 +3,7 @@
   <div class="container announcement-content">
     <div class="announcement-left">
       <span class="location-tag">📍 Petzlife, Kuravankonam Junction, Thiruvananthapuram</span>
-      <span class="delivery-tag">⚡ Fast Delivery within 20 km straight-line radius</span>
+      <span class="delivery-tag">⚡ Fast Local Delivery Across Thiruvananthapuram</span>
     </div>
     <div class="announcement-right">
       <span class="help-text">📞 Store Desk: Mon - Sat 9:00 AM - 8:30 PM</span>
@@ -15,7 +15,7 @@
 <header class="site-header">
   <div class="container header-container">
     <!-- Brand Logo -->
-    <a routerLink="/" class="brand-link">
+    <a routerLink="/" class="brand-link" (click)="closeMobileMenu()">
       <div class="brand-badge">🐾</div>
       <div class="brand-details">
         <span class="brand-name">NOVA PETZLIFE</span>
@@ -38,15 +38,9 @@
       </div>
     </div>
 
-    <!-- Actions: Connectivity, Cart, Account, Mobile Toggle -->
+    <!-- Actions: Cart, Account, Mobile Toggle -->
     <div class="header-actions">
-      <!-- Backend Status Pill -->
-      <div class="backend-pill" [class.connected]="isBackendOnline" title="REST API Connection Status">
-        <span class="status-dot"></span>
-        <span class="status-text">{{ isBackendOnline ? 'API Connected' : 'Offline Mode' }}</span>
-      </div>
-
-      <!-- Auth Actions: Logged In vs Logged Out -->
+      <!-- Auth Actions: Single Login when logged out; Profile & Logout when logged in -->
       <ng-container *ngIf="authService.currentUser$ | async as user; else loggedOutActions">
         <a routerLink="/account" class="account-btn" aria-label="Customer Account">
           <span class="account-icon">👤</span>
@@ -58,18 +52,15 @@
         </button>
       </ng-container>
       <ng-template #loggedOutActions>
-        <a routerLink="/login" class="account-btn" aria-label="Customer Login">
+        <!-- Single Login Button: Links to unified auth page with seamless switch -->
+        <a routerLink="/login" class="account-btn login-btn-single" aria-label="Customer Login">
           <span class="account-icon">🔑</span>
           <span class="account-text">Log In</span>
-        </a>
-        <a routerLink="/register" class="account-btn" aria-label="Customer Registration">
-          <span class="account-icon">📝</span>
-          <span class="account-text">Register</span>
         </a>
       </ng-template>
 
       <!-- My Pets Button -->
-      <a routerLink="/my-pets" class="account-btn" title="Customer Pet Profiles">
+      <a routerLink="/my-pets" class="account-btn header-pets-btn" title="Customer Pet Profiles">
         <span class="account-icon">🐾</span>
         <span class="account-text">My Pets</span>
       </a>
@@ -93,36 +84,106 @@
   <!-- Main Navigation Bar -->
   <nav class="main-nav" [class.mobile-open]="isMobileMenuOpen">
     <div class="container nav-container">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
+      <!-- Mobile Auth Header (Shown only inside mobile drawer) -->
+      <div class="mobile-only-auth-box">
+        <ng-container *ngIf="authService.currentUser$ | async as user; else mobileLoggedOut">
+          <div class="mobile-user-greeting">
+            <span class="user-avatar">👤</span>
+            <div class="user-info">
+              <strong>{{ user.firstName }} {{ user.lastName || '' }}</strong>
+              <small>{{ user.email }}</small>
+            </div>
+          </div>
+          <div class="mobile-auth-actions">
+            <a routerLink="/account" (click)="closeMobileMenu()" class="mobile-sub-btn">My Account</a>
+            <button type="button" (click)="logout()" class="mobile-sub-btn logout">Sign Out</button>
+          </div>
+        </ng-container>
+        <ng-template #mobileLoggedOut>
+          <a routerLink="/login" (click)="closeMobileMenu()" class="mobile-login-entry">
+            <span>🔑 Log In / Register</span>
+            <span class="arrow">→</span>
+          </a>
+        </ng-template>
+      </div>
+
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeMobileMenu()" class="nav-item">
         🏠 Home
       </a>
-      <a routerLink="/shop" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
+      <a routerLink="/shop" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeMobileMenu()" class="nav-item">
         🛍️ All Products
       </a>
-      <a [routerLink]="['/shop']" [queryParams]="{category: 'cat-food'}" class="nav-item">
+      <a [routerLink]="['/shop']" [queryParams]="{category: 'cat-food'}" (click)="closeMobileMenu()" class="nav-item">
         🐱 Cat Care & Food
       </a>
-      <a [routerLink]="['/shop']" [queryParams]="{category: 'dog-food'}" class="nav-item">
+      <a [routerLink]="['/shop']" [queryParams]="{category: 'dog-food'}" (click)="closeMobileMenu()" class="nav-item">
         🐶 Dog Care & Food
       </a>
-      <a [routerLink]="['/shop']" [queryParams]="{category: 'grooming'}" class="nav-item">
+      <a [routerLink]="['/shop']" [queryParams]="{category: 'grooming'}" (click)="closeMobileMenu()" class="nav-item">
         ✨ Grooming & Hygiene
       </a>
-      <a [routerLink]="['/']" fragment="brands" class="nav-item">
+      <a routerLink="/brands" routerLinkActive="active" (click)="closeMobileMenu()" class="nav-item">
         🏷️ Brands
       </a>
-      <a [routerLink]="['/']" fragment="delivery-checker" class="nav-item highlight">
-        📍 20 km Delivery Area
+      <a routerLink="/check-delivery" routerLinkActive="active" (click)="closeMobileMenu()" class="nav-item highlight">
+        📍 Check Delivery Area
       </a>
-      <a routerLink="/my-pets" routerLinkActive="active" class="nav-item">
+      <a routerLink="/my-pets" routerLinkActive="active" (click)="closeMobileMenu()" class="nav-item">
         🐾 My Pets
       </a>
-      <a routerLink="/support" routerLinkActive="active" class="nav-item">
-        💬 Help & FAQs
-      </a>
-      <a [routerLink]="['/']" fragment="store-info" class="nav-item">
-        ℹ️ About Store
-      </a>
+
+      <!-- Combined Help & FAQs Dropdown (Pure Click-to-Toggle) -->
+      <div
+        class="nav-dropdown"
+        [class.dropdown-active]="isHelpDropdownOpen"
+      >
+        <button
+          type="button"
+          class="nav-item dropdown-toggle"
+          (click)="toggleHelpDropdown($event)"
+          [attr.aria-expanded]="isHelpDropdownOpen"
+          aria-haspopup="true"
+        >
+          <span>💬 Help & FAQs</span>
+          <span class="dropdown-caret">▾</span>
+        </button>
+        <div class="dropdown-menu" *ngIf="isHelpDropdownOpen">
+          <a routerLink="/support" (click)="closeMobileMenu()" class="dropdown-item">
+            <span class="item-icon">🎧</span>
+            <div>
+              <strong>Store Support Desk</strong>
+              <small>Submit an inquiry or track ticket</small>
+            </div>
+          </a>
+          <a routerLink="/support" fragment="faqs" (click)="closeMobileMenu()" class="dropdown-item">
+            <span class="item-icon">❓</span>
+            <div>
+              <strong>Frequently Asked Questions</strong>
+              <small>Delivery, payment & return answers</small>
+            </div>
+          </a>
+          <a routerLink="/check-delivery" fragment="store-info" (click)="closeMobileMenu()" class="dropdown-item">
+            <span class="item-icon">🏪</span>
+            <div>
+              <strong>About Petzlife Store</strong>
+              <small>Location, timings & physical shop</small>
+            </div>
+          </a>
+        </div>
+      </div>
     </div>
   </nav>
+
+  <!-- Logout Confirmation Modal -->
+  <div class="logout-modal-backdrop" *ngIf="showLogoutConfirm" (click)="cancelLogout()">
+    <div class="logout-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-badge-icon">🚪</div>
+      <h3>Confirm Sign Out</h3>
+      <p>Are you sure you want to log out of your NOVA PETZLIFE account?</p>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="cancelLogout()">Cancel</button>
+        <button type="button" class="btn-confirm" (click)="confirmLogout()">Yes, Sign Out</button>
+      </div>
+    </div>
+  </div>
 </header>
