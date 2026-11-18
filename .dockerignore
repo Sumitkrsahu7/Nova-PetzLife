@@ -1,0 +1,31 @@
+# Version control
+.git
+.gitignore
+
+# Frontend & Admin dependencies and artifacts
+node_modules
+*/node_modules
+admin/dist
+admin/.angular
+frontend/dist
+frontend/.angular
+
+# Java build artifacts
+target
+*/target
+*.jar
+*.war
+
+# Environment files and credentials
+*.env
+*.env.*
+!*.env.example
+
+# IDE files
+.idea
+.vscode
+*.iml
+
+# Logs
+*.log
+logs/
