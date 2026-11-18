@@ -7,6 +7,15 @@
     <button (click)="fetchAnalytics()" class="btn-refresh">🔄 Refresh Data</button>
   </div>
 
+  <div *ngIf="errorMessage" class="error-banner" style="background: #FEE2E2; border: 1px solid #FECACA; color: #991B1B; padding: 1rem 1.25rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem;">
+    ⚠️ {{ errorMessage }}
+  </div>
+
+  <div *ngIf="!summary && !isLoading && !errorMessage" class="empty-state" style="text-align: center; padding: 3rem; color: #64748B; background: #FFFFFF; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid #E2E8F0;">
+    <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">No Analytics Data Available</p>
+    <p style="font-size: 0.85rem; color: #94A3B8;">Analytics data will populate automatically as orders and transactions are processed.</p>
+  </div>
+
   <!-- Executive KPI Grid -->
   <div class="kpi-grid" *ngIf="summary">
     <div class="kpi-card revenue">

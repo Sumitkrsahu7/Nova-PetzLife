@@ -1,0 +1,293 @@
+<div class="delivery-page">
+  <div class="container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb-nav">
+      <a routerLink="/">Home</a> <span>&gt;</span>
+      <span>Check Delivery Area</span>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <span class="delivery-pill">⚡ 20 km Express Doorstep Service</span>
+      <h1>Check Delivery Serviceability in Thiruvananthapuram</h1>
+      <p class="subtitle">
+        NOVA PETZLIFE operates directly from <strong>Kuravankonam Junction, Thiruvananthapuram</strong>.
+        Enter your address, search a landmark, or scroll and tap directly on the interactive map below to verify if our local delivery covers your doorstep.
+      </p>
+    </div>
+
+    <!-- Main Delivery Checker Grid -->
+    <div class="checker-card-wrapper" id="delivery-checker">
+      <div class="checker-card">
+        
+        <!-- Left Column: Search & Address Controls -->
+        <div class="checker-left-col">
+          <span class="checker-tag">📍 Instant Location & Address Verification</span>
+          <h2>Is Your Address Serviceable?</h2>
+          <p class="checker-desc">
+            We deliver genuine pet food, hygiene supplies, toys, and grooming essentials up to a <strong>20 km straight-line radius</strong> from our Kuravankonam hub.
+          </p>
+
+          <!-- Input Mode Tabs -->
+          <div class="address-tab-bar">
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="activeTab === 'search'"
+              (click)="activeTab = 'search'"
+            >
+              🔍 Quick Locality Search
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="activeTab === 'address'"
+              (click)="activeTab = 'address'"
+            >
+              📝 Add Detailed Street Address
+            </button>
+          </div>
+
+          <!-- Mode 1: Quick Search -->
+          <div *ngIf="activeTab === 'search'" class="tab-pane-search">
+            <div class="checker-input-row">
+              <input
+                type="text"
+                [(ngModel)]="customerSearchInput"
+                (keyup.enter)="searchAddressOrLocality()"
+                placeholder="Enter area, landmark, or PIN code (e.g. Kowdiar, Pattom, 695003)"
+                class="area-input"
+                aria-label="Delivery Area or PIN Code"
+              />
+              <button
+                type="button"
+                class="btn btn-secondary btn-gps"
+                (click)="useCurrentLocation()"
+                title="Detect GPS location"
+              >
+                <span>🎯 Use GPS</span>
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="isCheckingDelivery || isGeocoding"
+                (click)="searchAddressOrLocality()"
+              >
+                <span *ngIf="!isCheckingDelivery && !isGeocoding">Check Area</span>
+                <span *ngIf="isCheckingDelivery || isGeocoding">Searching...</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Mode 2: Detailed Address Form -->
+          <div *ngIf="activeTab === 'address'" class="tab-pane-address">
+            <div class="address-form-box">
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label>House / Flat / Building No. & Name</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="detailedAddress.buildingOrHouse"
+                    placeholder="e.g. Flat 3B, Sunshine Apartments"
+                  />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-2">
+                  <label>Street / Road / Colony *</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="detailedAddress.streetArea"
+                    placeholder="e.g. Cliff House Road, Kowdiar"
+                    required
+                  />
+                </div>
+                <div class="form-group flex-1">
+                  <label>Nearby Landmark</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="detailedAddress.landmark"
+                    placeholder="e.g. Near Golf Club"
+                  />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label>City</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="detailedAddress.city"
+                    placeholder="Thiruvananthapuram"
+                    readonly
+                  />
+                </div>
+                <div class="form-group flex-1">
+                  <label>Postal PIN Code *</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="detailedAddress.pincode"
+                    placeholder="695003"
+                    maxlength="6"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                class="btn btn-primary btn-block"
+                [disabled]="isCheckingDelivery || isGeocoding"
+                (click)="verifyDetailedStreetAddress()"
+              >
+                <span *ngIf="!isCheckingDelivery && !isGeocoding">📍 Locate & Verify Full Address on Map</span>
+                <span *ngIf="isCheckingDelivery || isGeocoding">Verifying Address & Distance...</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Interactive Map Tip -->
+          <div class="map-interactive-tip">
+            <span class="tip-icon">💡</span>
+            <span>You can also <strong>click anywhere on the map</strong> or <strong>drag the 📍 pin</strong> to test your exact building or house location!</span>
+          </div>
+
+          <!-- Delivery Result Verdict Card -->
+          <div
+            *ngIf="deliveryResult"
+            class="checker-result"
+            [class.eligible]="deliveryResult.isEligible"
+            [class.ineligible]="!deliveryResult.isEligible"
+          >
+            <div class="result-header">
+              <span class="result-icon">{{ deliveryResult.isEligible ? '✓' : '✕' }}</span>
+              <div class="result-headline">
+                <h3>{{ deliveryResult.isEligible ? 'Within 20 km Fast Delivery Zone' : 'Outside 20 km Delivery Boundary' }}</h3>
+                <span class="distance-pill">
+                  Straight-line Distance: <strong>{{ deliveryResult.distanceKm.toFixed(1) }} km</strong> (Limit: {{ deliveryResult.deliveryRadiusKm }} km)
+                  <ng-container *ngIf="deliveryResult.estimatedRoadDistanceKm">
+                    • Est. Road Route: <strong>~{{ deliveryResult.estimatedRoadDistanceKm.toFixed(1) }} km</strong> (approx. {{ deliveryResult.estimatedDurationMinutes }} mins)
+                  </ng-container>
+                </span>
+              </div>
+            </div>
+
+            <div class="result-body">
+              <p class="address-matched">
+                <strong>Selected Location:</strong> {{ deliveryResult.formattedAddress }}
+              </p>
+              <p class="result-desc">
+                {{ deliveryResult.message }}
+              </p>
+              
+              <div class="result-actions" *ngIf="deliveryResult.isEligible">
+                <a routerLink="/shop" class="btn btn-primary btn-sm">
+                  <span>🛍️ Shop Pet Essentials Now</span>
+                  <span class="arrow">→</span>
+                </a>
+              </div>
+              <div class="result-actions" *ngIf="!deliveryResult.isEligible">
+                <a routerLink="/delivery" fragment="store-info" class="btn btn-outline btn-sm">
+                  <span>🏪 View In-Store Pickup Details</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick-Check Locality Chips -->
+          <div class="sample-localities">
+            <span class="sample-label">Popular Localities in Trivandrum (tap to test):</span>
+            <div class="chips">
+              <button type="button" class="chip-btn" (click)="selectLocality('Kuravankonam')">Kuravankonam (0 km)</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Kowdiar')">Kowdiar (1.4 km)</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Pattom')">Pattom (1.3 km)</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Ambalamukku')">Ambalamukku (0.8 km)</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Sasthamangalam')">Sasthamangalam (2.5 km)</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Vazhuthacaud')">Vazhuthacaud (3.4 km)</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Technopark')">Technopark (9.8 km)</button>
+              <button type="button" class="chip-btn" (click)="selectLocality('Kazhakoottam')">Kazhakoottam (10.1 km)</button>
+              <button type="button" class="chip-btn outside" (click)="selectLocality('Neyyattinkara')">Neyyattinkara (21 km - outside)</button>
+              <button type="button" class="chip-btn outside" (click)="selectLocality('Attingal')">Attingal (24 km - outside)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Interactive Leaflet Map -->
+        <div class="checker-right-col">
+          <div class="map-card-container">
+            <div class="map-card-header">
+              <div class="header-left">
+                <span class="map-hub-badge">🏪 Storefront Dispatch Hub</span>
+                <span class="hub-address">{{ shopCoordinates.name }} &bull; Kuravankonam Junction</span>
+              </div>
+              <button type="button" class="btn-reset-map" (click)="resetMapToShop()" title="Center map at store">
+                🎯 Recenter Store
+              </button>
+            </div>
+
+            <!-- Leaflet Map Container -->
+            <div id="delivery-interactive-map" class="interactive-leaflet-map"></div>
+
+            <!-- Map Footer Legend -->
+            <div class="map-card-footer">
+              <div class="legend-item">
+                <span class="legend-color-box zone-circle"></span>
+                <span>20 km Service Radius</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-icon">🏪</span>
+                <span>Shop Hub</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-icon">📍</span>
+                <span>Your Location (Draggable)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Store Information & Timings Section -->
+    <div class="store-info-section" id="store-info">
+      <div class="section-title-wrap">
+        <h2>About Petzlife Storefront</h2>
+        <p>Physical retail shop, operating hours, and customer assurance</p>
+      </div>
+
+      <div class="store-info-grid">
+        <div class="info-card">
+          <h3>📍 Physical Store Location</h3>
+          <p class="store-name"><strong>{{ shopCoordinates.name }}</strong></p>
+          <p class="address-text">{{ shopCoordinates.address }}</p>
+          <div class="contact-pill">
+            <span>📞 Store Desk: Mon - Sat 9:00 AM - 8:30 PM</span>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>🕒 Operating & Dispatch Hours</h3>
+          <div class="hours-row">
+            <span class="day">Monday – Saturday:</span>
+            <span class="time">09:00 AM – 08:30 PM</span>
+          </div>
+          <div class="hours-row">
+            <span class="day">Sunday:</span>
+            <span class="time">10:00 AM – 06:00 PM</span>
+          </div>
+          <div class="holiday-note">
+            <span>Local delivery dispatches run Monday through Saturday during store operating hours.</span>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>🛡️ Customer Assurance</h3>
+          <ul class="assurance-list">
+            <li>✔ 100% Genuine, Sealed Manufacturer Packaging</li>
+            <li>✔ Transparent Product-Level Return Terms</li>
+            <li>✔ Official GST Tax Invoicing (32ABCDE1234F1Z5)</li>
+            <li>✔ Commercial pet supplies only (no unverified medication)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

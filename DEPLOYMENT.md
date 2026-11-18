@@ -40,7 +40,7 @@ This document describes the production deployment architecture for the **NOVA PE
 |                                                                                |
 |  • Database: nova_petzlife                                                     |
 |  • Character Set: utf8mb4 / Collation: utf8mb4_unicode_ci                      |
-|  • Dedicated User: nova_user                                                   |
+|  • Dedicated User: novapetz                                                   |
 +--------------------------------------------------------------------------------+
 ```
 
@@ -83,9 +83,9 @@ CREATE DATABASE IF NOT EXISTS nova_petzlife
   DEFAULT CHARACTER SET utf8mb4 
   DEFAULT COLLATE utf8mb4_unicode_ci;
 
-CREATE USER IF NOT EXISTS 'nova_user'@'localhost' IDENTIFIED BY 'PetzlifeProd@2026';
+CREATE USER IF NOT EXISTS 'novapetz'@'localhost' IDENTIFIED BY 'replace_with_your_application_database_password';
 
-GRANT ALL PRIVILEGES ON nova_petzlife.* TO 'nova_user'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE ON nova_petzlife.* TO 'novapetz'@'localhost';
 FLUSH PRIVILEGES;
 
 -- Verify collation and connectivity
@@ -177,8 +177,8 @@ SERVER_ADDRESS=127.0.0.1
 
 # MySQL Database Credentials
 SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/nova_petzlife?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
-SPRING_DATASOURCE_USERNAME=nova_user
-SPRING_DATASOURCE_PASSWORD=PetzlifeProd@2026
+SPRING_DATASOURCE_USERNAME=novapetz
+SPRING_DATASOURCE_PASSWORD=replace_with_your_application_database_password
 SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
 
 # JPA / Hibernate
@@ -192,7 +192,7 @@ SPRING_FLYWAY_BASELINE_ON_MIGRATE=true
 SPRING_FLYWAY_BASELINE_VERSION=0
 
 # Security & JWT Token Authentication
-APP_JWT_SECRET=c2VjdXJlX25vdmFfcGV0emxpZmVfa2V5XzIwMjZfZHVtbXlfMzJieXRlcw==
+JWT_SECRET=replace_with_your_secure_256_bit_jwt_secret_key_minimum_32_characters
 APP_JWT_EXPIRATION_HOURS=24
 APP_CORS_ALLOWED_ORIGINS=https://novapetzlife.com,https://admin.novapetzlife.com,http://localhost:4200,http://localhost:4201
 
@@ -399,7 +399,7 @@ BACKUP_DIR="/var/backups/nova-petzlife"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 mkdir -p "$BACKUP_DIR"
 
-mysqldump -u nova_user -p'PetzlifeProd@2026' --single-transaction --quick nova_petzlife | gzip > "$BACKUP_DIR/nova_petzlife_$TIMESTAMP.sql.gz"
+mysqldump -u novapetz -p"${DB_PASSWORD}" --single-transaction --quick nova_petzlife | gzip > "$BACKUP_DIR/nova_petzlife_$TIMESTAMP.sql.gz"
 
 # Rotate backups older than 30 days
 find "$BACKUP_DIR" -type f -name "*.sql.gz" -mtime +30 -delete

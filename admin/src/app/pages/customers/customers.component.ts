@@ -46,12 +46,12 @@ export class CustomersComponent implements OnInit {
         if (res?.success && res.data?.content) {
           this.customers = res.data.content;
         } else {
-          this.loadDefaultDemo();
+          this.customers = [];
         }
       },
       error: () => {
         this.isLoading = false;
-        this.loadDefaultDemo();
+        this.customers = [];
       }
     });
   }
@@ -64,13 +64,5 @@ export class CustomersComponent implements OnInit {
         }
       }
     });
-  }
-
-  private loadDefaultDemo(): void {
-    this.customers = [
-      { id: 1, email: 'anand.k@example.com', phone: '+91 94471 23456', firstName: 'Anand', lastName: 'Kumar', isGuest: false },
-      { id: 2, email: 'kavitha.s@example.com', phone: '+91 98470 54321', firstName: 'Kavitha', lastName: 'Suresh', isGuest: false },
-      { id: 3, email: 'rahul.menon@example.com', phone: '+91 94473 11223', firstName: 'Rahul', lastName: 'Menon', isGuest: true }
-    ];
   }
 }

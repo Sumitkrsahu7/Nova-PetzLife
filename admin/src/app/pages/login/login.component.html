@@ -7,29 +7,6 @@
       <p class="portal-desc">Admin Control Center • Kuravankonam, TVM</p>
     </div>
 
-    <!-- Quick Role Fill Pills -->
-    <div class="role-selector-strip">
-      <span class="strip-label">Development Demo Credentials:</span>
-      <div class="pills">
-        <button
-          type="button"
-          class="role-pill"
-          [class.active]="selectedRole === 'ROLE_SUPER_ADMIN'"
-          (click)="fillDemoCredentials('ROLE_SUPER_ADMIN')"
-        >
-          👑 Super Admin (test&#64;gmail.com / Test&#64;123)
-        </button>
-        <button
-          type="button"
-          class="role-pill"
-          [class.active]="selectedRole === 'ROLE_STAFF_ADMIN'"
-          (click)="fillDemoCredentials('ROLE_STAFF_ADMIN')"
-        >
-          👤 Staff Admin (staff&#64;novapetzlife.com)
-        </button>
-      </div>
-    </div>
-
     <!-- Login Form -->
     <form (ngSubmit)="onSubmit()" class="login-form">
       <div *ngIf="errorMessage" class="error-banner">
@@ -44,7 +21,7 @@
           name="identifier"
           [(ngModel)]="identifier"
           (input)="onInputChange()"
-          placeholder="e.g. test@gmail.com or 9876543200"
+          placeholder="Enter admin email or 10-digit mobile"
           required
           autofocus
         />
@@ -69,7 +46,7 @@
             name="password"
             [(ngModel)]="password"
             (input)="onInputChange()"
-            placeholder="e.g. Test@123"
+            placeholder="Enter your password"
             required
           />
         </div>
@@ -80,7 +57,6 @@
           <input type="checkbox" checked />
           <span>Keep me signed in</span>
         </label>
-        <span class="env-pill">Phase 2 Design Preview</span>
       </div>
 
       <button type="submit" class="submit-btn" [disabled]="isLoading">

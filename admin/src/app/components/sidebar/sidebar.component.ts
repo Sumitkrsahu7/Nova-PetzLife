@@ -24,6 +24,7 @@ export class SidebarComponent implements OnInit {
   @Input() currentUserName: string = 'Super Admin';
 
   isCollapsed = false;
+  showLogoutConfirm = false;
 
   constructor(
     public adminUi: AdminUiService,
@@ -85,9 +86,22 @@ export class SidebarComponent implements OnInit {
     localStorage.setItem('nova_admin_sidebar_collapsed', String(this.isCollapsed));
   }
 
-  logout(): void {
+  requestLogout(): void {
+    this.showLogoutConfirm = true;
+  }
+
+  cancelLogout(): void {
+    this.showLogoutConfirm = false;
+  }
+
+  confirmLogout(): void {
+    this.showLogoutConfirm = false;
     this.adminUi.closeDrawer();
     this.adminAuthService.logout();
     this.router.navigate(['/login']);
+  }
+
+  logout(): void {
+    this.requestLogout();
   }
 }

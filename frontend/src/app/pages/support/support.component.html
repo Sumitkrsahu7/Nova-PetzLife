@@ -30,8 +30,8 @@
           <div class="meta-item">
             <span class="icon">⚡</span>
             <div>
-              <strong>Delivery Radius</strong>
-              <p>Strict {{ storeInfo.deliveryRadiusKm }} km straight-line radius from Kuravankonam store</p>
+              <strong>Local Delivery</strong>
+              <p>Prompt door delivery across Thiruvananthapuram from Kuravankonam store</p>
             </div>
           </div>
         </div>
@@ -50,7 +50,7 @@
       </div>
 
       <!-- Interactive FAQs Accordion -->
-      <div class="faqs-card">
+      <div class="faqs-card" id="faqs">
         <h2>Frequently Asked Questions</h2>
         <p class="faq-sub">Essential details regarding orders, local delivery, returns, and payment options</p>
 
@@ -82,7 +82,7 @@
         <div class="ticket-search-box">
           <input type="text"
                  [(ngModel)]="searchTicketNumber"
-                 placeholder="e.g. TKT-20261114-A1B2C3"
+                 placeholder="Enter ticket number (e.g. TKT-20261114-A1B2C3)"
                  (keyup.enter)="trackTicket()">
           <button (click)="trackTicket()" [disabled]="isTrackingTicket">
             {{ isTrackingTicket ? '...' : 'Track Ticket' }}
@@ -140,32 +140,32 @@
         <form (ngSubmit)="submitInquiry()" class="inquiry-form">
           <div class="field-group">
             <label>Your Full Name *</label>
-            <input type="text" [(ngModel)]="inquiryForm.name" name="name" placeholder="e.g. Suresh Kumar" required>
+            <input type="text" [(ngModel)]="inquiryForm.name" name="name" placeholder="Enter your full name" required>
           </div>
 
           <div class="field-group">
             <label>Email Address *</label>
-            <input type="email" [(ngModel)]="inquiryForm.email" name="email" placeholder="youremail&#64;example.com" required>
+            <input type="email" [(ngModel)]="inquiryForm.email" name="email" placeholder="name@example.com" required>
           </div>
 
           <div class="field-group">
             <label>Phone Number *</label>
-            <input type="tel" [(ngModel)]="inquiryForm.phone" name="phone" placeholder="+91 94471 23456" required>
+            <input type="tel" [(ngModel)]="inquiryForm.phone" name="phone" placeholder="Enter your 10-digit mobile number" required>
           </div>
 
           <div class="field-group">
             <label>Order Number (optional)</label>
-            <input type="text" [(ngModel)]="inquiryForm.orderNumber" name="orderNumber" placeholder="e.g. ORD-20261114-XXXX">
+            <input type="text" [(ngModel)]="inquiryForm.orderNumber" name="orderNumber" placeholder="Enter order number (e.g. ORD-20261114-XXXX)">
           </div>
 
           <div class="field-group">
             <label>Subject *</label>
-            <input type="text" [(ngModel)]="inquiryForm.subject" name="subject" placeholder="e.g. Question on Royal Canin stock or delivery time" required>
+            <input type="text" [(ngModel)]="inquiryForm.subject" name="subject" placeholder="Enter subject of your inquiry" required>
           </div>
 
           <div class="field-group">
             <label>Your Message / Details *</label>
-            <textarea [(ngModel)]="inquiryForm.message" name="message" rows="4" placeholder="Tell us how we can help your pet..." required></textarea>
+            <textarea [(ngModel)]="inquiryForm.message" name="message" rows="4" placeholder="Enter your message or inquiry details..." required></textarea>
           </div>
 
           <button type="submit" [disabled]="isSubmitting" class="btn-submit-inquiry">

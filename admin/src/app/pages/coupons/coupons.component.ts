@@ -47,51 +47,14 @@ export class CouponsComponent implements OnInit {
         if (res?.success && res.data?.content) {
           this.coupons = res.data.content;
         } else {
-          this.loadDemoCoupons();
+          this.coupons = [];
         }
       },
       error: () => {
         this.isLoading = false;
-        this.loadDemoCoupons();
+        this.coupons = [];
       }
     });
-  }
-
-  loadDemoCoupons(): void {
-    this.coupons = [
-      {
-        id: 1,
-        code: 'WELCOME100',
-        description: 'Flat ₹100 OFF on your first local order from Kuravankonam',
-        discountType: 'FIXED',
-        discountValue: 100,
-        minOrderValue: 499,
-        maxDiscountAmount: 100,
-        validFrom: '2026-01-01',
-        validUntil: '2026-12-31',
-        isActive: true,
-        totalUsageLimit: 500,
-        perCustomerUsageLimit: 1,
-        currentUsageCount: 42,
-        createdAt: '2026-01-01T00:00:00Z'
-      },
-      {
-        id: 2,
-        code: 'PUPPYLOVE',
-        description: '15% OFF all premium puppy kibbles and treats',
-        discountType: 'PERCENTAGE',
-        discountValue: 15,
-        minOrderValue: 800,
-        maxDiscountAmount: 300,
-        validFrom: '2026-01-01',
-        validUntil: '2026-12-31',
-        isActive: true,
-        totalUsageLimit: 200,
-        perCustomerUsageLimit: 2,
-        currentUsageCount: 18,
-        createdAt: '2026-01-01T00:00:00Z'
-      }
-    ];
   }
 
   openCreateModal(): void {

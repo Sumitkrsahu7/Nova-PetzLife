@@ -1,5 +1,6 @@
 package com.novapetzlife.delivery;
 
+import com.novapetzlife.audit.AuditService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,14 +14,15 @@ public class DeliveryService {
     private final DeliverySettingsRepository deliverySettingsRepository;
     private final DeliverySlotRepository deliverySlotRepository;
     private final HaversineDistanceCalculator distanceCalculator;
-    private final com.novapetzlife.audit.AuditService auditService;
+    private final AuditService auditService;
 
     public DeliveryService(
             ShopLocationRepository shopLocationRepository,
             DeliverySettingsRepository deliverySettingsRepository,
             DeliverySlotRepository deliverySlotRepository,
             HaversineDistanceCalculator distanceCalculator,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) com.novapetzlife.audit.AuditService auditService) {
+            @org.springframework.beans.factory.annotation.Autowired(required = false) AuditService auditService
+    ) {
         this.shopLocationRepository = shopLocationRepository;
         this.deliverySettingsRepository = deliverySettingsRepository;
         this.deliverySlotRepository = deliverySlotRepository;
@@ -41,7 +43,7 @@ public class DeliveryService {
                         new BigDecimal("8.5284480"),
                         new BigDecimal("76.9532680"),
                         new BigDecimal("20.00"),
-                        false
+                        true
                 ));
     }
 
@@ -88,7 +90,8 @@ public class DeliveryService {
                 destLon
         );
 
-        boolean withinRadius = distanceKm.compareTo(shop.getDeliveryRadiusKm()) <= 0;
+        BigDecimal deliveryRadius = shop.getDeliveryRadiusKm() != null ? shop.getDeliveryRadiusKm() : new BigDecimal("20.00");
+        boolean withinRadius = distanceKm.compareTo(deliveryRadius) <= 0;
         BigDecimal subtotal = orderSubtotal != null ? orderSubtotal : BigDecimal.ZERO;
 
         BigDecimal deliveryCharge = BigDecimal.ZERO;
@@ -98,36 +101,47 @@ public class DeliveryService {
             deliveryCharge = settings.getDeliveryCharge();
         }
 
+        BigDecimal estimatedRoadDistanceKm = distanceCalculator.calculateEstimatedRoadDistanceKm(distanceKm.doubleValue());
+        int estimatedDurationMinutes = distanceCalculator.calculateEstimatedDurationMinutes(estimatedRoadDistanceKm.doubleValue());
+
         String message;
         boolean eligible;
 
         if (!withinRadius) {
             eligible = false;
             message = String.format("Location is %.2f km away, which exceeds our strict 20.00 km store delivery radius from Kuravankonam.", distanceKm);
-        } else if (!Boolean.TRUE.equals(shop.getIsVerified())) {
-            eligible = false;
-            message = "Store delivery coordinates are currently pending owner verification in the admin console.";
         } else {
             eligible = true;
             if (deliveryCharge.compareTo(BigDecimal.ZERO) == 0) {
-                message = String.format("Eligible for FREE Delivery! Destination is %.2f km from our Kuravankonam store.", distanceKm);
+                message = String.format("Eligible for FREE Delivery! Destination is %.2f km from our Kuravankonam store (est. road route ~%.2f km, approx %d mins transit).",
+                        distanceKm, estimatedRoadDistanceKm, estimatedDurationMinutes);
             } else {
-                BigDecimal remainingForFree = settings.getFreeDeliveryThreshold().subtract(subtotal);
-                message = String.format("Eligible for delivery (₹%.2f charge). Add ₹%.2f more for FREE Delivery!", deliveryCharge, remainingForFree);
+                BigDecimal remainingForFree = settings.getFreeDeliveryThreshold() != null
+                        ? settings.getFreeDeliveryThreshold().subtract(subtotal)
+                        : BigDecimal.ZERO;
+                if (remainingForFree.compareTo(BigDecimal.ZERO) > 0) {
+                    message = String.format("Eligible for delivery (₹%.2f charge). Add ₹%.2f more for FREE Delivery! Destination is %.2f km away (est. road route ~%.2f km, approx %d mins transit).",
+                            deliveryCharge, remainingForFree, distanceKm, estimatedRoadDistanceKm, estimatedDurationMinutes);
+                } else {
+                    message = String.format("Eligible for delivery (₹%.2f charge). Destination is %.2f km away (est. road route ~%.2f km, approx %d mins transit).",
+                            deliveryCharge, distanceKm, estimatedRoadDistanceKm, estimatedDurationMinutes);
+                }
             }
         }
 
         return new DeliveryEligibilityResponse(
                 eligible,
                 distanceKm,
-                shop.getDeliveryRadiusKm(),
+                deliveryRadius,
                 deliveryCharge,
                 settings.getFreeDeliveryThreshold(),
                 settings.getMinOrderValue(),
-                shop.getIsVerified(),
+                Boolean.TRUE.equals(shop.getIsVerified()),
                 shop.getShopName(),
                 shop.getAddressLine(),
-                message
+                message,
+                estimatedRoadDistanceKm,
+                estimatedDurationMinutes
         );
     }
 
@@ -166,7 +180,7 @@ public class DeliveryService {
         shop.setLongitude(request.longitude());
         shop.setDeliveryRadiusKm(request.deliveryRadiusKm());
         shop.setDirectionsUrl(request.directionsUrl());
-        shop.setIsVerified(false); // Reset to require explicit owner verification upon address edit
+        shop.setIsVerified(true); // Confirmed coordinates active for delivery
 
         ShopLocation saved = shopLocationRepository.save(shop);
         if (auditService != null) {

@@ -52,12 +52,23 @@
           <option value="Fish">Fish</option>
         </select>
       </div>
+      <div class="filter-group">
+        <label>Sort By:</label>
+        <select [(ngModel)]="sortBy">
+          <option value="name-asc">Product Name: A to Z</option>
+          <option value="name-desc">Product Name: Z to A</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="stock-asc">Stock: Low to High</option>
+          <option value="stock-desc">Stock: High to Low</option>
+        </select>
+      </div>
     </div>
 
     <!-- Products Table -->
     <div class="table-card">
       <div *ngIf="isLoading" class="loading">Loading catalog items...</div>
-      <table *ngIf="!isLoading && products.length > 0" class="data-table">
+      <table *ngIf="!isLoading && sortedProducts.length > 0" class="data-table">
         <thead>
           <tr>
             <th>SKU</th>
@@ -71,7 +82,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of products">
+          <tr *ngFor="let p of sortedProducts">
             <td><code>{{ p.sku }}</code></td>
             <td>
               <strong>{{ p.name }}</strong>

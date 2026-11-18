@@ -51,7 +51,7 @@
       <div class="store-info-box">
         <h4>🏪 Petzlife Kuravankonam</h4>
         <p>Your local pet supplies are fulfilled straight from Petzlife, Kuravankonam Junction, Kuravankonam Ambalamukku Road, Thiruvananthapuram, Kerala 695003.</p>
-        <p class="highlight">Standard express delivery within 20 km straight-line radius!</p>
+        <p class="highlight">Prompt, dependable local pet delivery directly to your door across Trivandrum!</p>
       </div>
     </div>
   </div>
@@ -76,11 +76,23 @@
         <div class="form-row">
           <div class="form-group col">
             <label>Recipient Name *</label>
-            <input type="text" [(ngModel)]="addressForm.recipientName" name="recipientName" required />
+            <input
+              type="text"
+              [(ngModel)]="addressForm.recipientName"
+              name="recipientName"
+              placeholder="Enter your full name"
+              required
+            />
           </div>
           <div class="form-group col">
             <label>Phone Number *</label>
-            <input type="tel" [(ngModel)]="addressForm.phone" name="phone" required />
+            <input
+              type="tel"
+              [(ngModel)]="addressForm.phone"
+              name="phone"
+              placeholder="Enter your 10-digit mobile number"
+              required
+            />
           </div>
         </div>
 
@@ -94,17 +106,34 @@
 
         <div class="form-group">
           <label>Address Line 1 (House/Flat, Building, Street) *</label>
-          <input type="text" [(ngModel)]="addressForm.addressLine1" name="addressLine1" required />
+          <input
+            type="text"
+            [(ngModel)]="addressForm.addressLine1"
+            name="addressLine1"
+            placeholder="Enter your house number, street or locality"
+            required
+          />
         </div>
 
         <div class="form-row">
           <div class="form-group col">
-            <label>Landmark</label>
-            <input type="text" [(ngModel)]="addressForm.landmark" name="landmark" />
+            <label>Landmark (optional)</label>
+            <input
+              type="text"
+              [(ngModel)]="addressForm.landmark"
+              name="landmark"
+              placeholder="Enter a nearby landmark (optional)"
+            />
           </div>
           <div class="form-group col">
             <label>Postal Code / PIN *</label>
-            <input type="text" [(ngModel)]="addressForm.postalCode" name="postalCode" required />
+            <input
+              type="text"
+              [(ngModel)]="addressForm.postalCode"
+              name="postalCode"
+              placeholder="Enter your 6-digit PIN code"
+              required
+            />
           </div>
         </div>
 
@@ -176,6 +205,19 @@
           <a [routerLink]="['/track', order.orderNumber]" class="btn btn-outline btn-sm">Track Order</a>
           <a [routerLink]="['/invoice', order.orderNumber]" class="btn btn-outline btn-sm">View Invoice</a>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logout Confirmation Modal -->
+  <div class="logout-modal-backdrop" *ngIf="showLogoutConfirm" (click)="cancelLogout()">
+    <div class="logout-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-badge-icon">🚪</div>
+      <h3>Confirm Sign Out</h3>
+      <p>Are you sure you want to log out of your NOVA PETZLIFE account?</p>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="cancelLogout()">Cancel</button>
+        <button type="button" class="btn-confirm" (click)="confirmLogout()">Yes, Sign Out</button>
       </div>
     </div>
   </div>

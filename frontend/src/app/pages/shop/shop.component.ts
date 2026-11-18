@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ProductCardComponent } from '../../components/product-card/product-card.component';
 import { ProductCardData, ProductVariant } from '../../models/product.model';
@@ -18,16 +18,19 @@ import { environment } from '../../../environments/environment';
 export class ShopComponent implements OnInit {
   products: ProductCardData[] = [];
   isLoading: boolean = true;
-  isLoadingMore: boolean = false;
   cartMessage: string = '';
 
-  // Pagination
-  currentPage: number = 0;
-  pageSize: number = 12;
+  // True Page-Based Pagination
+  currentPage: number = 0; // 0-indexed for backend API
+  pageSize: number = 12;   // Responsive: 12 desktop, 9 tablet, 6 mobile
+  totalPages: number = 0;
   totalElements: number = 0;
-  hasMore: boolean = false;
 
-  // Filters
+  // Exclusive Accordion Filter State: 'category' expanded by default, others collapsed
+  expandedSection: 'category' | 'brand' | 'petType' | 'availability' | null = 'category';
+  isMobileFilterOpen: boolean = false;
+
+  // Filters State
   searchQuery: string = '';
   selectedPetType: string = 'All';
   selectedCategory: string = 'All';
@@ -41,38 +44,99 @@ export class ShopComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private http: HttpClient,
     private cartService: CartService
   ) {}
 
   ngOnInit(): void {
+    this.updatePageSizeForViewport();
     this.loadCatalogFilters();
     this.route.queryParams.subscribe(params => {
-      if (params['query'] !== undefined) this.searchQuery = params['query'];
-      if (params['category'] !== undefined) {
-        const rawCat = params['category'];
-        if (rawCat === 'cat-food') this.selectedCategory = 'Cat Food';
-        else if (rawCat === 'dog-food') this.selectedCategory = 'Dog Food';
-        else if (rawCat === 'grooming') this.selectedCategory = 'Grooming';
-        else if (rawCat === 'hygiene') this.selectedCategory = 'Hygiene';
-        else this.selectedCategory = rawCat;
+      // 1. Text Query
+      this.searchQuery = params['query'] || '';
+
+      // 2. Category mapping (handles direct navbar routes & query params)
+      const rawCat = params['category'];
+      if (!rawCat || rawCat === 'all') {
+        this.selectedCategory = 'All';
+      } else if (rawCat === 'cat-food' || rawCat === 'cats') {
+        this.selectedCategory = 'Cat Food';
+        this.expandedSection = 'category';
+      } else if (rawCat === 'dog-food' || rawCat === 'dogs') {
+        this.selectedCategory = 'Dog Food';
+        this.expandedSection = 'category';
+      } else if (rawCat === 'grooming' || rawCat === 'grooming-hygiene') {
+        this.selectedCategory = 'Grooming';
+        this.expandedSection = 'category';
+      } else if (rawCat === 'hygiene') {
+        this.selectedCategory = 'Hygiene';
+        this.expandedSection = 'category';
+      } else if (rawCat === 'accessories') {
+        this.selectedCategory = 'Accessories';
+        this.expandedSection = 'category';
+      } else if (rawCat === 'supplements') {
+        this.selectedCategory = 'Supplements';
+        this.expandedSection = 'category';
+      } else {
+        this.selectedCategory = rawCat;
       }
-      if (params['brand'] !== undefined) {
-        const rawBrand = params['brand'];
-        if (rawBrand.toLowerCase() === 'farmina-nd' || rawBrand.toLowerCase() === 'farmina') {
-          this.selectedBrand = 'Farmina N&D';
-        } else if (rawBrand.toLowerCase() === 'royal-canin') {
-          this.selectedBrand = 'Royal Canin';
-        } else if (rawBrand.toLowerCase() === 'sheba') {
-          this.selectedBrand = 'Sheba';
-        } else {
-          this.selectedBrand = rawBrand;
-        }
+
+      // 3. Brand mapping
+      const rawBrand = params['brand'];
+      if (!rawBrand || rawBrand === 'all') {
+        this.selectedBrand = 'All';
+      } else if (rawBrand.toLowerCase() === 'farmina-nd' || rawBrand.toLowerCase() === 'farmina') {
+        this.selectedBrand = 'Farmina N&D';
+      } else if (rawBrand.toLowerCase() === 'royal-canin') {
+        this.selectedBrand = 'Royal Canin';
+      } else if (rawBrand.toLowerCase() === 'sheba') {
+        this.selectedBrand = 'Sheba';
+      } else if (rawBrand.toLowerCase() === 'pedigree') {
+        this.selectedBrand = 'Pedigree';
+      } else if (rawBrand.toLowerCase() === 'whiskas') {
+        this.selectedBrand = 'Whiskas';
+      } else if (rawBrand.toLowerCase() === 'drools') {
+        this.selectedBrand = 'Drools';
+      } else if (rawBrand.toLowerCase() === 'himalaya') {
+        this.selectedBrand = 'Himalaya';
+      } else {
+        this.selectedBrand = rawBrand;
       }
-      if (params['petType'] !== undefined) this.selectedPetType = params['petType'];
+
+      // 4. Pet Type & Stock
+      this.selectedPetType = params['petType'] || 'All';
+      this.inStockOnly = params['inStock'] === 'true';
+      if (params['sort']) {
+        this.sortBy = params['sort'];
+      }
+
       this.currentPage = 0;
-      this.loadProducts(false);
+      this.loadProducts();
     });
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    const prevSize = this.pageSize;
+    this.updatePageSizeForViewport();
+    if (prevSize !== this.pageSize) {
+      this.currentPage = 0;
+      this.loadProducts();
+    }
+  }
+
+  private updatePageSizeForViewport(): void {
+    if (typeof window !== 'undefined') {
+      const width = window.innerWidth;
+      if (width < 768) {
+        this.pageSize = 6;
+      } else if (width < 1024) {
+        this.pageSize = 9;
+      } else {
+        this.pageSize = 12;
+      }
+    }
   }
 
   loadCatalogFilters(): void {
@@ -99,13 +163,8 @@ export class ShopComponent implements OnInit {
     });
   }
 
-  loadProducts(append: boolean = false): void {
-    if (append) {
-      this.isLoadingMore = true;
-    } else {
-      this.isLoading = true;
-      this.currentPage = 0;
-    }
+  loadProducts(): void {
+    this.isLoading = true;
 
     let url = `${environment.apiUrl}/products?page=${this.currentPage}&size=${this.pageSize}&sort=${this.sortBy}`;
 
@@ -127,40 +186,122 @@ export class ShopComponent implements OnInit {
       url += `&inStockOnly=true`;
     }
 
-    this.http.get<{ success: boolean; data: { content: any[]; totalElements: number; last: boolean } }>(url).subscribe({
+    this.http.get<{ success: boolean; data: { content: any[]; totalElements: number; totalPages: number; last: boolean } }>(url).subscribe({
       next: (res) => {
         const items = res?.data?.content || [];
-        const mapped = items.map(p => this.mapToCard(p));
-        if (append) {
-          this.products = [...this.products, ...mapped];
-        } else {
-          this.products = mapped;
-        }
+        this.products = items.map(p => this.mapToCard(p));
         this.totalElements = res?.data?.totalElements ?? this.products.length;
-        this.hasMore = this.products.length < this.totalElements;
+        this.totalPages = res?.data?.totalPages ?? Math.ceil(this.totalElements / this.pageSize);
         this.isLoading = false;
-        this.isLoadingMore = false;
       },
       error: () => {
-        // Fallback demo catalog if backend is not seeded
-        const fallback = this.getFallbackCatalog();
-        if (append) {
-          this.products = [...this.products, ...fallback];
-        } else {
-          this.products = fallback;
-        }
-        this.totalElements = this.products.length;
-        this.hasMore = false;
-        this.isLoading = false;
-        this.isLoadingMore = false;
+        // Robust Client-Side Fallback Filtering when backend is offline
+        this.applyFallbackFilter();
       }
     });
   }
 
-  loadMore(): void {
-    if (this.isLoadingMore || !this.hasMore) return;
-    this.currentPage++;
-    this.loadProducts(true);
+  // Filter & Search Triggers (Synchronizes with URL and resets page to 0)
+  onFilterChange(): void {
+    this.currentPage = 0;
+    const queryParams: any = {};
+
+    if (this.searchQuery.trim()) {
+      queryParams['query'] = this.searchQuery.trim();
+    } else {
+      queryParams['query'] = null;
+    }
+
+    if (this.selectedCategory !== 'All') {
+      queryParams['category'] = this.selectedCategory.toLowerCase().replace(/[\s&]+/g, '-');
+    } else {
+      queryParams['category'] = null;
+    }
+
+    if (this.selectedBrand !== 'All') {
+      queryParams['brand'] = this.selectedBrand.toLowerCase().replace(/[\s&]+/g, '-');
+    } else {
+      queryParams['brand'] = null;
+    }
+
+    if (this.selectedPetType !== 'All') {
+      queryParams['petType'] = this.selectedPetType;
+    } else {
+      queryParams['petType'] = null;
+    }
+
+    if (this.inStockOnly) {
+      queryParams['inStock'] = 'true';
+    } else {
+      queryParams['inStock'] = null;
+    }
+
+    if (this.sortBy !== 'id,desc') {
+      queryParams['sort'] = this.sortBy;
+    } else {
+      queryParams['sort'] = null;
+    }
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      queryParamsHandling: 'merge'
+    });
+
+    this.loadProducts();
+  }
+
+  // Exclusive Accordion Toggle
+  toggleSection(section: 'category' | 'brand' | 'petType' | 'availability'): void {
+    this.expandedSection = this.expandedSection === section ? null : section;
+  }
+
+  // Mobile Filter Drawer Controls
+  toggleMobileFilter(): void {
+    this.isMobileFilterOpen = !this.isMobileFilterOpen;
+  }
+
+  closeMobileFilter(): void {
+    this.isMobileFilterOpen = false;
+  }
+
+  // Page-based Pagination Controls
+  goToPage(page: number): void {
+    if (page >= 0 && page < this.totalPages && page !== this.currentPage) {
+      this.currentPage = page;
+      this.loadProducts();
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages - 1) {
+      this.goToPage(this.currentPage + 1);
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 0) {
+      this.goToPage(this.currentPage - 1);
+    }
+  }
+
+  get pageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(this.totalPages - 1, start + maxVisible - 1);
+
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(0, end - maxVisible + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
   }
 
   private mapToCard(p: any): ProductCardData {
@@ -203,7 +344,83 @@ export class ShopComponent implements OnInit {
     this.inStockOnly = false;
     this.sortBy = 'id,desc';
     this.currentPage = 0;
-    this.loadProducts(false);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {}
+    });
+    this.loadProducts();
+  }
+
+  private applyFallbackFilter(): void {
+    let items = this.getFallbackCatalog();
+
+    // 1. Search Query Filter
+    if (this.searchQuery.trim()) {
+      const q = this.searchQuery.trim().toLowerCase();
+      items = items.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+      );
+    }
+
+    // 2. Category Filter
+    if (this.selectedCategory !== 'All') {
+      const cat = this.selectedCategory.toLowerCase();
+      items = items.filter(p => {
+        const pCat = p.category.toLowerCase();
+        if (cat === 'cat food') {
+          return pCat.includes('cat food') || p.petType.toLowerCase() === 'cat';
+        } else if (cat === 'dog food') {
+          return pCat.includes('dog food') || p.petType.toLowerCase() === 'dog';
+        } else if (cat === 'grooming') {
+          return pCat.includes('grooming') || pCat.includes('shampoo') || p.name.toLowerCase().includes('shampoo') || p.name.toLowerCase().includes('comb');
+        } else if (cat === 'hygiene') {
+          return pCat.includes('hygiene') || pCat.includes('litter') || pCat.includes('pad') || p.name.toLowerCase().includes('litter') || p.name.toLowerCase().includes('pads');
+        } else if (cat === 'accessories') {
+          return pCat.includes('accessories') || pCat.includes('toy') || p.name.toLowerCase().includes('toy') || p.name.toLowerCase().includes('harness');
+        } else if (cat === 'supplements') {
+          return pCat.includes('supplement') || pCat.includes('vitamin');
+        }
+        return pCat.includes(cat);
+      });
+    }
+
+    // 3. Brand Filter
+    if (this.selectedBrand !== 'All') {
+      const b = this.selectedBrand.toLowerCase();
+      items = items.filter(p => p.brand.toLowerCase() === b || p.brand.toLowerCase().includes(b));
+    }
+
+    // 4. Pet Type Filter
+    if (this.selectedPetType !== 'All') {
+      const pt = this.selectedPetType.toLowerCase();
+      items = items.filter(p =>
+        p.petType.toLowerCase() === pt || p.petType.toLowerCase() === 'all pets'
+      );
+    }
+
+    // 5. In-Stock Filter
+    if (this.inStockOnly) {
+      items = items.filter(p => p.inStock);
+    }
+
+    // 6. Sort
+    if (this.sortBy === 'basePrice,asc') {
+      items.sort((a, b) => (a.discountedPrice ?? a.price) - (b.discountedPrice ?? b.price));
+    } else if (this.sortBy === 'basePrice,desc') {
+      items.sort((a, b) => (b.discountedPrice ?? b.price) - (a.discountedPrice ?? a.price));
+    } else {
+      items.sort((a, b) => b.id - a.id);
+    }
+
+    this.totalElements = items.length;
+    this.totalPages = Math.ceil(this.totalElements / this.pageSize);
+
+    // 7. Paginate
+    const start = this.currentPage * this.pageSize;
+    this.products = items.slice(start, start + this.pageSize);
+    this.isLoading = false;
   }
 
   private getFallbackCatalog(): ProductCardData[] {
@@ -212,7 +429,7 @@ export class ShopComponent implements OnInit {
         id: 101,
         name: 'Royal Canin Maxi Adult Dry Dog Food (4 kg)',
         brand: 'Royal Canin',
-        category: 'Dog Food & Nutrition',
+        category: 'Dog Food',
         petType: 'Dog',
         price: 2950,
         discountedPrice: 2750,
@@ -228,7 +445,7 @@ export class ShopComponent implements OnInit {
         id: 102,
         name: 'Whiskas Ocean Fish Adult Wet Cat Food (Pack of 12)',
         brand: 'Whiskas',
-        category: 'Cat Food & Nutrition',
+        category: 'Cat Food',
         petType: 'Cat',
         price: 600,
         discountedPrice: 540,
@@ -244,7 +461,7 @@ export class ShopComponent implements OnInit {
         id: 103,
         name: 'Arden Grange Adult Dog Fresh Chicken & Rice (2 kg)',
         brand: 'Arden Grange',
-        category: 'Dog Food & Nutrition',
+        category: 'Dog Food',
         petType: 'Dog',
         price: 1850,
         discountedPrice: 1720,
@@ -260,7 +477,7 @@ export class ShopComponent implements OnInit {
         id: 104,
         name: 'Himalaya Erina-EP Anti-Tick Pet Shampoo (200 ml)',
         brand: 'Himalaya',
-        category: 'Grooming & Hygiene',
+        category: 'Grooming',
         petType: 'All Pets',
         price: 260,
         discountedPrice: 235,
@@ -269,6 +486,189 @@ export class ShopComponent implements OnInit {
         stockQuantity: 30,
         rating: 4.6,
         reviewCount: 41,
+        returnAllowed: true
+      },
+      {
+        id: 105,
+        name: 'Royal Canin Kitten Gravy Wet Cat Food (85 g Pouch)',
+        brand: 'Royal Canin',
+        category: 'Cat Food',
+        petType: 'Cat',
+        price: 110,
+        discountedPrice: 99,
+        imageUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 40,
+        rating: 4.9,
+        reviewCount: 65,
+        isFeatured: true,
+        returnAllowed: true
+      },
+      {
+        id: 106,
+        name: 'Pedigree Adult Complete Nutrition Chicken & Veg (3 kg)',
+        brand: 'Pedigree',
+        category: 'Dog Food',
+        petType: 'Dog',
+        price: 850,
+        discountedPrice: 780,
+        imageUrl: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 20,
+        rating: 4.7,
+        reviewCount: 44,
+        returnAllowed: true
+      },
+      {
+        id: 107,
+        name: 'Sheba Succulent Chicken Breast Cat Wet Pate (70 g)',
+        brand: 'Sheba',
+        category: 'Cat Food',
+        petType: 'Cat',
+        price: 95,
+        discountedPrice: 85,
+        imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 35,
+        rating: 4.8,
+        reviewCount: 29,
+        returnAllowed: true
+      },
+      {
+        id: 108,
+        name: 'Drools Focus Puppy Super Premium Dog Food (4 kg)',
+        brand: 'Drools',
+        category: 'Dog Food',
+        petType: 'Dog',
+        price: 1900,
+        discountedPrice: 1699,
+        imageUrl: 'https://images.unsplash.com/photo-1591769225440-811ad7d6eab2?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 12,
+        rating: 4.6,
+        reviewCount: 22,
+        returnAllowed: true
+      },
+      {
+        id: 109,
+        name: 'Farmina N&D Pumpkin Lamb & Blueberry Adult Dog (2.5 kg)',
+        brand: 'Farmina N&D',
+        category: 'Dog Food',
+        petType: 'Dog',
+        price: 2490,
+        discountedPrice: 2250,
+        imageUrl: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 15,
+        rating: 4.9,
+        reviewCount: 31,
+        isFeatured: true,
+        returnAllowed: true
+      },
+      {
+        id: 110,
+        name: 'Farmina N&D Prime Cat Chicken & Pomegranate (1.5 kg)',
+        brand: 'Farmina N&D',
+        category: 'Cat Food',
+        petType: 'Cat',
+        price: 2150,
+        discountedPrice: 1950,
+        imageUrl: 'https://images.unsplash.com/photo-1535930891776-0c2dfb7fda1a?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 18,
+        rating: 4.9,
+        reviewCount: 28,
+        isFeatured: true,
+        returnAllowed: true
+      },
+      {
+        id: 111,
+        name: 'Petzlife Professional Stainless Steel De-Shedding Comb',
+        brand: 'Nova Petzlife',
+        category: 'Grooming',
+        petType: 'All Pets',
+        price: 450,
+        discountedPrice: 399,
+        imageUrl: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 22,
+        rating: 4.7,
+        reviewCount: 16,
+        returnAllowed: true
+      },
+      {
+        id: 112,
+        name: 'Himalaya Fresh Coat Herbal Pet Grooming Spray (150 ml)',
+        brand: 'Himalaya',
+        category: 'Grooming',
+        petType: 'All Pets',
+        price: 320,
+        discountedPrice: 285,
+        imageUrl: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 28,
+        rating: 4.5,
+        reviewCount: 25,
+        returnAllowed: true
+      },
+      {
+        id: 113,
+        name: 'Cat Best Clumping Natural Wood Cat Litter (10 L)',
+        brand: 'Nova Petzlife',
+        category: 'Hygiene',
+        petType: 'Cat',
+        price: 1150,
+        discountedPrice: 1050,
+        imageUrl: 'https://images.unsplash.com/photo-1563460716037-460b3dd145dc?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 16,
+        rating: 4.8,
+        reviewCount: 47,
+        returnAllowed: true
+      },
+      {
+        id: 114,
+        name: 'Simple Solution Extreme Stain & Odor Eliminator Spray (750 ml)',
+        brand: 'Nova Petzlife',
+        category: 'Hygiene',
+        petType: 'All Pets',
+        price: 890,
+        discountedPrice: 820,
+        imageUrl: 'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 14,
+        rating: 4.7,
+        reviewCount: 33,
+        returnAllowed: true
+      },
+      {
+        id: 115,
+        name: 'Nova Petzlife Charcoal Puppy Training Pee Pads (50 Pack)',
+        brand: 'Nova Petzlife',
+        category: 'Hygiene',
+        petType: 'Dog',
+        price: 799,
+        discountedPrice: 699,
+        imageUrl: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 20,
+        rating: 4.8,
+        reviewCount: 50,
+        returnAllowed: true
+      },
+      {
+        id: 116,
+        name: 'Kong Classic Durable Natural Rubber Chew Dog Toy',
+        brand: 'Nova Petzlife',
+        category: 'Accessories',
+        petType: 'Dog',
+        price: 1250,
+        discountedPrice: 1100,
+        imageUrl: 'https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=600&auto=format&fit=crop&q=80',
+        inStock: true,
+        stockQuantity: 15,
+        rating: 4.9,
+        reviewCount: 62,
         returnAllowed: true
       }
     ];

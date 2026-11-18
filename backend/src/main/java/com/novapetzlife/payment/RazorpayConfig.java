@@ -6,13 +6,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RazorpayConfig {
 
-    @Value("${razorpay.key-id:rzp_test_nova_petzlife_sample}")
+    @Value("${razorpay.key-id:${RAZORPAY_KEY_ID:}}")
     private String keyId;
 
-    @Value("${razorpay.key-secret:nova_test_secret_key_12345}")
+    @Value("${razorpay.key-secret:${RAZORPAY_KEY_SECRET:}}")
     private String keySecret;
 
-    @Value("${razorpay.webhook-secret:nova_test_webhook_secret_67890}")
+    @Value("${razorpay.webhook-secret:${RAZORPAY_WEBHOOK_SECRET:}}")
     private String webhookSecret;
 
     @Value("${razorpay.currency:INR}")

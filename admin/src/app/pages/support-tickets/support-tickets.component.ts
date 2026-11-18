@@ -37,43 +37,14 @@ export class SupportTicketsComponent implements OnInit {
         if (res?.success && res.data?.content) {
           this.tickets = res.data.content;
         } else {
-          this.loadDemoTickets();
+          this.tickets = [];
         }
       },
       error: () => {
         this.isLoading = false;
-        this.loadDemoTickets();
+        this.tickets = [];
       }
     });
-  }
-
-  loadDemoTickets(): void {
-    this.tickets = [
-      {
-        id: 1,
-        ticketNumber: 'TKT-20261114-KOW01',
-        customerId: 1,
-        customerName: 'Anoop Nair',
-        customerEmail: 'anoop@example.com',
-        customerPhone: '+91 94471 22334',
-        orderNumber: 'ORD-20261114-102827',
-        subject: 'Delivery time inquiry for Kowdiar address',
-        priority: 'MEDIUM',
-        status: 'OPEN',
-        assignedTo: 'Store Desk',
-        messages: [
-          {
-            id: 1,
-            senderType: 'CUSTOMER',
-            senderId: 'Anoop Nair',
-            message: 'Hi, I live near Kowdiar Palace. Can I expect delivery before 6 PM today?',
-            createdAt: '2026-11-14T14:30:00Z'
-          }
-        ],
-        createdAt: '2026-11-14T14:30:00Z',
-        updatedAt: '2026-11-14T14:30:00Z'
-      }
-    ];
   }
 
   setTab(tab: string): void {

@@ -246,3 +246,57 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .google-reviews-section {
+    padding: 2.5rem 0;
+  }
+
+  .section-header {
+    margin-bottom: 1.5rem;
+    h2 {
+      font-size: 1.45rem;
+    }
+    .section-subtitle {
+      font-size: 0.85rem;
+    }
+  }
+
+  .rating-overview-card {
+    padding: 1.25rem 1rem;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+
+    .overview-left {
+      gap: 1rem;
+      width: 100%;
+    }
+
+    .score-display .big-score {
+      font-size: 2.25rem;
+    }
+
+    .verified-shop-info {
+      width: 100%;
+    }
+
+    .overview-right {
+      width: 100%;
+      align-items: stretch;
+
+      .read-all-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+
+  .review-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .review-card {
+    padding: 1.15rem;
+  }
+}

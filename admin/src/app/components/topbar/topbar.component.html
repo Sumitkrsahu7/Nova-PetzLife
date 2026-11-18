@@ -21,15 +21,9 @@
   </div>
 
   <div class="topbar-right">
-    <!-- Live API Connectivity Pill -->
-    <div class="api-status-pill" [class.online]="isBackendOnline">
-      <span class="pulse-dot"></span>
-      <span class="status-label">{{ isBackendOnline ? 'Spring Boot 3.x API Connected' : 'Backend Disconnected' }}</span>
-    </div>
-
-    <!-- Quick Refresh Button -->
-    <button type="button" class="btn-refresh" (click)="onRefresh()" title="Refresh Data & Backend Status">
-      🔄 Sync
-    </button>
+    <!-- Store Settings Link -->
+    <a routerLink="/delivery-settings" class="btn-store-location" title="Configure Store Location, GPS Coordinates & Delivery Radius">
+      📍 Store Settings
+    </a>
   </div>
 </header>

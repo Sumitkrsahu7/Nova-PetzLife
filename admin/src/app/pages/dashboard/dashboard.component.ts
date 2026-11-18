@@ -31,9 +31,9 @@ export class DashboardComponent implements OnInit {
   kpiMetrics = [
     {
       title: "Today's Orders",
-      value: '14',
-      subtitle: '₹18,450.00 Gross Sales',
-      trend: '+12% from yesterday',
+      value: '0',
+      subtitle: '₹0.00 Gross Sales',
+      trend: 'Live database sync',
       color: 'accent'
     },
     {
@@ -45,16 +45,16 @@ export class DashboardComponent implements OnInit {
     },
     {
       title: 'Low Stock Alerts',
-      value: '3',
+      value: '0',
       subtitle: 'Below re-order threshold (5 units)',
-      trend: 'Kitten food & litter low',
+      trend: 'Healthy inventory levels',
       color: 'warning'
     },
     {
       title: 'Pending Return Reviews',
-      value: '1',
+      value: '0',
       subtitle: 'Awaiting Owner Approval',
-      trend: 'Order #ORD-8291',
+      trend: 'No pending returns',
       color: 'danger'
     }
   ];
@@ -80,8 +80,11 @@ export class DashboardComponent implements OnInit {
           this.kpiMetrics[0].value = String(d.totalOrders || 0);
           this.kpiMetrics[0].subtitle = `₹${(d.totalRevenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} Gross Sales`;
           this.kpiMetrics[2].value = String(d.lowStockCount || 0);
-          this.kpiMetrics[3].value = String(d.ordersByStatus?.['PROCESSING'] || 1);
+          this.kpiMetrics[3].value = String(d.ordersByStatus?.['PROCESSING'] || 0);
         }
+      },
+      error: () => {
+        // Retain clean zero state on connection failure
       }
     });
 
@@ -99,11 +102,11 @@ export class DashboardComponent implements OnInit {
             time: new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }));
         } else {
-          this.loadDefaultDemoOrders();
+          this.recentOrders = [];
         }
       },
       error: () => {
-        this.loadDefaultDemoOrders();
+        this.recentOrders = [];
       }
     });
   }
@@ -118,32 +121,8 @@ export class DashboardComponent implements OnInit {
           : null;
       },
       error: () => {
-        // Fallback local toggle
         this.shopLocationData.isOwnerApproved = nextState;
       }
     });
-  }
-
-  private loadDefaultDemoOrders(): void {
-    this.recentOrders = [
-      {
-        orderNumber: 'ORD-8302',
-        customer: 'Kavitha S. (Kowdiar - 1.2 km)',
-        items: 'Royal Canin Kitten Food 2kg x 1',
-        amount: '₹1,690.00',
-        status: 'PROCESSING',
-        statusClass: 'badge-processing',
-        time: '12 mins ago'
-      },
-      {
-        orderNumber: 'ORD-8301',
-        customer: 'Rahul Menon (Pattom - 1.6 km)',
-        items: 'Pedigree Puppy 3kg, Bioline Shampoo x 1',
-        amount: '₹1,029.00',
-        status: 'READY_FOR_DISPATCH',
-        statusClass: 'badge-ready',
-        time: '34 mins ago'
-      }
-    ];
   }
 }

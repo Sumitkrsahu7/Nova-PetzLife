@@ -1,0 +1,68 @@
+<div class="brands-page">
+  <div class="container">
+    <!-- Breadcrumb & Header -->
+    <nav class="breadcrumb">
+      <a routerLink="/">Home</a> <span>/</span> <span>Authentic Brands</span>
+    </nav>
+
+    <div class="brands-hero">
+      <span class="hero-badge">🏷️ Authorized Brand Partners</span>
+      <h1>Authentic Pet Nutrition & Care Brands</h1>
+      <p class="subtitle">
+        Every brand stocked at <strong>Petzlife, Kuravankonam</strong> is 100% genuine and sourced directly through authorized company distribution networks.
+      </p>
+
+      <div class="search-filter-row">
+        <div class="search-input-box">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterBrands()"
+            placeholder="Search brands (e.g. Royal Canin, Farmina, Whiskas)..."
+          />
+          <button *ngIf="searchQuery" type="button" class="clear-btn" (click)="searchQuery = ''; filterBrands()">✕</button>
+        </div>
+        <span class="count-pill">{{ filteredBrands.length }} Brands Available</span>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading authorized brand catalog...</p>
+    </div>
+
+    <!-- Brands Grid -->
+    <div *ngIf="!isLoading && filteredBrands.length > 0" class="brands-grid">
+      <div *ngFor="let b of filteredBrands" class="brand-card">
+        <div class="brand-top">
+          <div class="brand-logo-badge">
+            <span class="brand-letter">{{ b.name.charAt(0) }}</span>
+          </div>
+          <div class="brand-meta">
+            <span class="verified-tag">✓ Authorized Stock</span>
+            <h3>{{ b.name }}</h3>
+          </div>
+        </div>
+
+        <p class="brand-desc">{{ b.description || 'Verified manufacturer formula available at Kuravankonam store.' }}</p>
+
+        <div class="brand-footer">
+          <a [routerLink]="['/shop']" [queryParams]="{brand: b.slug}" class="btn-browse-brand">
+            <span>Explore Products</span>
+            <span class="arrow">→</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoading && filteredBrands.length === 0" class="empty-state">
+      <span class="empty-icon">🐾</span>
+      <h3>No matching brands found</h3>
+      <p>Try searching with another brand name or view all products directly in our catalog.</p>
+      <button type="button" class="btn btn-secondary" (click)="searchQuery = ''; filterBrands()">Clear Search</button>
+    </div>
+  </div>
+</div>

@@ -79,4 +79,17 @@
     </div>
     <button type="button" (click)="logout()" class="logout-link" title="Logout" *ngIf="!isCollapsed">🚪</button>
   </div>
+
+  <!-- Admin Logout Confirmation Modal -->
+  <div class="logout-modal-backdrop" *ngIf="showLogoutConfirm" (click)="cancelLogout()">
+    <div class="logout-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-badge-icon">🛡️</div>
+      <h3>Confirm Admin Logout</h3>
+      <p>Are you sure you want to end your administrative session for NOVA PETZLIFE?</p>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="cancelLogout()">Cancel</button>
+        <button type="button" class="btn-confirm" (click)="confirmLogout()">Yes, Sign Out</button>
+      </div>
+    </div>
+  </div>
 </aside>

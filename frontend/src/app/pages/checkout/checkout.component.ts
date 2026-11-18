@@ -54,12 +54,12 @@ export class CheckoutComponent implements OnInit {
 
   // Trivandrum Popular Neighbourhood Presets
   trivandrumLocations = [
-    { name: 'Pattom Junction (1.1 km)', lat: 8.5244, lon: 76.9442, pin: '695004' },
-    { name: 'Kowdiar Palace (0.9 km)', lat: 8.5241, lon: 76.9602, pin: '695003' },
-    { name: 'Ambalamukku (0.7 km)', lat: 8.5320, lon: 76.9550, pin: '695005' },
-    { name: 'Palayam / Statue (3.2 km)', lat: 8.5020, lon: 76.9500, pin: '695001' },
-    { name: 'Sasthamangalam (2.8 km)', lat: 8.5140, lon: 76.9740, pin: '695010' },
-    { name: 'Technopark / Kazhakkoottam (8.6 km)', lat: 8.5583, lon: 76.8812, pin: '695581' }
+    { name: 'Pattom Junction', lat: 8.5244, lon: 76.9442, pin: '695004' },
+    { name: 'Kowdiar Palace', lat: 8.5241, lon: 76.9602, pin: '695003' },
+    { name: 'Ambalamukku', lat: 8.5320, lon: 76.9550, pin: '695005' },
+    { name: 'Palayam / Statue', lat: 8.5020, lon: 76.9500, pin: '695001' },
+    { name: 'Sasthamangalam', lat: 8.5140, lon: 76.9740, pin: '695010' },
+    { name: 'Technopark / Kazhakkoottam', lat: 8.5583, lon: 76.8812, pin: '695581' }
   ];
 
   constructor(
@@ -199,7 +199,7 @@ export class CheckoutComponent implements OnInit {
     }
 
     if (this.eligibility && !this.eligibility.isEligible) {
-      this.errorMessage = 'Delivery cannot be completed: ' + this.eligibility.message;
+      this.errorMessage = 'Sorry, delivery is not currently available at this location. Please choose a serviceable delivery address.';
       return;
     }
 
