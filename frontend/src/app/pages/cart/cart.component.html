@@ -4,7 +4,7 @@
       <a routerLink="/">Home</a> <span>/</span> Shopping Cart
     </div>
     <h1>Your Pet Shopping Cart</h1>
-    <p class="subtitle">Fresh pet food, treats, and supplies delivered from Kuravankonam, Trivandrum</p>
+    <p class="subtitle">Fresh pet food, treats, and supplies delivered from our, Trivandrum</p>
   </div>
 
   <!-- Empty State -->
@@ -26,7 +26,7 @@
           <div class="text">
             <strong *ngIf="remainingForFreeDelivery === 0">Congratulations! You unlocked FREE 20 km Home Delivery!</strong>
             <span *ngIf="remainingForFreeDelivery > 0">
-              Add <strong>₹{{ remainingForFreeDelivery | number:'1.2-2' }}</strong> more to unlock <strong>FREE Delivery</strong> from Kuravankonam!
+              Add <strong>₹{{ remainingForFreeDelivery | number:'1.2-2' }}</strong> more to unlock <strong>FREE Delivery</strong> from our!
             </span>
           </div>
         </div>
@@ -94,7 +94,7 @@
 
         <div class="summary-row">
           <span>
-            Kuravankonam Local Delivery
+            our Local Delivery
             <small *ngIf="deliveryFee === 0" class="free-pill">FREE</small>
           </span>
           <span [class.free-text]="deliveryFee === 0">
@@ -118,7 +118,7 @@
         <div class="trust-features">
           <div class="feature-item">
             <span class="feat-icon">📍</span>
-            <span>Local Kuravankonam store dispatch within 20 km</span>
+            <span>Local our store dispatch within 20 km</span>
           </div>
           <div class="feature-item">
             <span class="feat-icon">⚡</span>
@@ -133,3 +133,4 @@
     </div>
   </div>
 </div>
+

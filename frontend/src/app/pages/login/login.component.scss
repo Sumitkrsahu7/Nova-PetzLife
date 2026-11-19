@@ -3,58 +3,53 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 1rem;
+  padding: 1.75rem 1rem;
   background-color: #F8FAFC;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 460px;
+  max-width: 400px;
   background: #FFFFFF;
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  padding: 2.25rem 2rem;
+  padding: 1.5rem 1.75rem;
   border: 1px solid #E2E8F0;
 }
 
 .auth-header {
   text-align: center;
-  margin-bottom: 1.5rem;
-
-  .logo-icon {
-    font-size: 2.5rem;
-    margin-bottom: 0.25rem;
-  }
+  margin-bottom: 1rem;
 
   h2 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     color: #155C3B;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.25rem;
     font-weight: 800;
   }
 
   p {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: #64748B;
-    line-height: 1.4;
+    line-height: 1.35;
   }
 }
 
 .auth-tabs {
   display: flex;
   background: #F1F5F9;
-  border-radius: 10px;
-  padding: 4px;
-  margin-bottom: 1.5rem;
-  gap: 4px;
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 1rem;
+  gap: 3px;
 
   .tab-btn {
     flex: 1;
-    padding: 0.6rem 0.5rem;
+    padding: 0.45rem 0.5rem;
     border: none;
     background: transparent;
-    border-radius: 8px;
-    font-size: 0.875rem;
+    border-radius: 6px;
+    font-size: 0.825rem;
     font-weight: 600;
     color: #64748B;
     cursor: pointer;
@@ -68,7 +63,7 @@
       background: #FFFFFF;
       color: #155C3B;
       font-weight: 700;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
   }
 }
@@ -156,26 +151,24 @@
     }
   }
 
-  .password-checklist {
-    margin-top: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: #F8FAFC;
-    border-radius: 6px;
-    border: 1px solid #E2E8F0;
-    font-size: 0.75rem;
+  .password-checklist-compact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.45rem;
 
-    .check-item {
+    .check-chip {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      background: #F1F5F9;
       color: #94A3B8;
-      margin-bottom: 0.2rem;
-      transition: color 0.2s;
+      font-weight: 600;
+      transition: all 0.2s ease;
 
       &.valid {
-        color: #15803D;
-        font-weight: 600;
-      }
-
-      &:last-child {
-        margin-bottom: 0;
+        background: #DCFCE7;
+        color: #166534;
       }
     }
   }
@@ -267,7 +260,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 480px) {

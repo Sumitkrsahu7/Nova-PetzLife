@@ -27,7 +27,7 @@ export class HomeComponent implements OnInit {
     name: 'Petzlife (NOVA PETZLIFE)',
     lat: 8.528448,
     lng: 76.953268,
-    address: 'Petzlife, Kuravankonam Junction, Kuravankonam Ambalamukku Road, Thiruvananthapuram, Kerala 695003',
+    address: 'our store, our Ambalamukku Road, Thiruvananthapuram, Kerala 695003',
     maxRadiusKm: 20
   };
 
@@ -52,7 +52,7 @@ export class HomeComponent implements OnInit {
 
   // Known sample areas in Thiruvananthapuram with coordinates for geocoding
   knownTvmLocations: { [key: string]: { lat: number; lng: number; name: string } } = {
-    'kuravankonam': { lat: 8.528448, lng: 76.953268, name: 'Kuravankonam' },
+    'our': { lat: 8.528448, lng: 76.953268, name: 'our' },
     'kowdiar': { lat: 8.524, lng: 76.965, name: 'Kowdiar' },
     'ambalamukku': { lat: 8.533, lng: 76.959, name: 'Ambalamukku' },
     'pattom': { lat: 8.526, lng: 76.942, name: 'Pattom' },
@@ -70,7 +70,7 @@ export class HomeComponent implements OnInit {
     'nedumangad': { lat: 8.601, lng: 77.001, name: 'Nedumangad' },
     'neyyattinkara': { lat: 8.401, lng: 77.086, name: 'Neyyattinkara' },
     'attingal': { lat: 8.696, lng: 76.814, name: 'Attingal' },
-    '695003': { lat: 8.5284, lng: 76.9532, name: 'Kuravankonam / Kowdiar' },
+    '695003': { lat: 8.5284, lng: 76.9532, name: 'our / Kowdiar' },
     '695004': { lat: 8.526, lng: 76.942, name: 'Pattom' },
     '695001': { lat: 8.503, lng: 76.951, name: 'Palayam' },
     '695014': { lat: 8.500, lng: 76.965, name: 'Vazhuthacaud' },
@@ -205,7 +205,7 @@ export class HomeComponent implements OnInit {
             message: isEligible
               ? (res.data.message && !res.data.message.includes('pending owner verification')
                   ? res.data.message
-                  : `Delivery is available! Your location is ${finalDist.toFixed(1)} km from our Kuravankonam storefront (within the 20 km delivery radius).`)
+                  : `Delivery is available! Your location is ${finalDist.toFixed(1)} km from our Our Storefront (within the 20 km delivery radius).`)
               : `Sorry, location is ${finalDist.toFixed(1)} km away, exceeding our 20 km local delivery limit.`
           };
         }
@@ -224,7 +224,7 @@ export class HomeComponent implements OnInit {
           checked: true,
           isEligible,
           message: isEligible
-            ? `Delivery is available! Your location is approximately ${dist.toFixed(1)} km from our Kuravankonam storefront (within the 20 km delivery radius).`
+            ? `Delivery is available! Your location is approximately ${dist.toFixed(1)} km from our Our Storefront (within the 20 km delivery radius).`
             : `Sorry, location is approximately ${dist.toFixed(1)} km away, exceeding our 20 km local delivery limit.`
         };
       }
@@ -316,3 +316,4 @@ export class HomeComponent implements OnInit {
     ];
   }
 }
+

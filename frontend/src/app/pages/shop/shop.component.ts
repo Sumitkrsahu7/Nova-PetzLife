@@ -30,6 +30,10 @@ export class ShopComponent implements OnInit {
   expandedSection: 'category' | 'brand' | 'petType' | 'availability' | null = 'category';
   isMobileFilterOpen: boolean = false;
 
+  // Department Hub & Need Filters
+  activeDepartment: 'all' | 'dog-food' | 'dog-care' | 'cat-food' | 'cat-care' = 'all';
+  selectedNeed: string = 'All';
+
   // Filters State
   searchQuery: string = '';
   selectedPetType: string = 'All';
@@ -336,7 +340,45 @@ export class ShopComponent implements OnInit {
     setTimeout(() => { this.cartMessage = ''; }, 3000);
   }
 
+  selectDepartment(dept: 'all' | 'dog-food' | 'dog-care' | 'cat-food' | 'cat-care'): void {
+    this.activeDepartment = dept;
+    this.currentPage = 0;
+    this.selectedNeed = 'All';
+
+    if (dept === 'all') {
+      this.selectedCategory = 'All';
+      this.selectedPetType = 'All';
+    } else if (dept === 'dog-food') {
+      this.selectedCategory = 'Dog Food';
+      this.selectedPetType = 'Dog';
+    } else if (dept === 'dog-care') {
+      this.selectedCategory = 'Grooming';
+      this.selectedPetType = 'Dog';
+    } else if (dept === 'cat-food') {
+      this.selectedCategory = 'Cat Food';
+      this.selectedPetType = 'Cat';
+    } else if (dept === 'cat-care') {
+      this.selectedCategory = 'Hygiene';
+      this.selectedPetType = 'Cat';
+    }
+
+    this.onFilterChange();
+  }
+
+  selectNeed(need: string): void {
+    this.selectedNeed = need;
+    this.currentPage = 0;
+    if (need === 'All') {
+      this.searchQuery = '';
+    } else {
+      this.searchQuery = need;
+    }
+    this.onFilterChange();
+  }
+
   resetFilters(): void {
+    this.activeDepartment = 'all';
+    this.selectedNeed = 'All';
     this.searchQuery = '';
     this.selectedPetType = 'All';
     this.selectedCategory = 'All';

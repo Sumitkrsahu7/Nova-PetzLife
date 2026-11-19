@@ -8,11 +8,82 @@
         </nav>
         <h1>All Pet Products & Essentials</h1>
         <p class="subtitle">
-          In stock at <strong>Petzlife, Kuravankonam Junction</strong>. Fast local fulfillment across Thiruvananthapuram.
+          In stock at <strong>our store</strong>. Fast local fulfillment across Thiruvananthapuram.
         </p>
       </div>
 
       <div *ngIf="cartMessage" class="cart-toast">{{ cartMessage }}</div>
+    </div>
+
+    <!-- 4 Department Pillars Quick-Jump Deck -->
+    <div class="department-pillars-grid">
+      <div class="pillar-card" [class.active]="activeDepartment === 'dog-food'" (click)="selectDepartment('dog-food')">
+        <div class="pillar-icon">🥩</div>
+        <div class="pillar-details">
+          <h3>Dog Food</h3>
+          <p>Dry Kibble, Wet Gravy & Puppy Nutrition</p>
+          <span class="pillar-action">Explore Dog Food →</span>
+        </div>
+      </div>
+
+      <div class="pillar-card" [class.active]="activeDepartment === 'dog-care'" (click)="selectDepartment('dog-care')">
+        <div class="pillar-icon">🐕</div>
+        <div class="pillar-details">
+          <h3>Dog Care</h3>
+          <p>Grooming, Flea & Tick, Collars & Supplements</p>
+          <span class="pillar-action">Explore Dog Care →</span>
+        </div>
+      </div>
+
+      <div class="pillar-card" [class.active]="activeDepartment === 'cat-food'" (click)="selectDepartment('cat-food')">
+        <div class="pillar-icon">🐟</div>
+        <div class="pillar-details">
+          <h3>Cat Food</h3>
+          <p>Kitten & Adult Kibble, Gravy Pouches & Treats</p>
+          <span class="pillar-action">Explore Cat Food →</span>
+        </div>
+      </div>
+
+      <div class="pillar-card" [class.active]="activeDepartment === 'cat-care'" (click)="selectDepartment('cat-care')">
+        <div class="pillar-icon">🐈</div>
+        <div class="pillar-details">
+          <h3>Cat Care</h3>
+          <p>Clumping Litter, Deodorizers, Scratchers & Brushes</p>
+          <span class="pillar-action">Explore Cat Care →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Department Sub-Nav & Life-Stage Need Chips -->
+    <div class="department-subnav-bar">
+      <div class="dept-pills">
+        <button type="button" class="dept-pill" [class.active]="activeDepartment === 'all'" (click)="selectDepartment('all')">
+          🐾 All Departments
+        </button>
+        <button type="button" class="dept-pill" [class.active]="activeDepartment === 'dog-food'" (click)="selectDepartment('dog-food')">
+          🥩 Dog Food
+        </button>
+        <button type="button" class="dept-pill" [class.active]="activeDepartment === 'dog-care'" (click)="selectDepartment('dog-care')">
+          🐕 Dog Care
+        </button>
+        <button type="button" class="dept-pill" [class.active]="activeDepartment === 'cat-food'" (click)="selectDepartment('cat-food')">
+          🐟 Cat Food
+        </button>
+        <button type="button" class="dept-pill" [class.active]="activeDepartment === 'cat-care'" (click)="selectDepartment('cat-care')">
+          🐈 Cat Care
+        </button>
+      </div>
+
+      <!-- Quick Need Chips -->
+      <div class="need-chips-strip">
+        <span class="need-label">Shop by Need:</span>
+        <button type="button" class="need-chip" [class.active]="selectedNeed === 'All'" (click)="selectNeed('All')">All</button>
+        <button type="button" class="need-chip" [class.active]="selectedNeed === 'Puppy'" (click)="selectNeed('Puppy')">🍼 Puppy & Kitten</button>
+        <button type="button" class="need-chip" [class.active]="selectedNeed === 'Adult'" (click)="selectNeed('Adult')">🐕 Adult Health</button>
+        <button type="button" class="need-chip" [class.active]="selectedNeed === 'Gravy'" (click)="selectNeed('Gravy')">🥫 Wet Gravy</button>
+        <button type="button" class="need-chip" [class.active]="selectedNeed === 'Litter'" (click)="selectNeed('Litter')">✨ Litter & Hygiene</button>
+        <button type="button" class="need-chip" [class.active]="selectedNeed === 'Grooming'" (click)="selectNeed('Grooming')">🛁 Grooming & Coat</button>
+      </div>
     </div>
 
     <!-- Mobile Filter Toggle Button -->
@@ -146,11 +217,11 @@
           </div>
         </div>
 
-        <!-- Kuravankonam Store Delivery Note -->
+        <!-- our store Delivery Note -->
         <div class="delivery-notice-box">
           <span class="icon">📍</span>
           <div>
-            <strong>Kuravankonam Storefront</strong>
+            <strong>Our Storefront</strong>
             <p>Fast, direct delivery across Thiruvananthapuram from our physical store.</p>
           </div>
         </div>
@@ -192,7 +263,7 @@
         <!-- Loading State -->
         <div *ngIf="isLoading" class="loading-state">
           <div class="spinner"></div>
-          <p>Loading products from Kuravankonam inventory...</p>
+          <p>Loading products from our inventory...</p>
         </div>
 
         <!-- Empty State -->
@@ -257,3 +328,4 @@
     </div>
   </div>
 </div>
+

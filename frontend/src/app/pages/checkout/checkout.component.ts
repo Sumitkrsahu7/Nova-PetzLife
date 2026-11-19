@@ -44,7 +44,7 @@ export class CheckoutComponent implements OnInit {
   state = 'Kerala';
   postalCode = '695004';
 
-  // Coordinate Selection (Defaults to Pattom ~1.1 km from Kuravankonam store)
+  // Coordinate Selection (Defaults to Pattom ~1.1 km from our store)
   latitude = 8.5244;
   longitude = 76.9442;
 
@@ -334,3 +334,4 @@ export class CheckoutComponent implements OnInit {
     });
   }
 }
+

@@ -26,6 +26,20 @@ public class StoreSettingsController {
         return ResponseEntity.ok(ApiResponse.ok(settingService.getContactInfo()));
     }
 
+    @GetMapping("/settings/store-status")
+    @Operation(summary = "Get live store opening hours & delivery status", description = "Returns whether the shop is open, operating hours, and active delivery windows")
+    public ResponseEntity<ApiResponse<WebsiteSettingService.StoreStatusDto>> getStoreStatus() {
+        return ResponseEntity.ok(ApiResponse.ok(settingService.getStoreStatus()));
+    }
+
+    @PutMapping("/admin/settings/store-status")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'STORE_SETTINGS_EDIT')")
+    @Operation(summary = "Update shop opening/closing hours and delivery times (Super Admin)", description = "Allows Super Admin to toggle shop open/closed, change opening hours, and delivery operational timings")
+    public ResponseEntity<ApiResponse<WebsiteSettingService.StoreStatusDto>> updateStoreStatus(@RequestBody WebsiteSettingService.StoreStatusDto dto) {
+        WebsiteSettingService.StoreStatusDto updated = settingService.updateStoreStatus(dto);
+        return ResponseEntity.ok(ApiResponse.ok("Store hours and delivery status updated successfully", updated));
+    }
+
     @GetMapping("/admin/settings")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'STORE_SETTINGS_EDIT')")
     @Operation(summary = "Get all store settings (Admin)", description = "Returns all dynamic configuration key-value pairs")

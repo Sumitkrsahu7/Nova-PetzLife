@@ -21,13 +21,16 @@
   --radius-btn: 6px;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   width: 100%;
   margin: 0;
@@ -64,7 +67,9 @@ body {
   position: relative;
 }
 
-.data-table, .orders-table, .audit-table {
+.data-table,
+.orders-table,
+.audit-table {
   width: 100%;
   border-collapse: collapse;
   min-width: 680px;
@@ -147,7 +152,7 @@ body {
 
 /* Global 90% Desktop Page Container & Responsive Standardization */
 .page-container {
-  width: 90%;
+  width: 98%;
   max-width: 1600px;
   margin: 0 auto;
   padding: 1.5rem 1.25rem 3rem;

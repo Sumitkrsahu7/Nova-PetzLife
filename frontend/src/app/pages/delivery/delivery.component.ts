@@ -48,6 +48,7 @@ export class DeliveryComponent implements OnInit, AfterViewInit, OnDestroy {
   };
 
   isCheckingDelivery: boolean = false;
+  showDetailedFields: boolean = false;
   deliveryResult: DeliveryEligibilityResult | null = null;
   errorMessage: string | null = null;
 

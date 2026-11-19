@@ -213,10 +213,10 @@
   }
 }
 
+.dashboard-orders-grid,
 .dashboard-split-grid {
-  display: grid;
-  grid-template-columns: 1.35fr 0.85fr;
-  gap: 1.5rem;
+  display: block;
+  width: 100%;
 }
 
 .panel-card {

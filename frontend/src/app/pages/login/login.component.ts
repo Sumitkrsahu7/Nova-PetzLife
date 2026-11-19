@@ -163,8 +163,10 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    const phoneRegex = /^(\+91)?[6-9]\d{9}$/;
-    if (this.regPhone && !phoneRegex.test(this.regPhone.trim())) {
+    const rawDigits = (this.regPhone || '').replace(/\D/g, '');
+    const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : rawDigits;
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!cleanPhone || !phoneRegex.test(cleanPhone)) {
       this.errorMessage = 'Please enter a valid 10-digit Indian mobile number.';
       return;
     }
@@ -187,7 +189,7 @@ export class LoginComponent implements OnInit {
       password: this.regPassword,
       firstName: this.regFirstName.trim(),
       lastName: this.regLastName ? this.regLastName.trim() : undefined,
-      phone: this.regPhone ? this.regPhone.trim() : undefined
+      phone: cleanPhone
     };
 
     this.authService.register(payload).subscribe({

@@ -13,8 +13,8 @@ import { GoogleBusinessService } from '../../core/services/google-business.servi
 export class GoogleReviewsComponent implements OnInit {
   @Input() businessInfo: GoogleBusinessProfileSummary = {
     businessName: 'Petzlife (NOVA PETZLIFE)',
-    formattedAddress: 'Petzlife, Kuravankonam Junction, Kuravankonam Ambalamukku Road, Thiruvananthapuram, Kerala 695003',
-    googlePlaceId: 'ChIJ_petzlife_kuravankonam_verified',
+    formattedAddress: 'our store, our Ambalamukku Road, Thiruvananthapuram, Kerala 695003',
+    googlePlaceId: 'ChIJ_petzlife_our_verified',
     overallRating: 4.8,
     totalReviewCount: 148,
     googleMapsUrl: 'https://www.google.com/search?q=petzlife+reviews',
@@ -28,7 +28,7 @@ export class GoogleReviewsComponent implements OnInit {
       authorName: 'Anoop Nair',
       rating: 5,
       relativeTime: '2 weeks ago',
-      text: 'Excellent pet shop in Kuravankonam! They always have stock of Royal Canin and Pedigree dog food. The owner is very helpful with pet nutrition suggestions and delivery across Trivandrum is super prompt.',
+      text: 'Excellent pet shop in our! They always have stock of Royal Canin and Pedigree dog food. The owner is very helpful with pet nutrition suggestions and delivery across Trivandrum is super prompt.',
       sourceUrl: 'https://www.google.com/search?q=petzlife+reviews'
     },
     {
@@ -44,7 +44,7 @@ export class GoogleReviewsComponent implements OnInit {
       authorName: 'Rahul Menon',
       rating: 5,
       relativeTime: '2 months ago',
-      text: 'Got Arden Grange puppy food and chew toys. The shop is conveniently located right near Kuravankonam junction with parking. Very polite staff and quick local home delivery.',
+      text: 'Got Arden Grange puppy food and chew toys. The shop is conveniently located right near our store with parking. Very polite staff and quick local home delivery.',
       sourceUrl: 'https://www.google.com/search?q=petzlife+reviews'
     }
   ];
@@ -78,8 +78,9 @@ export class GoogleReviewsComponent implements OnInit {
         }
       },
       error: () => {
-        // Fallback to static verified Kuravankonam store details if API unavailable
+        // Fallback to static verified our store details if API unavailable
       }
     });
   }
 }
+

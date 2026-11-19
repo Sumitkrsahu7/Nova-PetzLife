@@ -4,7 +4,7 @@
       <a routerLink="/">Home</a> <span>/</span> <a routerLink="/cart">Cart</a> <span>/</span> Secure Checkout
     </div>
     <h1>Express Checkout</h1>
-    <p class="subtitle">Direct local fulfillment from NOVA PETZLIFE Kuravankonam store</p>
+    <p class="subtitle">Direct local fulfillment from NOVA PETZLIFE our store</p>
   </div>
 
   <div *ngIf="errorMessage" class="error-banner">
@@ -69,7 +69,7 @@
             <div class="status-icon">{{ eligibility.isEligible ? '✓' : '✕' }}</div>
             <div class="status-details">
               <strong>{{ eligibility.isEligible ? 'Delivery is available at this location.' : 'Sorry, delivery is not currently available at this location.' }}</strong>
-              <p *ngIf="eligibility.isEligible">Local express delivery will be dispatched directly from our Kuravankonam storefront.</p>
+              <p *ngIf="eligibility.isEligible">Local express delivery will be dispatched directly from our Our Storefront.</p>
               <p *ngIf="!eligibility.isEligible">This address falls outside our current local delivery area. Please enter a serviceable address or contact store support.</p>
             </div>
           </div>
@@ -213,7 +213,7 @@
         </div>
 
         <div class="calc-row">
-          <span>Delivery Charge (Kuravankonam)</span>
+          <span>Delivery Charge (our)</span>
           <span [class.free]="deliveryFee === 0">{{ deliveryFee === 0 ? 'FREE' : ('₹' + (deliveryFee | number:'1.2-2')) }}</span>
         </div>
 
@@ -236,3 +236,4 @@
     </div>
   </div>
 </div>
+

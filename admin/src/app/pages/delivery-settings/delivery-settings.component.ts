@@ -35,6 +35,19 @@ export interface DeliverySlotData {
   availableDays?: string;
 }
 
+export interface StoreStatusData {
+  isShopOpen: boolean;
+  shopOpenTime: string;
+  shopCloseTime: string;
+  sundayOpenTime: string;
+  sundayCloseTime: string;
+  isDeliveryActive: boolean;
+  deliveryStartTime: string;
+  deliveryEndTime: string;
+  deliverySpeedNotice: string;
+  storeTimingsSummary: string;
+}
+
 @Component({
   selector: 'app-delivery-settings',
   standalone: true,
@@ -84,6 +97,20 @@ export class DeliverySettingsComponent implements OnInit, AfterViewInit, OnDestr
     prepTimeMinutes: 60,
     isDeliveryEnabled: true
   };
+
+  storeStatus: StoreStatusData = {
+    isShopOpen: true,
+    shopOpenTime: '09:00 AM',
+    shopCloseTime: '08:30 PM',
+    sundayOpenTime: '10:00 AM',
+    sundayCloseTime: '06:00 PM',
+    isDeliveryActive: true,
+    deliveryStartTime: '09:30 AM',
+    deliveryEndTime: '08:00 PM',
+    deliverySpeedNotice: 'Express Delivery within 2 - 3 Hours in Trivandrum',
+    storeTimingsSummary: 'Mon - Sat: 09:00 AM - 08:30 PM | Sun: 10:00 AM - 06:00 PM'
+  };
+  isSavingStoreStatus = false;
 
   slots: DeliverySlotData[] = [];
   isLoading = false;
@@ -205,6 +232,48 @@ export class DeliverySettingsComponent implements OnInit, AfterViewInit, OnDestr
         this.slots = res.data;
       }
     });
+
+    this.fetchStoreStatus();
+  }
+
+  fetchStoreStatus(): void {
+    this.http.get<any>(`${environment.apiUrl}/settings/store-status`).subscribe({
+      next: res => {
+        if (res?.success && res.data) {
+          this.storeStatus = { ...this.storeStatus, ...res.data };
+        }
+      }
+    });
+  }
+
+  saveStoreStatus(): void {
+    this.isSavingStoreStatus = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.http.put<any>(`${environment.apiUrl}/admin/settings/store-status`, this.storeStatus).subscribe({
+      next: res => {
+        this.isSavingStoreStatus = false;
+        this.successMessage = 'Store operational hours & live delivery status updated successfully!';
+        if (res?.success && res.data) {
+          this.storeStatus = { ...this.storeStatus, ...res.data };
+        }
+        setTimeout(() => this.successMessage = '', 4000);
+      },
+      error: err => {
+        this.isSavingStoreStatus = false;
+        this.errorMessage = err.error?.message || 'Failed to update store operational hours.';
+      }
+    });
+  }
+
+  toggleShopOpen(): void {
+    this.storeStatus.isShopOpen = !this.storeStatus.isShopOpen;
+    this.saveStoreStatus();
+  }
+
+  toggleDeliveryActive(): void {
+    this.storeStatus.isDeliveryActive = !this.storeStatus.isDeliveryActive;
+    this.saveStoreStatus();
   }
 
   /**
