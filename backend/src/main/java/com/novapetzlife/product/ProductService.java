@@ -10,6 +10,7 @@ import com.novapetzlife.inventory.InventoryService;
 import com.novapetzlife.pricing.PricingService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -106,6 +107,33 @@ public class ProductService {
                 .map(p -> {
                     Integer stock = inventoryRepository.findTotalAvailableStockByProductId(p.getId());
                     return ProductSummaryDto.fromEntity(p, stock != null && stock > 0);
+                })
+                .toList();
+    }
+
+    public List<ProductSuggestionDto> getSearchSuggestions(String query) {
+        if (query == null || query.trim().length() < 2) {
+            return List.of();
+        }
+        String clean = query.trim();
+        List<Product> products = productRepository.findSuggestions(clean, PageRequest.of(0, 10));
+        return products.stream()
+                .map(p -> {
+                    String img = p.getImages() != null && !p.getImages().isEmpty()
+                            ? p.getImages().stream().filter(ProductImage::getIsPrimary).findFirst()
+                            .map(ProductImage::getImageUrl)
+                            .orElse(p.getImages().get(0).getImageUrl())
+                            : null;
+                    BigDecimal price = p.getDiscountedPrice() != null ? p.getDiscountedPrice() : p.getBasePrice();
+                    return new ProductSuggestionDto(
+                            p.getId(),
+                            p.getName(),
+                            p.getSlug(),
+                            p.getCategory() != null ? p.getCategory().getName() : null,
+                            p.getBrand() != null ? p.getBrand().getName() : null,
+                            price,
+                            img
+                    );
                 })
                 .toList();
     }

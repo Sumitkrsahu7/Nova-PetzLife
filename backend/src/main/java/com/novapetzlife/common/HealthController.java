@@ -23,6 +23,12 @@ public class HealthController {
     @Value("${app.version:1.0.0}")
     private String appVersion;
 
+    private final com.novapetzlife.delivery.ShopLocationRepository shopLocationRepository;
+
+    public HealthController(@org.springframework.beans.factory.annotation.Autowired(required = false) com.novapetzlife.delivery.ShopLocationRepository shopLocationRepository) {
+        this.shopLocationRepository = shopLocationRepository;
+    }
+
     @GetMapping
     @Operation(summary = "Check backend service health", description = "Returns the status of NOVA PETZLIFE backend API")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getHealth() {
@@ -31,7 +37,14 @@ public class HealthController {
         status.put("service", "NOVA PETZLIFE REST API");
         status.put("version", appVersion);
         status.put("profile", activeProfile);
-        status.put("shopLocation", "Kuravankonam Junction, Thiruvananthapuram, Kerala 695003, India");
+
+        String shopAddr = "Thiruvananthapuram, Kerala, India";
+        if (shopLocationRepository != null) {
+            shopAddr = shopLocationRepository.findByIsActiveTrue()
+                    .map(com.novapetzlife.delivery.ShopLocation::getAddressLine)
+                    .orElse(shopAddr);
+        }
+        status.put("shopLocation", shopAddr);
         status.put("timestamp", Instant.now().toString());
 
         return ResponseEntity.ok(ApiResponse.ok("NOVA PETZLIFE backend is operational", status));

@@ -93,7 +93,7 @@ public class OrderController {
     // --- Admin Endpoints ---
 
     @GetMapping("/api/v1/admin/orders")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'ORDER_VIEW')")
     @Operation(summary = "Search and filter orders (Admin)", description = "Search orders by status, order number, or address with pagination")
     public ResponseEntity<ApiResponse<Page<OrderSummaryDto>>> getAdminOrders(
             @RequestParam(required = false) String status,
@@ -107,7 +107,7 @@ public class OrderController {
     }
 
     @GetMapping("/api/v1/admin/orders/{orderNumber}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'ORDER_VIEW')")
     @Operation(summary = "Get order detail (Admin)", description = "Retrieve full order details, customer snapshot, items, and status history")
     public ResponseEntity<ApiResponse<OrderDetailDto>> getAdminOrderDetail(@PathVariable String orderNumber) {
         OrderDetailDto order = orderService.getOrderDetailByNumber(orderNumber, null);
@@ -115,8 +115,8 @@ public class OrderController {
     }
 
     @PatchMapping("/api/v1/admin/orders/{id}/status")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
-    @Operation(summary = "Update order status (Admin)", description = "Advance order lifecycle (CONFIRMED -> PROCESSING -> OUT_FOR_DELIVERY -> DELIVERED, or CANCELLED with stock release)")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'ORDER_EDIT')")
+    @Operation(summary = "Update order status (Admin)", description = "Advance order lifecycle (CONFIRMED -> PACKED -> DISPATCHED -> DELIVERED, or CANCELLED with stock release)")
     public ResponseEntity<ApiResponse<OrderDetailDto>> updateOrderStatus(
             Authentication authentication,
             @PathVariable Long id,
@@ -128,7 +128,7 @@ public class OrderController {
     }
 
     @PostMapping("/api/v1/admin/orders/{id}/verify-delivery-otp")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'ORDER_EDIT')")
     @Operation(summary = "Verify customer delivery OTP and complete delivery (Admin)", description = "Validates 6-digit OTP code provided by customer upon delivery and transitions order status to DELIVERED")
     public ResponseEntity<ApiResponse<OrderDetailDto>> verifyDeliveryOtp(
             Authentication authentication,
@@ -138,5 +138,18 @@ public class OrderController {
         String operator = authentication != null ? authentication.getName() : "ADMIN_DELIVERY_AGENT";
         OrderDetailDto updated = orderService.verifyDeliveryOtp(id, request.otp(), operator);
         return ResponseEntity.ok(ApiResponse.ok("Customer delivery OTP successfully verified. Order completed.", updated));
+    }
+
+    @PostMapping("/api/v1/admin/orders/{id}/cancel-item")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'ORDER_EDIT')")
+    @Operation(summary = "Cancel out-of-stock order item and process refund (Admin)", description = "Releases stock atomically, initiates pro-rated refund if order was paid online, and logs staff action")
+    public ResponseEntity<ApiResponse<OrderDetailDto>> cancelOrderItem(
+            Authentication authentication,
+            @PathVariable Long id,
+            @Valid @RequestBody CancelOrderItemRequest request) {
+
+        String operator = authentication != null ? authentication.getName() : "STAFF_OPERATOR";
+        OrderDetailDto updated = orderService.adminCancelItemOutOfStock(id, request.orderItemId(), request.reason(), operator);
+        return ResponseEntity.ok(ApiResponse.ok("Order item cancelled and refund processed successfully", updated));
     }
 }

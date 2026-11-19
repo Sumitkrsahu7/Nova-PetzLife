@@ -209,18 +209,118 @@
     </div>
   </div>
 
-  <!-- Delivery Slots Card -->
-  <div class="card">
-    <h3>Active Delivery Windows (Trivandrum)</h3>
-    <div *ngIf="slots.length > 0" class="slots-grid">
-      <div *ngFor="let s of slots" class="slot-card">
-        <strong>{{ s.slotName }}</strong>
-        <p class="slot-time">{{ s.startTime }} – {{ s.endTime }}</p>
-        <span class="slot-meta">Max Orders: {{ s.maxOrders }} | Cutoff: {{ s.cutoffMinutes }} mins</span>
+  <!-- Delivery Windows Management Card -->
+  <div class="card slots-card mt-4">
+    <div class="card-header-row">
+      <div>
+        <h3>Active Delivery Windows</h3>
+        <p class="subtitle">Manage scheduled local delivery slots, daily capacity, and dispatch timing</p>
       </div>
+      <button class="btn btn-primary" (click)="openCreateSlotModal()">+ Add Delivery Window</button>
     </div>
+
+    <div *ngIf="slots.length > 0" class="table-responsive mt-3">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Slot Name</th>
+            <th>Delivery Window</th>
+            <th>Max Orders</th>
+            <th>Cutoff Buffer</th>
+            <th>Applicable Days</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of slots">
+            <td><strong>{{ s.slotName }}</strong></td>
+            <td><code>{{ s.startTime }} – {{ s.endTime }}</code></td>
+            <td>{{ s.maxOrders }} orders</td>
+            <td>{{ s.cutoffMinutes }} mins</td>
+            <td><small>{{ s.availableDays || 'Mon – Sat' }}</small></td>
+            <td>
+              <button
+                type="button"
+                class="status-toggle-btn"
+                [class.active]="s.isActive"
+                (click)="toggleSlotActive(s)"
+                title="Toggle slot active/inactive"
+              >
+                {{ s.isActive ? 'Active' : 'Inactive' }}
+              </button>
+            </td>
+            <td>
+              <div class="btn-group-actions">
+                <button type="button" class="btn-sm btn-outline" (click)="openEditSlotModal(s)">✏️ Edit</button>
+                <button type="button" class="btn-sm btn-danger-outline" (click)="deleteSlot(s)">🗑️ Delete</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <div *ngIf="slots.length === 0" class="empty-state">
-      <p>No delivery slots configured yet.</p>
+      <p>No delivery windows configured yet. Click "+ Add Delivery Window" above to configure your first slot.</p>
+    </div>
+  </div>
+
+  <!-- Create/Edit Delivery Slot Modal -->
+  <div class="modal-backdrop" *ngIf="showSlotModal" (click)="showSlotModal = false">
+    <div class="modal-card slot-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEditingSlot ? 'Edit Delivery Window' : 'Add New Delivery Window' }}</h2>
+        <button type="button" class="btn-close" (click)="showSlotModal = false">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="slotModalError" class="alert alert-danger">{{ slotModalError }}</div>
+        <form (ngSubmit)="saveSlot()">
+          <div class="form-group mb-3">
+            <label>Slot Name *</label>
+            <input type="text" [(ngModel)]="slotForm.slotName" name="slotName" placeholder="e.g. Morning Express, Afternoon, Evening" required />
+          </div>
+
+          <div class="form-row mb-3">
+            <div class="form-group flex-1">
+              <label>Start Time * (24h)</label>
+              <input type="time" [(ngModel)]="slotForm.startTime" name="startTime" required />
+            </div>
+            <div class="form-group flex-1">
+              <label>End Time * (24h)</label>
+              <input type="time" [(ngModel)]="slotForm.endTime" name="endTime" required />
+            </div>
+          </div>
+
+          <div class="form-row mb-3">
+            <div class="form-group flex-1">
+              <label>Max Order Capacity *</label>
+              <input type="number" [(ngModel)]="slotForm.maxOrders" name="maxOrders" min="1" max="500" required />
+            </div>
+            <div class="form-group flex-1">
+              <label>Order Cutoff (Minutes Before Start)</label>
+              <input type="number" [(ngModel)]="slotForm.cutoffMinutes" name="cutoffMinutes" min="0" max="720" required />
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <label>Applicable Days (Comma Separated)</label>
+            <input type="text" [(ngModel)]="slotForm.availableDays" name="availableDays" placeholder="Monday,Tuesday,Wednesday,Thursday,Friday,Saturday" />
+          </div>
+
+          <div class="form-group checkbox-group mb-3">
+            <label>
+              <input type="checkbox" [(ngModel)]="slotForm.isActive" name="isActive" />
+              <span>Enable this delivery slot for customer checkout</span>
+            </label>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="showSlotModal = false">Cancel</button>
+            <button type="submit" class="btn btn-primary">{{ isEditingSlot ? 'Save Changes' : 'Create Window' }}</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>

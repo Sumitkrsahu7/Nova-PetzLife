@@ -30,6 +30,8 @@ public class SupportService {
     private final CustomerRepository customerRepository;
     private final CustomerService customerService;
     private final NotificationService notificationService;
+    private final com.novapetzlife.delivery.ShopLocationRepository shopLocationRepository;
+    private final com.novapetzlife.settings.WebsiteSettingService websiteSettingService;
 
     public SupportService(
             SupportTicketRepository ticketRepository,
@@ -37,34 +39,52 @@ public class SupportService {
             OrderRepository orderRepository,
             CustomerRepository customerRepository,
             CustomerService customerService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            com.novapetzlife.delivery.ShopLocationRepository shopLocationRepository,
+            com.novapetzlife.settings.WebsiteSettingService websiteSettingService) {
         this.ticketRepository = ticketRepository;
         this.messageRepository = messageRepository;
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
         this.customerService = customerService;
         this.notificationService = notificationService;
+        this.shopLocationRepository = shopLocationRepository;
+        this.websiteSettingService = websiteSettingService;
     }
 
     public StoreInfoDto getStoreInfo() {
+        var shopOpt = shopLocationRepository.findByIsActiveTrue();
+        var contactInfo = websiteSettingService.getContactInfo();
+
+        String storeName = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getShopName).orElse("NOVA PETZLIFE");
+        String address = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getAddressLine).orElse(contactInfo.address());
+        String locality = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getCity).orElse("Thiruvananthapuram");
+        String city = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getCity).orElse("Thiruvananthapuram");
+        String state = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getState).orElse("Kerala");
+        String country = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getCountry).orElse("India");
+        String postalCode = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getPinCode).orElse("695003");
+        Double lat = shopOpt.map(s -> s.getLatitude() != null ? s.getLatitude().doubleValue() : 8.528448).orElse(8.528448);
+        Double lng = shopOpt.map(s -> s.getLongitude() != null ? s.getLongitude().doubleValue() : 76.953268).orElse(76.953268);
+        Double radius = shopOpt.map(s -> s.getDeliveryRadiusKm() != null ? s.getDeliveryRadiusKm().doubleValue() : 20.0).orElse(20.0);
+
         return new StoreInfoDto(
-                "NOVA PETZLIFE",
-                "Petzlife",
-                "Petzlife, Kuravankonam Junction, Kuravankonam Ambalamukku Road",
-                "Kuravankonam Junction",
-                "Thiruvananthapuram",
-                "Kerala",
-                "India",
-                "695003",
-                8.528448,
-                76.953268,
-                20.0,
-                "+91 94471 00000",
-                "+91 94471 00000",
-                "support@novapetzlife.in",
-                "Monday – Saturday: 9:00 AM – 8:30 PM | Sunday: 10:00 AM – 7:00 PM",
+                storeName,
+                storeName,
+                address,
+                locality,
+                city,
+                state,
+                country,
+                postalCode,
+                lat,
+                lng,
+                radius,
+                contactInfo.phone(),
+                contactInfo.whatsappNumber(),
+                contactInfo.email(),
+                contactInfo.timings(),
                 List.of(
-                        "Local Delivery within 20 km radius",
+                        "Local Delivery within " + radius.intValue() + " km radius",
                         "Premium Dog & Cat Nutrition",
                         "Aquarium & Bird Supplies",
                         "Grooming & Hygiene Care Products",
@@ -79,7 +99,7 @@ public class SupportService {
                 new FaqItemDto(
                         "Delivery & Radius",
                         "What is the delivery coverage of NOVA PETZLIFE in Trivandrum?",
-                        "We deliver within a strict 20 km straight-line radius from our store at Kuravankonam Junction, covering Pattom, Kowdiar, Ambalamukku, Sasthamangalam, Palayam, Kazhakkoottam, Technopark, and nearby Thiruvananthapuram areas."
+                        "We deliver within a strict 20 km straight-line radius from our store, covering Kowdiar, Pattom, Ambalamukku, Sasthamangalam, Palayam, Kazhakkoottam, Technopark, and nearby Thiruvananthapuram areas."
                 ),
                 new FaqItemDto(
                         "Delivery & Radius",
@@ -149,7 +169,7 @@ public class SupportService {
         String notificationContent = String.format(
                 "Dear %s,\n\nYour support inquiry has been received with ticket number #%s.\n" +
                         "Subject: %s\n" +
-                        "Our shop team at Kuravankonam will assist you promptly during store hours.\n\nNOVA PETZLIFE",
+                        "Our shop team will assist you promptly during store hours.\n\nNOVA PETZLIFE",
                 customer.getFirstName(), ticketNumber, request.getSubject()
         );
         notificationService.recordAndDispatch(customer, customer.getEmail(), "EMAIL", "SUPPORT_TICKET_CREATED", "Support Ticket Received: #" + ticketNumber, notificationContent);

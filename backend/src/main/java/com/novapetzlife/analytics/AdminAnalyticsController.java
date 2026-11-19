@@ -35,7 +35,7 @@ public class AdminAnalyticsController {
     }
 
     @GetMapping("/low-stock")
-    @Operation(summary = "Get low stock products", description = "Catalog products that are at or below minimum threshold for Kuravankonam reordering")
+    @Operation(summary = "Get low stock products", description = "Catalog products that are at or below minimum threshold for store reordering")
     public ResponseEntity<ApiResponse<List<LowStockAlertDto>>> getLowStockAlerts() {
         List<LowStockAlertDto> alerts = analyticsService.getLowStockAlerts();
         return ResponseEntity.ok(ApiResponse.ok(alerts));

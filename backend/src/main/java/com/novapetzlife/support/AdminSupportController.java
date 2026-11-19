@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/admin/support/tickets")
-@PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+@PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'CUSTOMER_SUPPORT_VIEW')")
 @Tag(name = "Admin Support Management", description = "Store owner management of customer inquiries, status updates, and staff replies")
 public class AdminSupportController {
 
@@ -46,6 +46,7 @@ public class AdminSupportController {
     }
 
     @PostMapping("/{ticketNumber}/reply")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'CUSTOMER_SUPPORT_EDIT')")
     @Operation(summary = "Staff reply to ticket", description = "Appends staff response and updates status to WAITING_FOR_CUSTOMER")
     public ResponseEntity<ApiResponse<SupportTicketDto>> staffReply(
             @PathVariable String ticketNumber,
@@ -56,6 +57,7 @@ public class AdminSupportController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'CUSTOMER_SUPPORT_EDIT')")
     @Operation(summary = "Update ticket status and assignment", description = "Resolves or closes customer inquiry ticket")
     public ResponseEntity<ApiResponse<SupportTicketDto>> updateTicketStatus(
             @PathVariable Long id,

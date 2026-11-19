@@ -45,6 +45,10 @@ export interface SupportTicket {
   customerEmail?: string;
   customerPhone?: string;
   orderNumber?: string;
+  orderStatus?: string;
+  orderPaymentStatus?: string;
+  orderFinalAmount?: number;
+  orderCancellationReason?: string;
   subject: string;
   priority: string;
   status: string;
@@ -74,6 +78,10 @@ export class SupportService {
 
   public getStoreInfo(): Observable<{ success: boolean; data: StoreInfo }> {
     return this.http.get<{ success: boolean; data: StoreInfo }>(`${this.apiUrl}/store-info`);
+  }
+
+  public getContactInfo(): Observable<{ success: boolean; data: any }> {
+    return this.http.get<{ success: boolean; data: any }>(`${environment.apiUrl}/settings/contact`);
   }
 
   public getFaqs(): Observable<{ success: boolean; data: FaqItem[] }> {

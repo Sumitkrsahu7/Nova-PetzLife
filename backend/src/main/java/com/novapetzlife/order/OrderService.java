@@ -42,6 +42,7 @@ public class OrderService {
     private final com.novapetzlife.audit.AuditService auditService;
     private final ObjectMapper objectMapper;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final com.novapetzlife.refund.RefundService refundService;
 
     public OrderService(
             OrderRepository orderRepository,
@@ -56,7 +57,8 @@ public class OrderService {
             com.novapetzlife.notification.NotificationService notificationService,
             com.novapetzlife.audit.AuditService auditService,
             ObjectMapper objectMapper,
-            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
+            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder,
+            com.novapetzlife.refund.RefundService refundService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.statusHistoryRepository = statusHistoryRepository;
@@ -70,6 +72,7 @@ public class OrderService {
         this.auditService = auditService;
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder != null ? passwordEncoder : new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+        this.refundService = refundService;
     }
 
     @Transactional
@@ -346,6 +349,71 @@ public class OrderService {
 
         order.setIsOtpVerified(true);
         return adminUpdateOrderStatus(orderId, "DELIVERED", changedBy, "Delivered successfully with verified customer 2-Factor OTP: " + otp.trim(), otp);
+    }
+
+    @Transactional
+    public OrderDetailDto adminCancelItemOutOfStock(Long orderId, Long orderItemId, String reason, String changedBy) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with id: " + orderId));
+
+        OrderItem itemToCancel = order.getItems().stream()
+                .filter(i -> i.getId().equals(orderItemId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Order item not found with id: " + orderItemId));
+
+        // 1. Single stock restoration: atomically release reserved stock for this item
+        Long variantId = itemToCancel.getVariant() != null ? itemToCancel.getVariant().getId() : null;
+        inventoryService.releaseReservedStock(
+                itemToCancel.getProduct().getId(),
+                variantId,
+                itemToCancel.getQuantity(),
+                order.getOrderNumber(),
+                "Cancelled due to Out of Stock: " + reason
+        );
+
+        // 2. Proportional refund calculation:
+        // refund amount = item.totalPrice - proportional share of discount
+        BigDecimal refundAmount = itemToCancel.getTotalPrice();
+        if (order.getSubtotal().compareTo(BigDecimal.ZERO) > 0 && order.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal ratio = itemToCancel.getTotalPrice().divide(order.getSubtotal(), 4, java.math.RoundingMode.HALF_UP);
+            BigDecimal discountShare = order.getDiscountAmount().multiply(ratio).setScale(2, java.math.RoundingMode.HALF_UP);
+            refundAmount = refundAmount.subtract(discountShare);
+        }
+        if (refundAmount.compareTo(BigDecimal.ZERO) < 0) {
+            refundAmount = BigDecimal.ZERO;
+        }
+
+        // 3. If order is paid or partially refunded, initiate refund through RefundService
+        boolean isPaid = "PAID".equalsIgnoreCase(order.getPaymentStatus()) ||
+                         "COMPLETED".equalsIgnoreCase(order.getPaymentStatus()) ||
+                         "PARTIALLY_REFUNDED".equalsIgnoreCase(order.getPaymentStatus());
+
+        if (isPaid && refundAmount.compareTo(BigDecimal.ZERO) > 0) {
+            refundService.processRefund(order, refundAmount, "Out-of-stock cancellation of item: " + itemToCancel.getProductName() + ". " + reason, changedBy);
+        }
+
+        // 4. Record status history
+        order.addStatusHistory(new OrderStatusHistory(
+                order,
+                order.getOrderStatus(),
+                order.getOrderStatus(),
+                changedBy,
+                "Cancelled item '" + itemToCancel.getProductName() + "' (Qty: " + itemToCancel.getQuantity() + ") due to Out of Stock. Reason: " + reason
+        ));
+
+        // 5. If all items are cancelled or only this item existed, mark order as CANCELLED
+        if (order.getItems().size() <= 1) {
+            order.setOrderStatus("CANCELLED");
+            order.setCancellationReason("All items cancelled due to out-of-stock: " + reason);
+            order.setCancelledAt(java.time.Instant.now());
+            order.setCancelledBy(changedBy);
+        }
+
+        Order updated = orderRepository.save(order);
+        if (auditService != null) {
+            auditService.recordAudit("Order", updated.getOrderNumber(), "ITEM_CANCELLED_OUT_OF_STOCK", changedBy, null, itemToCancel.getProductName(), reason);
+        }
+        return OrderDetailDto.fromEntity(updated);
     }
 
     @Transactional(readOnly = true)

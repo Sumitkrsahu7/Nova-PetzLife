@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { AdminOrderService, AdminOrderSummary, AdminOrderDetail } from '../../core/services/admin-order.service';
+import { AdminOrderService, AdminOrderSummary, AdminOrderDetail, AdminOrderItem } from '../../core/services/admin-order.service';
 
 @Component({
   selector: 'app-orders',
@@ -18,7 +18,14 @@ export class OrdersComponent implements OnInit {
   searchQuery = '';
   activeTab = 'ALL';
 
-  statusTabs = ['ALL', 'CONFIRMED', 'PROCESSING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'];
+  statusTabs = ['ALL', 'PENDING_PAYMENT', 'CONFIRMED', 'PACKED', 'DISPATCHED', 'DELIVERED', 'CANCELLED'];
+
+  // Out of Stock Item Cancellation Modal State
+  showCancelItemModal = false;
+  selectedCancelItem: AdminOrderItem | null = null;
+  cancelItemReason = 'Item currently out of stock at store';
+  isCancellingItem = false;
+  cancelItemError = '';
 
   constructor(private adminOrderService: AdminOrderService) {}
 
@@ -70,6 +77,39 @@ export class OrdersComponent implements OnInit {
 
   closeDetail(): void {
     this.selectedOrder = null;
+  }
+
+  openCancelItemModal(item: any): void {
+    this.selectedCancelItem = item;
+    this.cancelItemReason = 'Item currently out of stock at store';
+    this.cancelItemError = '';
+    this.showCancelItemModal = true;
+  }
+
+  confirmCancelItem(): void {
+    if (!this.selectedOrder || !this.selectedCancelItem) return;
+    this.isCancellingItem = true;
+    this.cancelItemError = '';
+
+    this.adminOrderService.cancelOrderItem(
+      this.selectedOrder.id,
+      this.selectedCancelItem.id,
+      this.cancelItemReason
+    ).subscribe({
+      next: (res) => {
+        this.isCancellingItem = false;
+        this.showCancelItemModal = false;
+        if (res?.success && res.data) {
+          this.selectedOrder = res.data;
+          this.fetchOrders();
+          alert(`Item '${this.selectedCancelItem?.productName}' cancelled. Stock restored and refund initiated if paid.`);
+        }
+      },
+      error: (err) => {
+        this.isCancellingItem = false;
+        this.cancelItemError = err.error?.message || 'Failed to cancel order item';
+      }
+    });
   }
 
   printInvoice(orderNumber: string): void {

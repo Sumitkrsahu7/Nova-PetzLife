@@ -1,0 +1,246 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1>Staff & Access Control</h1>
+      <p>Manage administrative personnel, roles, and granular operating permissions</p>
+    </div>
+    <button class="btn btn-primary" (click)="openCreateModal()">+ Add Staff Member</button>
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+  <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading">Loading staff accounts...</div>
+
+    <div *ngIf="!isLoading && staffList.length > 0" class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Staff Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Role</th>
+            <th>Assigned Permissions</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of staffList">
+            <td>
+              <strong>{{ s.firstName }} {{ s.lastName }}</strong>
+            </td>
+            <td><code>{{ s.email }}</code></td>
+            <td>{{ s.phone || '—' }}</td>
+            <td>
+              <span class="role-badge" [class.super]="s.roles.includes('ROLE_SUPER_ADMIN')">
+                {{ s.roles.includes('ROLE_SUPER_ADMIN') ? '👑 SUPER ADMIN' : 'STAFF' }}
+              </span>
+            </td>
+            <td>
+              <div class="permissions-chips">
+                <span *ngIf="s.roles.includes('ROLE_SUPER_ADMIN')" class="chip-super">ALL PERMISSIONS</span>
+                <ng-container *ngIf="!s.roles.includes('ROLE_SUPER_ADMIN')">
+                  <span *ngFor="let p of s.permissions" class="permission-chip">
+                    {{ p }}
+                  </span>
+                  <span *ngIf="!s.permissions || s.permissions.length === 0" class="no-perms">
+                    No permissions assigned
+                  </span>
+                </ng-container>
+              </div>
+            </td>
+            <td>
+              <span class="status-pill" [class.active]="s.isActive" [class.inactive]="!s.isActive">
+                {{ s.isActive ? 'Active' : 'Deactivated' }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button
+                  type="button"
+                  class="btn-sm btn-outline"
+                  (click)="openPermissionsModal(s)"
+                  *ngIf="!s.roles.includes('ROLE_SUPER_ADMIN')"
+                  title="Edit permissions"
+                >
+                  🛡️ Permissions
+                </button>
+                <button
+                  type="button"
+                  class="btn-sm btn-outline"
+                  (click)="openResetPasswordModal(s)"
+                  title="Reset password"
+                >
+                  🔑 Reset Pwd
+                </button>
+                <button
+                  type="button"
+                  class="btn-sm"
+                  [class.btn-danger]="s.isActive"
+                  [class.btn-success]="!s.isActive"
+                  (click)="toggleStatus(s)"
+                  *ngIf="!s.roles.includes('ROLE_SUPER_ADMIN')"
+                  title="Toggle account active state"
+                >
+                  {{ s.isActive ? 'Deactivate' : 'Activate' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!isLoading && staffList.length === 0" class="empty-state">
+      <p>No staff accounts found.</p>
+    </div>
+  </div>
+
+  <!-- Create Staff Modal -->
+  <div class="modal-backdrop" *ngIf="showCreateModal" (click)="showCreateModal = false">
+    <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add Staff Member</h2>
+        <button type="button" class="btn-close" (click)="showCreateModal = false">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="createModalError" class="alert alert-danger">{{ createModalError }}</div>
+
+        <form (ngSubmit)="submitCreateStaff()">
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>First Name *</label>
+              <input type="text" [(ngModel)]="createForm.firstName" name="firstName" required placeholder="e.g. Anand" />
+            </div>
+            <div class="form-group flex-1">
+              <label>Last Name</label>
+              <input type="text" [(ngModel)]="createForm.lastName" name="lastName" placeholder="e.g. Nair" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>Email Address *</label>
+              <input type="email" [(ngModel)]="createForm.email" name="email" required placeholder="staff@novapetzlife.com" />
+            </div>
+            <div class="form-group flex-1">
+              <label>Phone Number</label>
+              <input type="text" [(ngModel)]="createForm.phone" name="phone" placeholder="9876543210" />
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <label>Initial Temporary Password *</label>
+            <input type="password" [(ngModel)]="createForm.password" name="password" required placeholder="Minimum 6 characters" />
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="section-label">Assign Granular Permissions</label>
+            <p class="help-text">Select the specific modules and actions this staff member can access:</p>
+
+            <div class="permissions-grid">
+              <div *ngFor="let p of availablePermissions" class="permission-item">
+                <label>
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="createForm.selectedPermissions[p.name]"
+                    [name]="'perm_' + p.name"
+                  />
+                  <div class="perm-info">
+                    <strong>{{ p.name }}</strong>
+                    <small>{{ p.description }}</small>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="showCreateModal = false">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isCreating">
+              {{ isCreating ? 'Creating Staff...' : 'Create Staff Member' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Permissions Modal -->
+  <div class="modal-backdrop" *ngIf="showPermissionsModal" (click)="showPermissionsModal = false">
+    <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Update Permissions — {{ editingStaff?.firstName }} {{ editingStaff?.lastName }}</h2>
+        <button type="button" class="btn-close" (click)="showPermissionsModal = false">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="permissionsModalError" class="alert alert-danger">{{ permissionsModalError }}</div>
+
+        <p class="help-text mb-3">
+          Configure active permissions for <strong>{{ editingStaff?.email }}</strong>. Changes take effect on next API request.
+        </p>
+
+        <form (ngSubmit)="submitPermissionsUpdate()">
+          <div class="permissions-grid">
+            <div *ngFor="let p of availablePermissions" class="permission-item">
+              <label>
+                <input
+                  type="checkbox"
+                  [(ngModel)]="permissionsForm[p.name]"
+                  [name]="'edit_perm_' + p.name"
+                />
+                <div class="perm-info">
+                  <strong>{{ p.name }}</strong>
+                  <small>{{ p.description }}</small>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-actions mt-4">
+            <button type="button" class="btn btn-secondary" (click)="showPermissionsModal = false">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isUpdatingPermissions">
+              {{ isUpdatingPermissions ? 'Saving...' : 'Save Permissions' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset Password Modal -->
+  <div class="modal-backdrop" *ngIf="showResetPasswordModal" (click)="showResetPasswordModal = false">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Reset Password for {{ resetStaffTarget?.firstName }}</h2>
+        <button type="button" class="btn-close" (click)="showResetPasswordModal = false">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="resetPasswordError" class="alert alert-danger">{{ resetPasswordError }}</div>
+
+        <p class="help-text">
+          Enter a new secure password for <strong>{{ resetStaffTarget?.email }}</strong>:
+        </p>
+
+        <form (ngSubmit)="submitResetPassword()">
+          <div class="form-group mb-3">
+            <label>New Password *</label>
+            <input type="password" [(ngModel)]="newPassword" name="newPassword" required placeholder="Minimum 6 characters" />
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="showResetPasswordModal = false">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isResettingPassword">
+              {{ isResettingPassword ? 'Resetting...' : 'Set New Password' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

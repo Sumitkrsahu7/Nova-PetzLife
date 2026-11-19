@@ -94,20 +94,22 @@ a:hover {
 }
 
 .container {
-  width: 100%;
-  max-width: 1350px;
+  width: 90%;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 0 1.25rem;
 }
 
 @media (max-width: 768px) {
   .container {
+    width: 100%;
     padding: 0 1rem;
   }
 }
 
 @media (max-width: 480px) {
   .container {
+    width: 100%;
     padding: 0 0.85rem;
   }
 }

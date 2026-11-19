@@ -42,7 +42,7 @@ export class ProductsComponent implements OnInit {
   brands: any[] = [];
   isLoading = false;
   searchQuery = '';
-  selectedPetType = 'ALL';
+  selectedCategoryId = 'ALL';
   sortBy: 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' = 'name-asc';
 
   get sortedProducts(): ProductItem[] {
@@ -143,7 +143,7 @@ export class ProductsComponent implements OnInit {
     this.isLoading = true;
     let url = `${environment.apiUrl}/products?page=0&size=50`;
     if (this.searchQuery.trim()) url += `&query=${encodeURIComponent(this.searchQuery.trim())}`;
-    if (this.selectedPetType !== 'ALL') url += `&petType=${encodeURIComponent(this.selectedPetType)}`;
+    if (this.selectedCategoryId !== 'ALL') url += `&categoryId=${encodeURIComponent(this.selectedCategoryId)}`;
 
     this.http.get<any>(url).subscribe({
       next: res => {

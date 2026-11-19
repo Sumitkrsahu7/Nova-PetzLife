@@ -8,7 +8,8 @@ public record DeliverySlotDto(
         LocalTime startTime,
         LocalTime endTime,
         Integer maxCapacity,
-        Boolean isActive
+        Boolean isActive,
+        String availableDays
 ) {
     public static DeliverySlotDto fromEntity(DeliverySlot s) {
         return new DeliverySlotDto(
@@ -17,7 +18,8 @@ public record DeliverySlotDto(
                 s.getStartTime(),
                 s.getEndTime(),
                 s.getMaxCapacity(),
-                s.getIsActive()
+                s.getIsActive(),
+                s.getAvailableDays()
         );
     }
 }

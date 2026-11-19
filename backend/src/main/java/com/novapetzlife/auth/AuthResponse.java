@@ -8,9 +8,14 @@ public record AuthResponse(
         String email,
         String firstName,
         String lastName,
-        List<String> roles
+        List<String> roles,
+        List<String> permissions
 ) {
     public static AuthResponse of(String token, String email, String firstName, String lastName, List<String> roles) {
-        return new AuthResponse(token, "Bearer", email, firstName, lastName, roles);
+        return new AuthResponse(token, "Bearer", email, firstName, lastName, roles, List.of());
+    }
+
+    public static AuthResponse of(String token, String email, String firstName, String lastName, List<String> roles, List<String> permissions) {
+        return new AuthResponse(token, "Bearer", email, firstName, lastName, roles, permissions != null ? permissions : List.of());
     }
 }

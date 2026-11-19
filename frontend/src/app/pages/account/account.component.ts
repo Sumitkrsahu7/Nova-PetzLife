@@ -58,10 +58,8 @@ export class AccountComponent implements OnInit {
     landmark: '',
     city: 'Thiruvananthapuram',
     state: 'Kerala',
-    postalCode: '695003',
-    latitude: 8.5244,
-    longitude: 76.9442,
-    isDefault: true
+    postalCode: '',
+    isDefault: false
   };
   addressSaveMessage = '';
 

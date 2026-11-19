@@ -91,6 +91,14 @@ export class AdminOrderService {
     );
   }
 
+  public cancelOrderItem(orderId: number, orderItemId: number, reason: string): Observable<{ success: boolean; data: AdminOrderDetail }> {
+    return this.http.post<{ success: boolean; data: AdminOrderDetail }>(
+      `${this.apiUrl}/orders/${orderId}/cancel-item`,
+      { orderItemId, reason },
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
   public verifyShopLocation(isVerified: boolean): Observable<{ success: boolean; data: any }> {
     return this.http.patch<{ success: boolean; data: any }>(
       `${this.apiUrl}/delivery/shop-location/verify`,

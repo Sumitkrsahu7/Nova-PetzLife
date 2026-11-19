@@ -15,6 +15,8 @@ export class SupportComponent implements OnInit {
   storeInfo: StoreInfo | null = null;
   faqs: FaqItem[] = [];
   openFaqIndex: number | null = 0; // First FAQ open by default
+  whatsappUrl: string = 'https://wa.me/919447100000?text=Hello%20Nova%20Petzlife%2C%20I%20would%20like%20to%20inquire%20about%20your%20pet%20products%20and%20delivery.';
+  contactInfo: any = null;
 
   inquiryForm: CreateInquiryPayload = {
     name: '',
@@ -54,6 +56,17 @@ export class SupportComponent implements OnInit {
       next: res => {
         if (res?.success && res.data) {
           this.faqs = res.data;
+        }
+      }
+    });
+
+    this.supportService.getContactInfo().subscribe({
+      next: res => {
+        if (res?.success && res.data) {
+          this.contactInfo = res.data;
+          if (res.data.whatsappUrl) {
+            this.whatsappUrl = res.data.whatsappUrl;
+          }
         }
       }
     });

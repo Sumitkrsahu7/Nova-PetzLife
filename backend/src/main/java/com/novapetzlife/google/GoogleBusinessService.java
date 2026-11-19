@@ -36,7 +36,7 @@ public class GoogleBusinessService {
         ShopLocation shop = shopLocationRepository.findFirstByOrderByIdAsc().orElseGet(() -> {
             return new ShopLocation(
                     "NOVA PETZLIFE",
-                    "Petzlife, Kuravankonam Junction, Kuravankonam Ambalamukku Road",
+                    "NOVA PETZLIFE Store, Thiruvananthapuram, Kerala 695003",
                     "Thiruvananthapuram",
                     "Kerala",
                     "India",
@@ -107,7 +107,7 @@ public class GoogleBusinessService {
 
     @Transactional
     public int syncGoogleReviews() {
-        log.info("Initiating Google Business Profile sync for Petzlife, Kuravankonam Junction");
+        log.info("Initiating Google Business Profile sync for NOVA PETZLIFE");
         long count = googleReviewRepository.count();
         if (count == 0) {
             googleReviewRepository.save(new GoogleReview(

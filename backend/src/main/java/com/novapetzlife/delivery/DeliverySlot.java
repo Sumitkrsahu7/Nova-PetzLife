@@ -27,17 +27,27 @@ public class DeliverySlot {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    @Column(name = "available_days", nullable = false, length = 100)
+    private String availableDays = "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY";
+
     @Column(name = "created_at", updatable = false)
     private Instant createdAt = Instant.now();
 
     public DeliverySlot() {}
 
     public DeliverySlot(String slotName, LocalTime startTime, LocalTime endTime, Integer maxCapacity, Boolean isActive) {
+        this(slotName, startTime, endTime, maxCapacity, isActive, "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY");
+    }
+
+    public DeliverySlot(String slotName, LocalTime startTime, LocalTime endTime, Integer maxCapacity, Boolean isActive, String availableDays) {
         this.slotName = slotName;
         this.startTime = startTime;
         this.endTime = endTime;
         this.maxCapacity = maxCapacity != null ? maxCapacity : 20;
         this.isActive = isActive != null ? isActive : true;
+        this.availableDays = availableDays != null && !availableDays.isBlank()
+                ? availableDays
+                : "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY";
         this.createdAt = Instant.now();
     }
 
@@ -85,8 +95,16 @@ public class DeliverySlot {
         return isActive;
     }
 
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
+    public void setIsActive(Boolean active) {
+        isActive = active;
+    }
+
+    public String getAvailableDays() {
+        return availableDays;
+    }
+
+    public void setAvailableDays(String availableDays) {
+        this.availableDays = availableDays;
     }
 
     public Instant getCreatedAt() {

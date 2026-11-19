@@ -48,8 +48,10 @@ public class ReturnController {
     @Operation(summary = "Cancel order prior to delivery", description = "Cancels order, releases reserved inventory stock, and auto-initiates refund if paid online")
     public ResponseEntity<ApiResponse<OrderDetailDto>> cancelOrder(
             @PathVariable String orderNumber,
-            @Valid @RequestBody CancelOrderRequest request) {
-        OrderDetailDto result = returnService.cancelOrder(orderNumber, request.getReason(), "CUSTOMER", true);
+            @Valid @RequestBody CancelOrderRequest request,
+            org.springframework.security.core.Authentication auth) {
+        String actor = auth != null ? auth.getName() : "CUSTOMER";
+        OrderDetailDto result = returnService.cancelOrder(orderNumber, request.getReason(), actor, true);
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 }

@@ -43,7 +43,7 @@ public class CategoryController {
     }
 
     @PostMapping("/admin/categories")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'PRODUCT_CREATE', 'PRODUCT_EDIT')")
     @Operation(summary = "Create category or subcategory (Admin only)")
     public ResponseEntity<ApiResponse<CategoryDto>> createCategory(@Valid @RequestBody CategoryCreateRequest request) {
         CategoryDto created = categoryService.createCategory(request);
@@ -51,7 +51,7 @@ public class CategoryController {
     }
 
     @PutMapping("/admin/categories/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'PRODUCT_EDIT')")
     @Operation(summary = "Update category (Admin only)")
     public ResponseEntity<ApiResponse<CategoryDto>> updateCategory(
             @PathVariable Long id,
@@ -61,7 +61,7 @@ public class CategoryController {
     }
 
     @RequestMapping(value = {"/admin/categories/{id}/status", "/admin/categories/{id}/toggle-status"}, method = {RequestMethod.PATCH, RequestMethod.DELETE})
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'PRODUCT_EDIT')")
     @Operation(summary = "Toggle category active state (Admin only)")
     public ResponseEntity<ApiResponse<Void>> toggleCategoryStatus(@PathVariable Long id) {
         categoryService.toggleActiveStatus(id);

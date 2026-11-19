@@ -5,8 +5,22 @@
     </div>
     <h1>Store Desk & Help Center 💬</h1>
     <p class="subtitle">
-      Direct assistance from the Petzlife team at Kuravankonam Junction, Thiruvananthapuram.
+      Direct assistance from the NOVA PETZLIFE team in Thiruvananthapuram.
     </p>
+
+    <!-- WhatsApp Support Banner -->
+    <div class="whatsapp-support-banner mt-3">
+      <div class="wa-content">
+        <span class="wa-icon">💬</span>
+        <div class="wa-text">
+          <strong>Need Instant Help? Chat on WhatsApp!</strong>
+          <p>Get immediate support for delivery queries, stock availability, or order returns.</p>
+        </div>
+      </div>
+      <a [href]="whatsappUrl" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-chat">
+        <span>📲 Open WhatsApp Chat</span>
+      </a>
+    </div>
   </div>
 
   <div class="support-grid">
@@ -100,6 +114,20 @@
             <span class="status-pill" [class.open]="trackedTicket.status === 'OPEN'" [class.progress]="trackedTicket.status === 'IN_PROGRESS'" [class.resolved]="trackedTicket.status === 'RESOLVED'">
               {{ trackedTicket.status }}
             </span>
+          </div>
+
+          <!-- Linked Order and Refund Details -->
+          <div *ngIf="trackedTicket.orderNumber" class="linked-order-box mb-3">
+            <div class="order-box-title">📦 Linked Order Details</div>
+            <div class="order-box-grid">
+              <div><span>Order:</span> <strong>#{{ trackedTicket.orderNumber }}</strong></div>
+              <div><span>Status:</span> <strong>{{ trackedTicket.orderStatus || 'N/A' }}</strong></div>
+              <div><span>Payment / Refund:</span> <strong class="badge-payment">{{ trackedTicket.orderPaymentStatus || 'N/A' }}</strong></div>
+              <div *ngIf="trackedTicket.orderFinalAmount != null"><span>Total:</span> <strong>₹{{ trackedTicket.orderFinalAmount }}</strong></div>
+            </div>
+            <div *ngIf="trackedTicket.orderCancellationReason" class="cancellation-reason-row">
+              <span>Cancellation Reason:</span> {{ trackedTicket.orderCancellationReason }}
+            </div>
           </div>
 
           <!-- Message Thread -->

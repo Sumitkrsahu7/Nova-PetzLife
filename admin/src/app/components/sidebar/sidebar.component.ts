@@ -10,6 +10,8 @@ export interface NavItem {
   route: string;
   badge?: string;
   badgeType?: 'warning' | 'danger' | 'success';
+  permission?: string;
+  superAdminOnly?: boolean;
 }
 
 @Component({
@@ -32,38 +34,48 @@ export class SidebarComponent implements OnInit {
     private router: Router
   ) {}
 
-  navGroups = [
+  navGroups: { title: string; items: NavItem[] }[] = [
     {
       title: 'OPERATIONS',
       items: [
         { label: 'Dashboard', icon: '📊', route: '/dashboard' },
-        { label: 'Orders & Dispatch', icon: '📦', route: '/orders', badge: 'Active', badgeType: 'success' },
+        { label: 'Orders & Dispatch', icon: '📦', route: '/orders', badge: 'Active', badgeType: 'success', permission: 'ORDER_VIEW' },
         { label: 'Customers & Accounts', icon: '👥', route: '/customers' },
-        { label: 'Inventory & Stock', icon: '📋', route: '/inventory' },
-        { label: 'Returns & Refunds', icon: '🔄', route: '/returns', badge: 'Review', badgeType: 'warning' },
-        { label: 'Customer Inquiries', icon: '💬', route: '/support-tickets', badge: 'Help', badgeType: 'warning' }
+        { label: 'Inventory & Stock', icon: '📋', route: '/inventory', permission: 'INVENTORY_VIEW' },
+        { label: 'Returns & Refunds', icon: '🔄', route: '/returns', badge: 'Review', badgeType: 'warning', permission: 'ORDER_VIEW' },
+        { label: 'Customer Inquiries', icon: '💬', route: '/support-tickets', badge: 'Help', badgeType: 'warning', permission: 'CUSTOMER_SUPPORT_VIEW' }
       ]
     },
     {
       title: 'CATALOG & PRICING',
       items: [
-        { label: 'Products & Variants', icon: '🏷️', route: '/products' },
-        { label: 'Category Hierarchy', icon: '📂', route: '/categories' },
-        { label: 'Brand Isolation', icon: '✨', route: '/brands' },
-        { label: 'Promotions & Coupons', icon: '🎟️', route: '/coupons', badge: 'Active', badgeType: 'success' },
-        { label: 'Pricing Engine & GST', icon: '💰', route: '/pricing' }
+        { label: 'Products & Variants', icon: '🏷️', route: '/products', permission: 'PRODUCT_VIEW' },
+        { label: 'Category Hierarchy', icon: '📂', route: '/categories', permission: 'PRODUCT_VIEW' },
+        { label: 'Brand Isolation', icon: '✨', route: '/brands', permission: 'PRODUCT_VIEW' },
+        { label: 'Promotions & Coupons', icon: '🎟️', route: '/coupons', badge: 'Active', badgeType: 'success', permission: 'PRODUCT_VIEW' },
+        { label: 'Pricing Engine & GST', icon: '💰', route: '/pricing', permission: 'PRODUCT_VIEW' }
       ]
     },
     {
       title: 'SETTINGS & COMPLIANCE',
       items: [
         { label: 'Business Analytics & Sales', icon: '📈', route: '/analytics', badge: 'Live', badgeType: 'success' },
-        { label: 'Kuravankonam 20 km Delivery', icon: '📍', route: '/delivery-settings', badge: 'Verify', badgeType: 'danger' },
+        { label: 'Store & Delivery Settings', icon: '📍', route: '/delivery-settings', permission: 'STORE_SETTINGS_EDIT' },
+        { label: 'Staff & Permissions', icon: '👑', route: '/staff', permission: 'STAFF_MANAGE', superAdminOnly: true },
         { label: 'Website Product Reviews', icon: '⭐', route: '/reviews' },
-        { label: 'Audit & Security Logs', icon: '🛡️', route: '/audit' }
+        { label: 'Audit & Security Logs', icon: '🛡️', route: '/audit', superAdminOnly: true }
       ]
     }
   ];
+
+  canShow(item: NavItem): boolean {
+    if (this.currentUserRole === 'ROLE_SUPER_ADMIN') return true;
+    if (item.superAdminOnly) return false;
+    if (item.permission) {
+      return this.adminAuthService.hasPermission(item.permission);
+    }
+    return true;
+  }
 
   ngOnInit(): void {
     const saved = localStorage.getItem('nova_admin_sidebar_collapsed');

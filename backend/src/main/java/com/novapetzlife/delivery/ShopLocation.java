@@ -198,6 +198,10 @@ public class ShopLocation {
         return verifiedAt;
     }
 
+    public void setVerifiedAt(Instant verifiedAt) {
+        this.verifiedAt = verifiedAt;
+    }
+
     public Instant getUpdatedAt() {
         return updatedAt;
     }

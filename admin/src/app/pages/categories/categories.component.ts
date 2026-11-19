@@ -26,6 +26,8 @@ export class CategoriesComponent implements OnInit {
   isLoading = false;
 
   showModal = false;
+  isEditing = false;
+  editingId: number | null = null;
   categoryForm = {
     name: '',
     description: '',
@@ -65,7 +67,21 @@ export class CategoriesComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    this.isEditing = false;
+    this.editingId = null;
     this.categoryForm = { name: '', description: '', displayOrder: this.categories.length + 1 };
+    this.modalErrorMessage = '';
+    this.showModal = true;
+  }
+
+  openEditModal(c: CategoryItem): void {
+    this.isEditing = true;
+    this.editingId = c.id;
+    this.categoryForm = {
+      name: c.name,
+      description: c.description || '',
+      displayOrder: c.displayOrder || 0
+    };
     this.modalErrorMessage = '';
     this.showModal = true;
   }
@@ -76,16 +92,30 @@ export class CategoriesComponent implements OnInit {
       return;
     }
 
-    this.http.post<any>(`${environment.apiUrl}/admin/categories`, this.categoryForm).subscribe({
-      next: res => {
-        if (res?.success) {
-          this.showModal = false;
-          this.fetchCategories();
+    if (this.isEditing && this.editingId) {
+      this.http.put<any>(`${environment.apiUrl}/admin/categories/${this.editingId}`, this.categoryForm).subscribe({
+        next: res => {
+          if (res?.success) {
+            this.showModal = false;
+            this.fetchCategories();
+          }
+        },
+        error: err => {
+          this.modalErrorMessage = err.error?.message || 'Failed to update category';
         }
-      },
-      error: err => {
-        this.modalErrorMessage = err.error?.message || 'Failed to create category';
-      }
-    });
+      });
+    } else {
+      this.http.post<any>(`${environment.apiUrl}/admin/categories`, this.categoryForm).subscribe({
+        next: res => {
+          if (res?.success) {
+            this.showModal = false;
+            this.fetchCategories();
+          }
+        },
+        error: err => {
+          this.modalErrorMessage = err.error?.message || 'Failed to create category';
+        }
+      });
+    }
   }
 }

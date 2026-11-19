@@ -318,11 +318,34 @@ public class ReturnService {
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with number: " + orderNumber));
 
         String currentStatus = order.getOrderStatus();
-        if ("DELIVERED".equalsIgnoreCase(currentStatus)
-                || "OUT_FOR_DELIVERY".equalsIgnoreCase(currentStatus)
-                || "CANCELLED".equalsIgnoreCase(currentStatus)
-                || "RETURNED".equalsIgnoreCase(currentStatus)) {
-            throw new IllegalStateException("Order cannot be cancelled in status: " + currentStatus + ". Please use the return request workflow if delivered.");
+
+        // 1. Ownership validation for customer
+        if (isCustomer && cancelledBy != null && !"CUSTOMER".equalsIgnoreCase(cancelledBy)) {
+            String customerEmail = order.getCustomer() != null && order.getCustomer().getUser() != null
+                    ? order.getCustomer().getUser().getEmail()
+                    : null;
+            if (customerEmail != null && !customerEmail.equalsIgnoreCase(cancelledBy)) {
+                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to cancel this order.");
+            }
+        }
+
+        // 2. State validation: Customer cancellation allowed ONLY before packing
+        if (isCustomer) {
+            boolean allowed = "PENDING_PAYMENT".equalsIgnoreCase(currentStatus)
+                    || "PENDING".equalsIgnoreCase(currentStatus)
+                    || "CONFIRMED".equalsIgnoreCase(currentStatus)
+                    || "PAID".equalsIgnoreCase(currentStatus);
+            if (!allowed) {
+                throw new IllegalStateException("Order cannot be cancelled because it has already reached status: "
+                        + currentStatus + ". Customers can only cancel orders before packing has begun.");
+            }
+        } else {
+            if ("DELIVERED".equalsIgnoreCase(currentStatus)
+                    || "OUT_FOR_DELIVERY".equalsIgnoreCase(currentStatus)
+                    || "CANCELLED".equalsIgnoreCase(currentStatus)
+                    || "RETURNED".equalsIgnoreCase(currentStatus)) {
+                throw new IllegalStateException("Order cannot be cancelled in status: " + currentStatus + ". Please use the return request workflow if delivered.");
+            }
         }
 
         // Release reserved stock for each item

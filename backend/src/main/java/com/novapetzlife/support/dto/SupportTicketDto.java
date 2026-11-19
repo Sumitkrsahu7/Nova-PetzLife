@@ -13,6 +13,10 @@ public class SupportTicketDto {
     private String customerEmail;
     private String customerPhone;
     private String orderNumber;
+    private String orderStatus;
+    private String orderPaymentStatus;
+    private java.math.BigDecimal orderFinalAmount;
+    private String orderCancellationReason;
     private String subject;
     private String priority;
     private String status;
@@ -23,7 +27,7 @@ public class SupportTicketDto {
 
     public SupportTicketDto() {}
 
-    public SupportTicketDto(Long id, String ticketNumber, Long customerId, String customerName, String customerEmail, String customerPhone, String orderNumber, String subject, String priority, String status, String assignedTo, List<SupportMessageDto> messages, Instant createdAt, Instant updatedAt) {
+    public SupportTicketDto(Long id, String ticketNumber, Long customerId, String customerName, String customerEmail, String customerPhone, String orderNumber, String orderStatus, String orderPaymentStatus, java.math.BigDecimal orderFinalAmount, String orderCancellationReason, String subject, String priority, String status, String assignedTo, List<SupportMessageDto> messages, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.ticketNumber = ticketNumber;
         this.customerId = customerId;
@@ -31,6 +35,10 @@ public class SupportTicketDto {
         this.customerEmail = customerEmail;
         this.customerPhone = customerPhone;
         this.orderNumber = orderNumber;
+        this.orderStatus = orderStatus;
+        this.orderPaymentStatus = orderPaymentStatus;
+        this.orderFinalAmount = orderFinalAmount;
+        this.orderCancellationReason = orderCancellationReason;
         this.subject = subject;
         this.priority = priority;
         this.status = status;
@@ -53,6 +61,10 @@ public class SupportTicketDto {
                 t.getCustomer() != null ? t.getCustomer().getEmail() : null,
                 t.getCustomer() != null ? t.getCustomer().getPhone() : null,
                 t.getOrder() != null ? t.getOrder().getOrderNumber() : null,
+                t.getOrder() != null ? t.getOrder().getOrderStatus() : null,
+                t.getOrder() != null ? t.getOrder().getPaymentStatus() : null,
+                t.getOrder() != null ? t.getOrder().getFinalPayableAmount() : null,
+                t.getOrder() != null ? t.getOrder().getCancellationReason() : null,
                 t.getSubject(),
                 t.getPriority(),
                 t.getStatus(),
@@ -62,6 +74,15 @@ public class SupportTicketDto {
                 t.getUpdatedAt()
         );
     }
+
+    public String getOrderStatus() { return orderStatus; }
+    public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
+    public String getOrderPaymentStatus() { return orderPaymentStatus; }
+    public void setOrderPaymentStatus(String orderPaymentStatus) { this.orderPaymentStatus = orderPaymentStatus; }
+    public java.math.BigDecimal getOrderFinalAmount() { return orderFinalAmount; }
+    public void setOrderFinalAmount(java.math.BigDecimal orderFinalAmount) { this.orderFinalAmount = orderFinalAmount; }
+    public String getOrderCancellationReason() { return orderCancellationReason; }
+    public void setOrderCancellationReason(String orderCancellationReason) { this.orderCancellationReason = orderCancellationReason; }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
