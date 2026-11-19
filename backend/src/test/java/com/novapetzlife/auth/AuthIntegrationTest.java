@@ -215,4 +215,17 @@ class AuthIntegrationTest {
                         .content(objectMapper.writeValueAsString(weak4)))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("Should authenticate seeded user anand.nair@example.com with Test@123")
+    void shouldLoginSeededCustomer() throws Exception {
+        LoginRequest loginReq = new LoginRequest("anand.nair@example.com", "Test@123");
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginReq)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.token").isNotEmpty())
+                .andExpect(jsonPath("$.data.email").value("anand.nair@example.com"));
+    }
 }
