@@ -27,117 +27,106 @@
             We deliver pet food, supplies, toys, and grooming essentials within a <strong>{{ shopCoordinates.maxRadiusKm }} km radius</strong> of our store.
           </p>
 
-          <!-- Address Entry Form -->
-          <form class="address-entry-form" (ngSubmit)="checkDeliveryAvailability()">
-            <!-- Full Address / Quick Input -->
-            <div class="form-group mb-3">
-              <label for="fullAddress">Full Address or Locality</label>
-              <div class="input-with-button">
+          <!-- Compact Address & Pincode Entry Form -->
+          <form class="address-entry-form compact-delivery-form" (ngSubmit)="checkDeliveryAvailability()">
+            <div class="compact-checker-wrapper">
+              <label for="fullAddress">Enter Your 6-Digit PIN Code or Locality *</label>
+              <div class="compact-input-bar">
+                <span class="input-pin-icon">📍</span>
                 <input
                   id="fullAddress"
                   type="text"
                   [(ngModel)]="addressForm.fullAddress"
                   name="fullAddress"
-                  placeholder="Enter house, street, locality, or landmark"
-                  class="form-control"
+                  placeholder="e.g. 695003 or Kowdiar"
+                  class="compact-input-field"
+                  required
                 />
                 <button
+                  type="submit"
+                  class="btn-check-submit"
+                  [disabled]="isCheckingDelivery"
+                >
+                  <span *ngIf="!isCheckingDelivery">Check Area</span>
+                  <span *ngIf="isCheckingDelivery">Checking...</span>
+                </button>
+                <button
                   type="button"
-                  class="btn-gps"
+                  class="btn-gps-pill"
                   (click)="useCurrentLocation()"
                   title="Detect my current location via GPS"
                 >
-                  🎯 Use GPS
+                  🎯 GPS
                 </button>
               </div>
             </div>
 
-            <!-- Detailed Address Breakdown -->
-            <div class="form-row-grid">
-              <div class="form-group">
-                <label for="buildingOrHouse">House / Flat / Building No.</label>
-                <input
-                  id="buildingOrHouse"
-                  type="text"
-                  [(ngModel)]="addressForm.buildingOrHouse"
-                  name="buildingOrHouse"
-                  placeholder="e.g. TC 14/25, Sunshine Apts"
-                  class="form-control"
-                />
-              </div>
-
-              <div class="form-group">
-                <label for="streetArea">Street / Locality *</label>
-                <input
-                  id="streetArea"
-                  type="text"
-                  [(ngModel)]="addressForm.streetArea"
-                  name="streetArea"
-                  placeholder="e.g. Kowdiar Main Road"
-                  class="form-control"
-                />
-              </div>
+            <!-- Optional Detailed Address Toggle -->
+            <div class="detailed-toggle-row mt-2">
+              <button
+                type="button"
+                class="btn-toggle-details"
+                (click)="showDetailedFields = !showDetailedFields"
+              >
+                {{ showDetailedFields ? '▲ Hide Full Street Fields' : '▼ Add House / Flat No. (Optional)' }}
+              </button>
             </div>
 
-            <div class="form-row-grid">
-              <div class="form-group">
-                <label for="city">City</label>
-                <input
-                  id="city"
-                  type="text"
-                  [(ngModel)]="addressForm.city"
-                  name="city"
-                  placeholder="Thiruvananthapuram"
-                  class="form-control"
-                />
+            <!-- Collapsible Detailed Address Breakdown -->
+            <div class="collapsible-details mt-2" *ngIf="showDetailedFields">
+              <div class="form-row-grid">
+                <div class="form-group">
+                  <label for="buildingOrHouse">House / Flat / Building No.</label>
+                  <input
+                    id="buildingOrHouse"
+                    type="text"
+                    [(ngModel)]="addressForm.buildingOrHouse"
+                    name="buildingOrHouse"
+                    placeholder="e.g. TC 14/25, Sunshine Apts"
+                    class="form-control"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="streetArea">Street / Locality</label>
+                  <input
+                    id="streetArea"
+                    type="text"
+                    [(ngModel)]="addressForm.streetArea"
+                    name="streetArea"
+                    placeholder="e.g. Kowdiar Main Road"
+                    class="form-control"
+                  />
+                </div>
               </div>
 
-              <div class="form-group">
-                <label for="state">State</label>
-                <input
-                  id="state"
-                  type="text"
-                  [(ngModel)]="addressForm.state"
-                  name="state"
-                  placeholder="Kerala"
-                  class="form-control"
-                />
-              </div>
+              <div class="form-row-grid mt-2">
+                <div class="form-group">
+                  <label for="city">City</label>
+                  <input
+                    id="city"
+                    type="text"
+                    [(ngModel)]="addressForm.city"
+                    name="city"
+                    placeholder="Thiruvananthapuram"
+                    class="form-control"
+                  />
+                </div>
 
-              <div class="form-group">
-                <label for="pincode">PIN Code *</label>
-                <input
-                  id="pincode"
-                  type="text"
-                  [(ngModel)]="addressForm.pincode"
-                  name="pincode"
-                  placeholder="695003"
-                  maxlength="6"
-                  class="form-control"
-                />
+                <div class="form-group">
+                  <label for="pincode">PIN Code</label>
+                  <input
+                    id="pincode"
+                    type="text"
+                    [(ngModel)]="addressForm.pincode"
+                    name="pincode"
+                    placeholder="695003"
+                    maxlength="6"
+                    class="form-control"
+                  />
+                </div>
               </div>
             </div>
-
-            <div class="form-group mb-3">
-              <label for="landmark">Optional Landmark</label>
-              <input
-                id="landmark"
-                type="text"
-                [(ngModel)]="addressForm.landmark"
-                name="landmark"
-                placeholder="e.g. Near Post Office / Petrol Pump"
-                class="form-control"
-              />
-            </div>
-
-            <button
-              type="submit"
-              class="btn btn-primary btn-block check-btn"
-              [disabled]="isCheckingDelivery"
-            >
-              <span *ngIf="!isCheckingDelivery">Check Delivery Availability</span>
-              <span *ngIf="isCheckingDelivery">Verifying Delivery Radius...</span>
-            </button>
           </form>
 
           <!-- Error Alert -->

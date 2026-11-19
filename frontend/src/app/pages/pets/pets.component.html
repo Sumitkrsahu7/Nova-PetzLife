@@ -106,7 +106,7 @@
   <div *ngIf="!isLoading && pets.length === 0" class="empty-state">
     <div class="empty-illustration">🐕🐈</div>
     <h2>No Pets Registered Yet</h2>
-    <p>Add your dog, cat, bird, fish or small companion to get personalized diet and care suggestions straight from our Kuravankonam shop experts!</p>
+    <p>Add your dog, cat, bird, fish or small companion to get personalized diet and care suggestions straight from our our shop experts!</p>
     <button (click)="openNewPetForm()" class="btn-add-pet-large">Register Your First Pet 🐾</button>
   </div>
 
@@ -173,7 +173,7 @@
         </div>
 
         <div *ngIf="!isLoadingRecommendations && recommendations && (!recommendations.recommendedProducts || recommendations.recommendedProducts.length === 0)" class="no-recs">
-          <p>No specific formula match found for this pet's life stage yet. Check our complete catalog or contact our shop at Kuravankonam!</p>
+          <p>No specific formula match found for this pet's life stage yet. Check our complete catalog or contact our shop at our!</p>
           <a routerLink="/" class="btn-browse-all">Browse All Products</a>
         </div>
 
@@ -193,7 +193,7 @@
               <div class="rec-pricing">
                 <strong class="rec-price">₹{{ (product.salePrice || product.regularPrice) | number:'1.2-2' }}</strong>
                 <span *ngIf="product.salePrice && product.salePrice < product.regularPrice" class="rec-regular">₹{{ product.regularPrice | number:'1.2-2' }}</span>
-                <span class="stock-badge" [class.in-stock]="product.isInStock">{{ product.isInStock ? 'In Stock (Kuravankonam)' : 'Out of Stock' }}</span>
+                <span class="stock-badge" [class.in-stock]="product.isInStock">{{ product.isInStock ? 'In Stock (our)' : 'Out of Stock' }}</span>
               </div>
             </div>
             <div class="rec-actions">
@@ -208,3 +208,4 @@
     </div>
   </div>
 </div>
+

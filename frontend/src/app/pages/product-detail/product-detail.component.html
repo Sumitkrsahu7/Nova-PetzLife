@@ -64,7 +64,7 @@
         <!-- Stock Status -->
         <div class="stock-badge" [class.in-stock]="product.availableStock > 0" [class.out-of-stock]="product.availableStock <= 0">
           <span class="dot"></span>
-          <span>{{ product.availableStock > 0 ? 'In Stock (' + product.availableStock + ' available at Kuravankonam Store)' : 'Out of Stock' }}</span>
+          <span>{{ product.availableStock > 0 ? 'In Stock (' + product.availableStock + ' available at our store)' : 'Out of Stock' }}</span>
         </div>
 
         <!-- Variant Options -->
@@ -108,7 +108,7 @@
             <span class="icon">🚚</span>
             <div>
               <strong>Local Delivery (20 km Radius)</strong>
-              <p>Free home delivery on orders above ₹500 across Thiruvananthapuram from Kuravankonam Junction.</p>
+              <p>Free home delivery on orders above ₹500 across Thiruvananthapuram from our store.</p>
             </div>
           </div>
           <div class="policy-card">
@@ -246,7 +246,7 @@
           <div *ngIf="rev.adminReply" class="admin-reply-box">
             <div class="reply-header">
               <span class="badge">Store Response</span>
-              <strong>NOVA PETZLIFE (Kuravankonam Desk)</strong>
+              <strong>NOVA PETZLIFE (our Desk)</strong>
             </div>
             <p>{{ rev.adminReply }}</p>
           </div>
@@ -255,3 +255,4 @@
     </section>
   </div>
 </div>
+

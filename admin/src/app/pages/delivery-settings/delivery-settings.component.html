@@ -173,6 +173,114 @@
     </div>
   </div>
 
+  <!-- 🏪 Store Operations, Timings & Live Status Controls (Super Admin) -->
+  <div class="card store-operations-card mt-4">
+    <div class="card-header-row">
+      <div>
+        <h3>🏪 Physical Shop Hours & Express Delivery Timing Controls</h3>
+        <p class="subtitle">Super Admin live controls for physical shop opening/closing status, customer operating hours, and dispatch delivery windows.</p>
+      </div>
+      <div class="header-badges">
+        <span class="status-live-badge" [class.badge-open]="storeStatus.isShopOpen" [class.badge-closed]="!storeStatus.isShopOpen">
+          {{ storeStatus.isShopOpen ? '🟢 STORE OPEN NOW' : '🔴 STORE CLOSED' }}
+        </span>
+        <span class="status-live-badge" [class.badge-open]="storeStatus.isDeliveryActive" [class.badge-closed]="!storeStatus.isDeliveryActive">
+          {{ storeStatus.isDeliveryActive ? '⚡ DELIVERY ACTIVE' : '⏸️ DELIVERY PAUSED' }}
+        </span>
+      </div>
+    </div>
+
+    <form (ngSubmit)="saveStoreStatus()" class="operations-grid-form">
+      <!-- Status Toggles -->
+      <div class="toggles-grid">
+        <div class="toggle-card" [class.active]="storeStatus.isShopOpen">
+          <div class="toggle-info">
+            <span class="toggle-icon">{{ storeStatus.isShopOpen ? '🏪' : '🔒' }}</span>
+            <div>
+              <strong>Physical Store Status</strong>
+              <p>{{ storeStatus.isShopOpen ? 'Store is open for walk-in customers and order pickups.' : 'Store is marked closed. Notice displayed on storefront.' }}</p>
+            </div>
+          </div>
+          <button type="button" class="btn-toggle-switch" [class.on]="storeStatus.isShopOpen" (click)="toggleShopOpen()">
+            {{ storeStatus.isShopOpen ? 'Switch to Closed' : 'Switch to Open' }}
+          </button>
+        </div>
+
+        <div class="toggle-card" [class.active]="storeStatus.isDeliveryActive">
+          <div class="toggle-info">
+            <span class="toggle-icon">{{ storeStatus.isDeliveryActive ? '🚚' : '⏸️' }}</span>
+            <div>
+              <strong>Local Delivery Service</strong>
+              <p>{{ storeStatus.isDeliveryActive ? 'Local 20 km dispatch is actively accepting orders.' : 'Local delivery temporarily paused (e.g. heavy rain or store holiday).' }}</p>
+            </div>
+          </div>
+          <button type="button" class="btn-toggle-switch" [class.on]="storeStatus.isDeliveryActive" (click)="toggleDeliveryActive()">
+            {{ storeStatus.isDeliveryActive ? 'Pause Delivery' : 'Activate Delivery' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Timing Fields Grid -->
+      <div class="timings-grid-fields mt-3">
+        <div class="timing-block">
+          <h4>🕒 Weekday Store Hours (Mon – Sat)</h4>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="shopOpenTime">Opening Time</label>
+              <input id="shopOpenTime" type="text" [(ngModel)]="storeStatus.shopOpenTime" name="shopOpenTime" placeholder="e.g. 09:00 AM" />
+            </div>
+            <div class="form-group">
+              <label for="shopCloseTime">Closing Time</label>
+              <input id="shopCloseTime" type="text" [(ngModel)]="storeStatus.shopCloseTime" name="shopCloseTime" placeholder="e.g. 08:30 PM" />
+            </div>
+          </div>
+        </div>
+
+        <div class="timing-block">
+          <h4>☀️ Sunday / Holiday Hours</h4>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="sundayOpenTime">Opening Time</label>
+              <input id="sundayOpenTime" type="text" [(ngModel)]="storeStatus.sundayOpenTime" name="sundayOpenTime" placeholder="e.g. 10:00 AM" />
+            </div>
+            <div class="form-group">
+              <label for="sundayCloseTime">Closing Time</label>
+              <input id="sundayCloseTime" type="text" [(ngModel)]="storeStatus.sundayCloseTime" name="sundayCloseTime" placeholder="e.g. 06:00 PM" />
+            </div>
+          </div>
+        </div>
+
+        <div class="timing-block">
+          <h4>🚚 Daily Delivery Operational Hours</h4>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="deliveryStartTime">Delivery Starts</label>
+              <input id="deliveryStartTime" type="text" [(ngModel)]="storeStatus.deliveryStartTime" name="deliveryStartTime" placeholder="e.g. 09:30 AM" />
+            </div>
+            <div class="form-group">
+              <label for="deliveryEndTime">Last Dispatch Window</label>
+              <input id="deliveryEndTime" type="text" [(ngModel)]="storeStatus.deliveryEndTime" name="deliveryEndTime" placeholder="e.g. 08:00 PM" />
+            </div>
+          </div>
+        </div>
+
+        <div class="timing-block">
+          <h4>⚡ Customer Speed & Banner Notice</h4>
+          <div class="form-group">
+            <label for="deliverySpeedNotice">Turnaround Promise</label>
+            <input id="deliverySpeedNotice" type="text" [(ngModel)]="storeStatus.deliverySpeedNotice" name="deliverySpeedNotice" placeholder="e.g. Express Delivery within 2 - 3 Hours in Trivandrum" />
+          </div>
+        </div>
+      </div>
+
+      <div class="operations-actions mt-3">
+        <button type="submit" class="btn btn-primary" [disabled]="isSavingStoreStatus">
+          {{ isSavingStoreStatus ? 'Saving Changes...' : '💾 Save Store Hours & Delivery Timings' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
   <!-- Delivery Windows Management Card -->
   <div class="card slots-card mt-4">
     <div class="card-header-row">

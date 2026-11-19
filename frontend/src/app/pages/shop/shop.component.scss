@@ -65,6 +65,190 @@
   }
 }
 
+/* 4 Department Pillars Grid */
+.department-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: 992px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .pillar-card {
+    background: #FFFFFF;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 1.15rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+
+    &:hover {
+      border-color: #248B58;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(36, 139, 88, 0.1);
+
+      .pillar-action {
+        color: #155C3B;
+      }
+    }
+
+    &.active {
+      border-color: #248B58;
+      background: #F0FDF4;
+      box-shadow: 0 0 0 2px rgba(36, 139, 88, 0.2);
+    }
+
+    .pillar-icon {
+      font-size: 2.2rem;
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      background: #F8FAFC;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pillar-details {
+      flex: 1;
+      min-width: 0;
+
+      h3 {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #155C3B;
+        margin: 0 0 0.2rem;
+      }
+
+      p {
+        font-size: 0.78rem;
+        color: #64748B;
+        margin: 0 0 0.35rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .pillar-action {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #248B58;
+        display: inline-block;
+        transition: color 0.15s;
+      }
+    }
+  }
+}
+
+/* Department Sub-Nav & Life-Stage Need Chips */
+.department-subnav-bar {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+
+  .dept-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .dept-pill {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      color: #334155;
+      padding: 0.45rem 0.95rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: #E2E8F0;
+        color: #0F172A;
+      }
+
+      &.active {
+        background: #248B58;
+        border-color: #248B58;
+        color: #FFFFFF;
+        box-shadow: 0 2px 8px rgba(36, 139, 88, 0.25);
+      }
+    }
+  }
+
+  .need-chips-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .need-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #64748B;
+      margin-right: 0.35rem;
+      white-space: nowrap;
+    }
+
+    .need-chip {
+      background: transparent;
+      border: 1px dashed #CBD5E1;
+      color: #475569;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+
+      &:hover {
+        border-color: #248B58;
+        color: #155C3B;
+      }
+
+      &.active {
+        background: #E7F5E9;
+        border-color: #86EFAC;
+        border-style: solid;
+        color: #166534;
+        font-weight: 700;
+      }
+    }
+  }
+}
+
 /* Mobile Filter Bar */
 .mobile-filter-bar {
   display: none;

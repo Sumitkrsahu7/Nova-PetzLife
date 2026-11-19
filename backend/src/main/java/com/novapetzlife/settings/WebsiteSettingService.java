@@ -80,4 +80,76 @@ public class WebsiteSettingService {
             String address,
             String timings
     ) {}
+
+    public record StoreStatusDto(
+            boolean isShopOpen,
+            String shopOpenTime,
+            String shopCloseTime,
+            String sundayOpenTime,
+            String sundayCloseTime,
+            boolean isDeliveryActive,
+            String deliveryStartTime,
+            String deliveryEndTime,
+            String deliverySpeedNotice,
+            String storeTimingsSummary
+    ) {}
+
+    @Transactional(readOnly = true)
+    public StoreStatusDto getStoreStatus() {
+        boolean isShopOpen = Boolean.parseBoolean(getSetting("store_is_open", "true"));
+        String shopOpenTime = getSetting("store_open_time", "09:00 AM");
+        String shopCloseTime = getSetting("store_close_time", "08:30 PM");
+        String sundayOpenTime = getSetting("store_sunday_open_time", "10:00 AM");
+        String sundayCloseTime = getSetting("store_sunday_close_time", "06:00 PM");
+
+        boolean isDeliveryActive = Boolean.parseBoolean(getSetting("delivery_is_active", "true"));
+        String deliveryStartTime = getSetting("delivery_start_time", "09:30 AM");
+        String deliveryEndTime = getSetting("delivery_end_time", "08:00 PM");
+        String deliverySpeedNotice = getSetting("delivery_speed_notice", "Express Delivery within 2 - 3 Hours in Trivandrum");
+        String storeTimingsSummary = getSetting("store_timings", "Mon - Sat: 09:00 AM - 08:30 PM | Sun: 10:00 AM - 06:00 PM");
+
+        return new StoreStatusDto(
+                isShopOpen,
+                shopOpenTime,
+                shopCloseTime,
+                sundayOpenTime,
+                sundayCloseTime,
+                isDeliveryActive,
+                deliveryStartTime,
+                deliveryEndTime,
+                deliverySpeedNotice,
+                storeTimingsSummary
+        );
+    }
+
+    @Transactional
+    public StoreStatusDto updateStoreStatus(StoreStatusDto dto) {
+        updateSetting("store_is_open", String.valueOf(dto.isShopOpen()), "Whether the physical pet shop is currently open for customers");
+        if (dto.shopOpenTime() != null) {
+            updateSetting("store_open_time", dto.shopOpenTime(), "Daily shop opening time");
+        }
+        if (dto.shopCloseTime() != null) {
+            updateSetting("store_close_time", dto.shopCloseTime(), "Daily shop closing time");
+        }
+        if (dto.sundayOpenTime() != null) {
+            updateSetting("store_sunday_open_time", dto.sundayOpenTime(), "Sunday opening time");
+        }
+        if (dto.sundayCloseTime() != null) {
+            updateSetting("store_sunday_close_time", dto.sundayCloseTime(), "Sunday closing time");
+        }
+        updateSetting("delivery_is_active", String.valueOf(dto.isDeliveryActive()), "Whether local express delivery service is active");
+        if (dto.deliveryStartTime() != null) {
+            updateSetting("delivery_start_time", dto.deliveryStartTime(), "Daily delivery operations start time");
+        }
+        if (dto.deliveryEndTime() != null) {
+            updateSetting("delivery_end_time", dto.deliveryEndTime(), "Daily delivery operations end time");
+        }
+        if (dto.deliverySpeedNotice() != null) {
+            updateSetting("delivery_speed_notice", dto.deliverySpeedNotice(), "Delivery turnaround notice");
+        }
+        if (dto.storeTimingsSummary() != null) {
+            updateSetting("store_timings", dto.storeTimingsSummary(), "Display summary of store timings");
+        }
+        return getStoreStatus();
+    }
 }

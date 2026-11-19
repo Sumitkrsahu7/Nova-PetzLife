@@ -11,6 +11,7 @@ import { RouterModule } from '@angular/router';
 })
 export class FooterComponent {
   currentYear = new Date().getFullYear();
-  shopAddress = 'Petzlife, Kuravankonam Junction, Kuravankonam Ambalamukku Road, Thiruvananthapuram, Kerala 695003, India';
+  shopAddress = 'our store, our Ambalamukku Road, Thiruvananthapuram, Kerala 695003, India';
   googleReviewUrl = 'https://www.google.com/search?q=petzlife+reviews';
 }
+

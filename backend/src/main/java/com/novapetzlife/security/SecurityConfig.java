@@ -60,9 +60,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
-                        // Public Shopping Cart & Delivery Geolocation
+                        // Public Shopping Cart, Delivery Geolocation & Store Settings
                         .requestMatchers("/api/v1/cart/**").permitAll()
                         .requestMatchers("/api/v1/delivery/**").permitAll()
+                        .requestMatchers("/api/v1/settings/**").permitAll()
                         // Public Checkout, Order Tracking, Invoices & Returns
                         .requestMatchers("/api/v1/orders/checkout").permitAll()
                         .requestMatchers("/api/v1/orders/*/track").permitAll()

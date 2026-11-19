@@ -242,9 +242,21 @@
     cursor: pointer;
     flex-shrink: 0;
     transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 
     &:hover {
       background-color: #155C3B;
+    }
+
+    .search-btn-icon {
+      display: none;
+    }
+
+    .search-btn-text {
+      display: inline;
     }
   }
 }
@@ -693,8 +705,24 @@
       }
 
       .search-submit-btn {
-        padding: 0.35rem 0.75rem;
-        font-size: 0.78rem;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        .search-btn-text {
+          display: none;
+        }
+
+        .search-btn-icon {
+          display: inline;
+          font-size: 0.85rem;
+          line-height: 1;
+        }
       }
     }
   }
@@ -717,39 +745,39 @@
 
   .logout-modal-card {
     background: #FFFFFF;
-    border-radius: 16px;
-    padding: 2rem 1.75rem;
-    max-width: 400px;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    max-width: 360px;
     width: 100%;
     text-align: center;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
     animation: modalPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
     .modal-badge-icon {
-      font-size: 2.25rem;
-      width: 58px;
-      height: 58px;
+      font-size: 1.5rem;
+      width: 44px;
+      height: 44px;
       background: #FEE2E2;
       color: #DC2626;
       border-radius: 50%;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 1rem auto;
+      margin: 0 auto 0.65rem auto;
     }
 
     h3 {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 800;
       color: #0F172A;
-      margin: 0 0 0.5rem 0;
+      margin: 0 0 0.35rem 0;
     }
 
     p {
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       color: #64748B;
-      margin: 0 0 1.5rem 0;
-      line-height: 1.45;
+      margin: 0 0 1.15rem 0;
+      line-height: 1.4;
     }
 
     .modal-actions {
