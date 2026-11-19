@@ -106,12 +106,13 @@
         <nav class="breadcrumb" aria-label="Breadcrumb">
           <a routerLink="/">Home</a> &gt;
           <a href="javascript:void(0)" (click)="backToDepartments()">Departments</a> &gt;
-          <span>{{ activeDepartmentTitle }}</span>
+          <span *ngIf="!searchQuery?.trim()">{{ activeDepartmentTitle }}</span>
+          <span *ngIf="searchQuery?.trim()">Search: "{{ searchQuery.trim() }}"</span>
         </nav>
       </div>
 
-      <!-- Department Hero Card -->
-      <section class="department-hero-card">
+      <!-- Department Hero Card (hidden when user is searching) -->
+      <section class="department-hero-card" *ngIf="!searchQuery?.trim()">
         <div class="hero-left">
           <div class="hero-icon-box">{{ activeDepartmentIcon }}</div>
           <div class="hero-text">
@@ -123,6 +124,17 @@
           <span class="dept-stock-badge">{{ totalElements }} Products Available</span>
         </div>
       </section>
+
+      <!-- Active Search Header (replaces department hero card during search) -->
+      <div class="search-results-header" *ngIf="searchQuery?.trim()">
+        <div class="search-results-info">
+          <h2>Search Results for <em>"{{ searchQuery.trim() }}"</em></h2>
+          <span class="search-count-badge">{{ totalElements }} {{ totalElements === 1 ? 'Product' : 'Products' }} Found</span>
+        </div>
+        <button type="button" class="btn-clear-search" (click)="searchQuery = ''; onFilterChange()" aria-label="Clear active search">
+          ✕ Clear Search
+        </button>
+      </div>
 
       <!-- Department Toolbar: In-department Search, Brand Filter, In-Stock, Sort -->
       <div class="department-toolbar">

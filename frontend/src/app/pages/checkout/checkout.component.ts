@@ -7,11 +7,12 @@ import { DeliveryService, DeliveryEligibility, DeliverySlot } from '../../core/s
 import { OrderService, CheckoutPayload } from '../../core/services/order.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { PromotionService, Coupon } from '../../core/services/promotion.service';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent],
   templateUrl: './checkout.component.html',
   styleUrls: ['./checkout.component.scss']
 })

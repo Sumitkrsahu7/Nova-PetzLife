@@ -54,6 +54,14 @@
       </div>
     </div>
 
+    <!-- Mobile-Only Action to Read All Reviews on Google (shown right after the 2 mobile reviews) -->
+    <div class="mobile-reviews-cta">
+      <a [href]="businessInfo.googleMapsUrl" target="_blank" rel="noopener noreferrer" class="mobile-read-all-btn">
+        <span>Read All {{ businessInfo.totalReviewCount }}+ Google Reviews</span>
+        <span class="arrow">↗</span>
+      </a>
+    </div>
+
     <!-- Distinction & Compliance Notice -->
     <div class="integration-notice">
       <span class="notice-icon">ℹ️</span>

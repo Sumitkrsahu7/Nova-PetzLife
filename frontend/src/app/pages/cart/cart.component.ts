@@ -2,11 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { CartService, Cart, CartItem } from '../../core/services/cart.service';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, BackButtonComponent],
   templateUrl: './cart.component.html',
   styleUrls: ['./cart.component.scss']
 })
@@ -21,6 +22,7 @@ export class CartComponent implements OnInit {
     this.cartService.cart$.subscribe(cart => {
       this.cart = cart;
     });
+    this.cartService.loadCart().subscribe();
   }
 
   get remainingForFreeDelivery(): number {

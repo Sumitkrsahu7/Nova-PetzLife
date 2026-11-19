@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PetService, PetProfile, CreatePetPayload, PetRecommendation, RecommendedProduct } from '../../core/services/pet.service';
 import { CartService } from '../../core/services/cart.service';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
 @Component({
   selector: 'app-pets',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent],
   templateUrl: './pets.component.html',
   styleUrls: ['./pets.component.scss']
 })
@@ -178,7 +179,16 @@ export class PetsComponent implements OnInit {
   }
 
   addToCart(product: RecommendedProduct): void {
-    this.cartService.addItem(product.id, 1).subscribe({
+    const price = product.salePrice || product.regularPrice;
+    this.cartService.addItem(product.id, undefined, 1, {
+      productName: product.name,
+      brandName: product.brandName || 'Nova Petzlife',
+      primaryImageUrl: product.featuredImageUrl,
+      unitPrice: price,
+      availableStock: product.currentStock || 15,
+      returnAllowed: true,
+      returnWindowDays: 7
+    }).subscribe({
       next: () => {
         this.successMessage = `Added ${product.name} to cart!`;
         setTimeout(() => this.successMessage = '', 3500);

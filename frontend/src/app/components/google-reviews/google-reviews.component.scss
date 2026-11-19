@@ -247,6 +247,10 @@
   }
 }
 
+.mobile-reviews-cta {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .google-reviews-section {
     padding: 2.5rem 0;
@@ -294,6 +298,38 @@
   .review-cards-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+
+    .review-card:nth-child(n+3) {
+      display: none !important;
+    }
+  }
+
+  .mobile-reviews-cta {
+    display: block;
+    margin-top: 1.25rem;
+    text-align: center;
+
+    .mobile-read-all-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      background-color: #248B58;
+      color: #FFFFFF;
+      text-decoration: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      transition: background 0.2s ease;
+      touch-action: manipulation;
+      min-height: 44px;
+
+      &:hover {
+        background-color: #155C3B;
+      }
+    }
   }
 
   .review-card {

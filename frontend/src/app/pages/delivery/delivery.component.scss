@@ -640,22 +640,161 @@
   }
 
   .checker-right-col .interactive-leaflet-map {
-    height: 400px;
+    height: 380px;
   }
 }
 
-@media (max-width: 600px) {
-  .page-header h1 {
-    font-size: 1.65rem;
+@media (max-width: 640px) {
+  .delivery-page {
+    padding: 1rem 0 3rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.25rem;
+
+    h1 {
+      font-size: 1.5rem;
+      line-height: 1.25;
+    }
+
+    .subtitle {
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
   }
 
   .checker-card {
-    padding: 1.25rem 0.85rem;
+    padding: 1.15rem 0.85rem;
     border-radius: 12px;
+    gap: 1.5rem;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
-  .checker-right-col .interactive-leaflet-map {
-    height: 350px;
+  .compact-delivery-form {
+    max-width: 100%;
+
+    .compact-checker-wrapper .compact-input-bar {
+      border-radius: 14px;
+      flex-wrap: wrap;
+      padding: 0.65rem 0.75rem;
+      gap: 0.5rem;
+
+      .compact-input-field {
+        flex: 1 1 calc(100% - 2.2rem);
+        width: calc(100% - 2.2rem);
+        min-width: 150px;
+        padding: 0.25rem 0;
+        font-size: 0.92rem;
+      }
+
+      .btn-check-submit {
+        flex: 1 1 auto;
+        text-align: center;
+        justify-content: center;
+        padding: 0.65rem 1rem;
+        font-size: 0.88rem;
+        min-height: 44px;
+      }
+
+      .btn-gps-pill {
+        flex: 0 0 auto;
+        padding: 0.65rem 0.95rem;
+        font-size: 0.88rem;
+        min-height: 44px;
+      }
+    }
+  }
+
+  .checker-result {
+    padding: 1rem 0.85rem;
+
+    .result-header {
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .result-headline {
+        h3 {
+          font-size: 1.05rem;
+        }
+
+        .distance-pill {
+          display: inline-block;
+          font-size: 0.78rem;
+          line-height: 1.4;
+          white-space: normal;
+          border-radius: 6px;
+          padding: 0.35rem 0.6rem;
+          word-break: break-word;
+        }
+      }
+    }
+
+    .result-body .result-actions {
+      flex-direction: column;
+
+      .btn-sm {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+      }
+    }
+  }
+
+  .checker-right-col {
+    .map-card-container {
+      border-radius: 12px;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .map-card-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.75rem 0.85rem;
+
+      .btn-reset-map {
+        align-self: flex-start;
+        padding: 0.35rem 0.75rem;
+      }
+    }
+
+    .interactive-leaflet-map {
+      height: 280px;
+      min-height: 260px;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .map-card-footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.45rem;
+      padding: 0.75rem 0.85rem;
+    }
+  }
+
+  .store-info-section {
+    padding-top: 1.75rem;
+
+    .section-title-wrap {
+      margin-bottom: 1.25rem;
+
+      h2 {
+        font-size: 1.35rem;
+      }
+    }
+
+    .store-info-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+
+      .info-card {
+        padding: 1.15rem 1rem;
+      }
+    }
   }
 }
 

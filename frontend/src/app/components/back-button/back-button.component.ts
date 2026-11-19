@@ -17,7 +17,7 @@ import { Router } from '@angular/router';
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      background: transparent;
+      background: #FFFFFF;
       border: 1px solid #DDE7DF;
       color: #26352D;
       padding: 0.4rem 0.85rem;
@@ -25,15 +25,37 @@ import { Router } from '@angular/router';
       font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
-      margin-bottom: 1rem;
+      margin-bottom: 0.85rem;
       transition: all 0.2s ease;
       touch-action: manipulation;
-      min-height: 44px;
+      min-height: 40px;
 
       &:hover {
         background: #E7F5E9;
         color: #155C3B;
         border-color: #248B58;
+      }
+
+      @media (max-width: 768px) {
+        min-width: 38px;
+        min-height: 38px;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        border-radius: 50%;
+        justify-content: center;
+        background: #F4F7F5;
+        border: 1px solid #DDE7DF;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+        .back-label {
+          display: none !important;
+        }
+
+        .back-icon {
+          font-size: 1.15rem;
+          line-height: 1;
+        }
       }
     }
   `]

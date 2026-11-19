@@ -22,6 +22,13 @@ export interface StoreInfo {
   availableServices: string[];
 }
 
+export interface WhatsAppConfig {
+  phoneNumber: string;
+  displayPhoneNumber: string;
+  defaultMessage: string;
+  whatsappUrl: string;
+}
+
 export interface FaqItem {
   category: string;
   question: string;
@@ -78,6 +85,13 @@ export class SupportService {
 
   public getStoreInfo(): Observable<{ success: boolean; data: StoreInfo }> {
     return this.http.get<{ success: boolean; data: StoreInfo }>(`${this.apiUrl}/store-info`);
+  }
+
+  public getWhatsAppConfig(product?: string, message?: string): Observable<{ success: boolean; data: WhatsAppConfig }> {
+    let params: any = {};
+    if (product) params.product = product;
+    if (message) params.message = message;
+    return this.http.get<{ success: boolean; data: WhatsAppConfig }>(`${this.apiUrl}/whatsapp`, { params });
   }
 
   public getContactInfo(): Observable<{ success: boolean; data: any }> {
