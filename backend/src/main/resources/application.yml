@@ -11,7 +11,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:mysql://localhost:3306/nova_petzlife?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true}}
     username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:novapetz}}
-    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:Novapetz@1}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
   jpa:
     database-platform: ${JPA_DATABASE_PLATFORM:org.hibernate.dialect.MySQLDialect}
