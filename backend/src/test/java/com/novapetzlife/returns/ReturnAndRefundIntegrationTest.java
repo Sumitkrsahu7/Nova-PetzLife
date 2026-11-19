@@ -12,7 +12,6 @@ import com.novapetzlife.customer.CustomerAddressRepository;
 import com.novapetzlife.customer.CustomerRepository;
 import com.novapetzlife.delivery.ShopLocation;
 import com.novapetzlife.delivery.ShopLocationRepository;
-import com.novapetzlife.inventory.Inventory;
 import com.novapetzlife.inventory.InventoryRepository;
 import com.novapetzlife.inventory.InventoryService;
 import com.novapetzlife.inventory.InventoryTransactionRepository;

@@ -3,7 +3,6 @@ package com.novapetzlife.analytics;
 import com.novapetzlife.analytics.dto.AnalyticsSummaryDto;
 import com.novapetzlife.analytics.dto.LowStockAlertDto;
 import com.novapetzlife.analytics.dto.TopProductDto;
-import com.novapetzlife.inventory.Inventory;
 import com.novapetzlife.inventory.InventoryRepository;
 import com.novapetzlife.order.Order;
 import com.novapetzlife.order.OrderItem;

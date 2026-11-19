@@ -23,7 +23,6 @@ import com.novapetzlife.order.*;
 import com.novapetzlife.payment.PaymentRepository;
 import com.novapetzlife.petprofile.PetProfileRepository;
 import com.novapetzlife.product.Product;
-import com.novapetzlife.product.ProductImage;
 import com.novapetzlife.product.ProductImageRepository;
 import com.novapetzlife.product.ProductRepository;
 import com.novapetzlife.promotion.CouponRepository;
