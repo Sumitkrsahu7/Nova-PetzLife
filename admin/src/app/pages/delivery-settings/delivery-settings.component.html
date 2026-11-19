@@ -284,54 +284,117 @@
   <!-- Delivery Windows Management Card -->
   <div class="card slots-card mt-4">
     <div class="card-header-row">
-      <div>
-        <h3>Active Delivery Windows</h3>
-        <p class="subtitle">Manage scheduled local delivery slots, daily capacity, and dispatch timing</p>
+      <div class="title-group">
+        <div class="title-with-badge">
+          <h3>🚚 Active Delivery Windows</h3>
+          <span class="slot-count-badge">{{ slots.length }} Configured</span>
+        </div>
+        <p class="subtitle">Manage scheduled local dispatch windows, daily order capacity, cutoff buffers, and customer checkout availability</p>
       </div>
-      <button class="btn btn-primary" (click)="openCreateSlotModal()">+ Add Delivery Window</button>
+      <button type="button" class="btn btn-primary btn-add-slot" (click)="openCreateSlotModal()">
+        <span>➕ Add Delivery Window</span>
+      </button>
     </div>
 
+    <!-- Quick Stats Overview Bar -->
+    <div class="slots-stats-bar" *ngIf="slots.length > 0">
+      <div class="stat-pill">
+        <span class="stat-icon">🚚</span>
+        <div class="stat-info">
+          <span class="stat-label">Total Windows</span>
+          <span class="stat-val">{{ slots.length }} Slots</span>
+        </div>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-icon">🟢</span>
+        <div class="stat-info">
+          <span class="stat-label">Active at Checkout</span>
+          <span class="stat-val text-success">{{ getActiveSlotCount() }} Live</span>
+        </div>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-icon">📦</span>
+        <div class="stat-info">
+          <span class="stat-label">Daily Capacity</span>
+          <span class="stat-val">{{ getTotalCapacity() }} Orders/Day</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Delivery Windows Table -->
     <div *ngIf="slots.length > 0" class="table-responsive mt-3">
-      <table class="data-table">
+      <table class="slots-table">
         <thead>
           <tr>
             <th>Slot Name</th>
-            <th>Delivery Window</th>
-            <th>Max Orders</th>
+            <th>Operating Window</th>
+            <th>Order Capacity</th>
             <th>Cutoff Buffer</th>
             <th>Applicable Days</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>Checkout Status</th>
+            <th class="text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let s of paginatedSlots">
-            <td><strong>{{ s.slotName }}</strong></td>
-            <td><code>{{ s.startTime }} – {{ s.endTime }}</code></td>
-            <td>{{ s.maxOrders }} orders</td>
-            <td>{{ s.cutoffMinutes }} mins</td>
-            <td><small>{{ s.availableDays || 'Mon – Sat' }}</small></td>
-            <td>
-              <button type="button" class="status-toggle-btn" [class.active]="s.isActive" (click)="toggleSlotActive(s)"
-                title="Toggle slot active/inactive">
-                {{ s.isActive ? 'Active' : 'Inactive' }}
-              </button>
+            <td class="slot-name-cell">
+              <span class="slot-icon">🚚</span>
+              <strong>{{ s.slotName }}</strong>
             </td>
             <td>
-              <div class="btn-group-actions">
-                <button type="button" class="btn-sm btn-outline" (click)="openEditSlotModal(s)">✏️ Edit</button>
-                <button type="button" class="btn-sm btn-danger-outline" (click)="deleteSlot(s)">🗑️ Delete</button>
+              <span class="time-badge">
+                <span class="time-clock-icon">🕒</span>
+                {{ s.startTime }} – {{ s.endTime }}
+              </span>
+            </td>
+            <td>
+              <span class="capacity-badge">
+                <span class="capacity-icon">📦</span>
+                {{ s.maxOrders }} orders
+              </span>
+            </td>
+            <td>
+              <span class="cutoff-badge">
+                ⏱️ {{ s.cutoffMinutes }} mins prior
+              </span>
+            </td>
+            <td>
+              <span class="days-badge">
+                📅 {{ s.availableDays || 'Mon – Sat' }}
+              </span>
+            </td>
+            <td>
+              <button type="button" class="status-toggle-pill" [class.active]="s.isActive" (click)="toggleSlotActive(s)"
+                [title]="s.isActive ? 'Click to disable for checkout' : 'Click to enable for checkout'">
+                <span class="status-dot"></span>
+                <span>{{ s.isActive ? 'Active (Live)' : 'Disabled' }}</span>
+              </button>
+            </td>
+            <td class="text-right">
+              <div class="action-btn-group">
+                <button type="button" class="btn-slot-action btn-edit" (click)="openEditSlotModal(s)" title="Edit slot details">
+                  ✏️ Edit
+                </button>
+                <button type="button" class="btn-slot-action btn-delete" (click)="deleteSlot(s)" title="Delete delivery slot">
+                  🗑️ Delete
+                </button>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
-      <app-pagination [currentPage]="slotPage" [pageSize]="slotPageSize" [totalElements]="totalSlotElements"
-        (pageChange)="onSlotPageChange($event)" (pageSizeChange)="onSlotPageSizeChange($event)"></app-pagination>
+      <div class="slots-pagination-wrap mt-3">
+        <app-pagination [currentPage]="slotPage" [pageSize]="slotPageSize" [totalElements]="totalSlotElements"
+          (pageChange)="onSlotPageChange($event)" (pageSizeChange)="onSlotPageSizeChange($event)"></app-pagination>
+      </div>
     </div>
 
-    <div *ngIf="slots.length === 0" class="empty-state">
-      <p>No delivery windows configured yet. Click "+ Add Delivery Window" above to configure your first slot.</p>
+    <!-- Clean Empty State -->
+    <div *ngIf="slots.length === 0" class="slots-empty-state">
+      <div class="empty-icon">🚚</div>
+      <h4>No Delivery Windows Configured Yet</h4>
+      <p>Configure scheduled delivery slots (e.g. Morning 09:00 AM – 01:00 PM) so customers can select their preferred delivery timing during checkout.</p>
+      <button type="button" class="btn btn-primary" (click)="openCreateSlotModal()">+ Create First Delivery Window</button>
     </div>
   </div>
 
@@ -339,7 +402,10 @@
   <div class="modal-backdrop" *ngIf="showSlotModal" (click)="showSlotModal = false">
     <div class="modal-card slot-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>{{ isEditingSlot ? 'Edit Delivery Window' : 'Add New Delivery Window' }}</h2>
+        <div class="modal-title-wrap">
+          <span class="modal-icon">🚚</span>
+          <h2>{{ isEditingSlot ? 'Edit Delivery Window' : 'Add New Delivery Window' }}</h2>
+        </div>
         <button type="button" class="btn-close" (click)="showSlotModal = false">&times;</button>
       </div>
       <div class="modal-body">
@@ -348,16 +414,16 @@
           <div class="form-group mb-3">
             <label>Slot Name *</label>
             <input type="text" [(ngModel)]="slotForm.slotName" name="slotName"
-              placeholder="e.g. Morning Express, Afternoon, Evening" required />
+              placeholder="e.g. Morning Express, Afternoon Slot, Evening Delivery" required />
           </div>
 
           <div class="form-row mb-3">
             <div class="form-group flex-1">
-              <label>Start Time * (24h)</label>
+              <label>Start Time * (24h format)</label>
               <input type="time" [(ngModel)]="slotForm.startTime" name="startTime" required />
             </div>
             <div class="form-group flex-1">
-              <label>End Time * (24h)</label>
+              <label>End Time * (24h format)</label>
               <input type="time" [(ngModel)]="slotForm.endTime" name="endTime" required />
             </div>
           </div>
@@ -368,7 +434,7 @@
               <input type="number" [(ngModel)]="slotForm.maxOrders" name="maxOrders" min="1" max="500" required />
             </div>
             <div class="form-group flex-1">
-              <label>Order Cutoff (Minutes Before Start)</label>
+              <label>Cutoff Buffer (Minutes Before Start)</label>
               <input type="number" [(ngModel)]="slotForm.cutoffMinutes" name="cutoffMinutes" min="0" max="720"
                 required />
             </div>
@@ -381,16 +447,15 @@
           </div>
 
           <div class="form-group checkbox-group mb-3">
-            <label>
+            <label class="checkbox-label">
               <input type="checkbox" [(ngModel)]="slotForm.isActive" name="isActive" />
-              <span>Enable this delivery slot for customer checkout</span>
+              <span>Enable this delivery window immediately for customer checkout</span>
             </label>
           </div>
 
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" (click)="showSlotModal = false">Cancel</button>
-            <button type="submit" class="btn btn-primary">{{ isEditingSlot ? 'Save Changes' : 'Create Window'
-              }}</button>
+            <button type="submit" class="btn btn-primary">{{ isEditingSlot ? 'Save Changes' : 'Create Window' }}</button>
           </div>
         </form>
       </div>
