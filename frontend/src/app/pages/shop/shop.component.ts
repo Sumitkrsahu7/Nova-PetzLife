@@ -8,6 +8,17 @@ import { ProductCardData, ProductVariant } from '../../models/product.model';
 import { CartService } from '../../core/services/cart.service';
 import { environment } from '../../../environments/environment';
 
+export interface DepartmentItem {
+  id: string;
+  name: string;
+  icon: string;
+  subtitle: string;
+  tags: string[];
+  petType?: string;
+  categorySlug?: string;
+  isCustom?: boolean;
+}
+
 @Component({
   selector: 'app-shop',
   standalone: true,
@@ -17,34 +28,74 @@ import { environment } from '../../../environments/environment';
 })
 export class ShopComponent implements OnInit {
   products: ProductCardData[] = [];
-  isLoading: boolean = true;
+  isLoading: boolean = false;
   cartMessage: string = '';
 
-  // True Page-Based Pagination
-  currentPage: number = 0; // 0-indexed for backend API
-  pageSize: number = 12;   // Responsive: 12 desktop, 9 tablet, 6 mobile
+  // View state: true = inside a department view; false = 4 cards hub
+  isDepartmentSelected: boolean = false;
+  activeDepartmentId: string | null = null;
+  activeDepartmentTitle: string = '';
+  activeDepartmentSubtitle: string = '';
+  activeDepartmentIcon: string = '🐾';
+
+  // 4 Medium-Sized Core Department Cards (Dynamically expandable by admin)
+  departmentCards: DepartmentItem[] = [
+    {
+      id: 'dog-food',
+      name: 'Dog Food',
+      icon: '🥩',
+      subtitle: 'Dry Kibble, Wet Gravy & Puppy Nutrition',
+      tags: ['Dry Kibble', 'Wet Gravy', 'Puppy Nutrition'],
+      petType: 'Dog',
+      categorySlug: 'dog-food'
+    },
+    {
+      id: 'dog-care',
+      name: 'Dog Care',
+      icon: '🐕',
+      subtitle: 'Grooming, Flea & Tick, Collars & Supplements',
+      tags: ['Anti-Tick', 'Herbal Shampoo', 'Collars & Toys'],
+      petType: 'Dog',
+      categorySlug: 'dog-care'
+    },
+    {
+      id: 'cat-food',
+      name: 'Cat Food',
+      icon: '🐟',
+      subtitle: 'Kitten & Adult Kibble, Gravy Pouches & Treats',
+      tags: ['Kitten Formula', 'Ocean Fish', 'Gravy Pouches'],
+      petType: 'Cat',
+      categorySlug: 'cat-food'
+    },
+    {
+      id: 'cat-care',
+      name: 'Cat Care',
+      icon: '🐈',
+      subtitle: 'Clumping Litter, Deodorizers, Scratchers & Brushes',
+      tags: ['Wood Litter', 'Deodorizer', 'Grooming Brushes'],
+      petType: 'Cat',
+      categorySlug: 'cat-care'
+    }
+  ];
+
+  // Pagination State
+  currentPage: number = 0;
+  pageSize: number = 12;
   totalPages: number = 0;
   totalElements: number = 0;
 
-  // Exclusive Accordion Filter State: 'category' expanded by default, others collapsed
-  expandedSection: 'category' | 'brand' | 'petType' | 'availability' | null = 'category';
-  isMobileFilterOpen: boolean = false;
-
-  // Department Hub & Need Filters
-  activeDepartment: 'all' | 'dog-food' | 'dog-care' | 'cat-food' | 'cat-care' = 'all';
-  selectedNeed: string = 'All';
-
-  // Filters State
+  // Active Department Filter Controls
   searchQuery: string = '';
-  selectedPetType: string = 'All';
-  selectedCategory: string = 'All';
   selectedBrand: string = 'All';
   inStockOnly: boolean = false;
   sortBy: string = 'id,desc';
 
-  petTypes = ['All', 'Cat', 'Dog', 'Bird', 'Fish'];
-  categories = ['All', 'Dog Food', 'Cat Food', 'Grooming', 'Hygiene', 'Accessories', 'Supplements'];
-  brands = ['All', 'Royal Canin', 'Pedigree', 'Whiskas', 'Drools', 'Sheba', 'Himalaya', 'Farmina N&D'];
+  // Available brands for the currently active department
+  availableBrandsForDepartment: string[] = ['All'];
+
+  // Global filters cache
+  allCategories: string[] = ['All', 'Dog Food', 'Cat Food', 'Grooming', 'Hygiene', 'Accessories', 'Supplements'];
+  allBrands: string[] = ['All', 'Royal Canin', 'Pedigree', 'Whiskas', 'Drools', 'Sheba', 'Himalaya', 'Farmina N&D'];
 
   constructor(
     private route: ActivatedRoute,
@@ -56,67 +107,47 @@ export class ShopComponent implements OnInit {
   ngOnInit(): void {
     this.updatePageSizeForViewport();
     this.loadCatalogFilters();
+
     this.route.queryParams.subscribe(params => {
-      // 1. Text Query
-      this.searchQuery = params['query'] || '';
+      const dept = params['department'];
+      const cat = params['category'];
+      const query = params['query'];
+      const brand = params['brand'];
+      const view = params['view'];
+      const inStock = params['inStock'];
+      const sort = params['sort'];
 
-      // 2. Category mapping (handles direct navbar routes & query params)
-      const rawCat = params['category'];
-      if (!rawCat || rawCat === 'all') {
-        this.selectedCategory = 'All';
-      } else if (rawCat === 'cat-food' || rawCat === 'cats') {
-        this.selectedCategory = 'Cat Food';
-        this.expandedSection = 'category';
-      } else if (rawCat === 'dog-food' || rawCat === 'dogs') {
-        this.selectedCategory = 'Dog Food';
-        this.expandedSection = 'category';
-      } else if (rawCat === 'grooming' || rawCat === 'grooming-hygiene') {
-        this.selectedCategory = 'Grooming';
-        this.expandedSection = 'category';
-      } else if (rawCat === 'hygiene') {
-        this.selectedCategory = 'Hygiene';
-        this.expandedSection = 'category';
-      } else if (rawCat === 'accessories') {
-        this.selectedCategory = 'Accessories';
-        this.expandedSection = 'category';
-      } else if (rawCat === 'supplements') {
-        this.selectedCategory = 'Supplements';
-        this.expandedSection = 'category';
+      // Check if user has navigated into a specific department, search, or view
+      if (dept || cat || query || brand || view === 'all') {
+        this.isDepartmentSelected = true;
+
+        if (dept) {
+          this.activeDepartmentId = dept;
+        } else if (cat) {
+          // Map category param to department id
+          this.activeDepartmentId = this.mapCategoryToDepartment(cat);
+        } else if (view === 'all' || query || brand) {
+          this.activeDepartmentId = 'all';
+        }
+
+        this.searchQuery = query || '';
+        this.selectedBrand = brand || 'All';
+        this.inStockOnly = inStock === 'true';
+        if (sort) {
+          this.sortBy = sort;
+        }
+
+        this.updateDepartmentMetadata();
+        this.currentPage = 0;
+        this.loadProducts();
       } else {
-        this.selectedCategory = rawCat;
-      }
-
-      // 3. Brand mapping
-      const rawBrand = params['brand'];
-      if (!rawBrand || rawBrand === 'all') {
+        // Landing on All Products Hub (4 medium-sized cards)
+        this.isDepartmentSelected = false;
+        this.activeDepartmentId = null;
+        this.searchQuery = '';
         this.selectedBrand = 'All';
-      } else if (rawBrand.toLowerCase() === 'farmina-nd' || rawBrand.toLowerCase() === 'farmina') {
-        this.selectedBrand = 'Farmina N&D';
-      } else if (rawBrand.toLowerCase() === 'royal-canin') {
-        this.selectedBrand = 'Royal Canin';
-      } else if (rawBrand.toLowerCase() === 'sheba') {
-        this.selectedBrand = 'Sheba';
-      } else if (rawBrand.toLowerCase() === 'pedigree') {
-        this.selectedBrand = 'Pedigree';
-      } else if (rawBrand.toLowerCase() === 'whiskas') {
-        this.selectedBrand = 'Whiskas';
-      } else if (rawBrand.toLowerCase() === 'drools') {
-        this.selectedBrand = 'Drools';
-      } else if (rawBrand.toLowerCase() === 'himalaya') {
-        this.selectedBrand = 'Himalaya';
-      } else {
-        this.selectedBrand = rawBrand;
+        this.inStockOnly = false;
       }
-
-      // 4. Pet Type & Stock
-      this.selectedPetType = params['petType'] || 'All';
-      this.inStockOnly = params['inStock'] === 'true';
-      if (params['sort']) {
-        this.sortBy = params['sort'];
-      }
-
-      this.currentPage = 0;
-      this.loadProducts();
     });
   }
 
@@ -124,7 +155,7 @@ export class ShopComponent implements OnInit {
   onResize(): void {
     const prevSize = this.pageSize;
     this.updatePageSizeForViewport();
-    if (prevSize !== this.pageSize) {
+    if (prevSize !== this.pageSize && this.isDepartmentSelected) {
       this.currentPage = 0;
       this.loadProducts();
     }
@@ -143,28 +174,137 @@ export class ShopComponent implements OnInit {
     }
   }
 
+  /**
+   * Load categories & brands from backend API.
+   * If admin adds new categories in the future, dynamically create extra cards!
+   */
   loadCatalogFilters(): void {
-    // Dynamic Categories
+    // Dynamic Categories from Admin/Backend
     this.http.get<any>(`${environment.apiUrl}/categories/flat`).subscribe({
       next: res => {
-        if (res?.success && res.data) {
+        if (res?.success && Array.isArray(res.data)) {
           const names = res.data.map((c: any) => c.name);
-          const uniqueNames = Array.from(new Set(['All', 'Dog Food', 'Cat Food', 'Grooming', 'Hygiene', ...names]));
-          this.categories = uniqueNames;
+          this.allCategories = Array.from(new Set(['All', 'Dog Food', 'Cat Food', 'Grooming', 'Hygiene', ...names]));
+
+          // Dynamically append any custom categories created by admin beyond the default 4
+          const coreSlugs = ['dog-food', 'dog-care', 'cat-food', 'cat-care'];
+          const coreNames = ['dog food', 'dog care', 'cat food', 'cat care'];
+
+          for (const c of res.data) {
+            const slug = (c.slug || c.name.toLowerCase().replace(/[\s&]+/g, '-')).toLowerCase();
+            const lowerName = c.name.toLowerCase();
+
+            if (!coreSlugs.includes(slug) && !coreNames.includes(lowerName)) {
+              if (!this.departmentCards.find(d => d.id === slug || d.name.toLowerCase() === lowerName)) {
+                this.departmentCards.push({
+                  id: slug,
+                  name: c.name,
+                  icon: c.icon || '✨',
+                  subtitle: c.description || `Specialized ${c.name} supplies & essentials`,
+                  tags: [c.name, 'Store Verified'],
+                  categorySlug: slug,
+                  isCustom: true
+                });
+              }
+            }
+          }
         }
+      },
+      error: () => {
+        // Fallback categories already initialized
       }
     });
 
     // Dynamic Brands
     this.http.get<any>(`${environment.apiUrl}/brands`).subscribe({
       next: res => {
-        if (res?.success && res.data) {
+        if (res?.success && Array.isArray(res.data)) {
           const names = res.data.map((b: any) => b.name);
-          const uniqueBrands = Array.from(new Set(['All', 'Royal Canin', 'Pedigree', 'Whiskas', 'Drools', 'Sheba', 'Himalaya', 'Farmina N&D', ...names]));
-          this.brands = uniqueBrands;
+          this.allBrands = Array.from(new Set(['All', 'Royal Canin', 'Pedigree', 'Whiskas', 'Drools', 'Sheba', 'Himalaya', 'Farmina N&D', ...names]));
         }
       }
     });
+  }
+
+  /**
+   * User selects one of the 4 medium-sized department cards.
+   * Navigates to dedicated department view.
+   */
+  selectDepartment(deptId: string): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { department: deptId },
+      queryParamsHandling: ''
+    });
+  }
+
+  /**
+   * Returns to the 4 cards Hub view.
+   */
+  backToDepartments(): void {
+    this.isDepartmentSelected = false;
+    this.activeDepartmentId = null;
+    this.searchQuery = '';
+    this.selectedBrand = 'All';
+    this.inStockOnly = false;
+    this.currentPage = 0;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {}
+    });
+  }
+
+  /**
+   * View full store catalog without department filter.
+   */
+  viewAllCatalog(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { view: 'all' }
+    });
+  }
+
+  private mapCategoryToDepartment(cat: string): string {
+    const lower = cat.toLowerCase();
+    if (lower === 'dog-food' || lower === 'dogs' || lower.includes('dog food')) {
+      return 'dog-food';
+    } else if (lower === 'cat-food' || lower === 'cats' || lower.includes('cat food')) {
+      return 'cat-food';
+    } else if (lower === 'grooming' || lower === 'hygiene' || lower === 'accessories') {
+      return 'dog-care';
+    }
+    return lower;
+  }
+
+  private updateDepartmentMetadata(): void {
+    const card = this.departmentCards.find(d => d.id === this.activeDepartmentId);
+    if (card) {
+      this.activeDepartmentTitle = card.name;
+      this.activeDepartmentIcon = card.icon;
+      if (card.id === 'dog-food') {
+        this.activeDepartmentSubtitle = 'Premium dry kibble, wet gravy pouches, puppy nutrition & treats in stock at our store.';
+      } else if (card.id === 'dog-care') {
+        this.activeDepartmentSubtitle = 'Shampoos, anti-tick care, grooming combs, hygiene pads, durable toys & health supplements.';
+      } else if (card.id === 'cat-food') {
+        this.activeDepartmentSubtitle = 'Kitten formulas, ocean fish wet pouches, adult crunchy kibble & delicious cat treats.';
+      } else if (card.id === 'cat-care') {
+        this.activeDepartmentSubtitle = 'Natural clumping wood litter, stain & odor neutralizers, scratchers & grooming brushes.';
+      } else {
+        this.activeDepartmentSubtitle = card.subtitle;
+      }
+    } else if (this.activeDepartmentId === 'all') {
+      this.activeDepartmentTitle = 'Complete Store Catalog';
+      this.activeDepartmentIcon = '🛍️';
+      this.activeDepartmentSubtitle = 'Browsing all verified pet foods, grooming essentials & accessories in stock.';
+    } else if (this.activeDepartmentId === 'grooming') {
+      this.activeDepartmentTitle = 'Grooming & Hygiene';
+      this.activeDepartmentIcon = '✨';
+      this.activeDepartmentSubtitle = 'Herbal shampoos, tick treatments, de-shedding tools & sanitary pads.';
+    } else {
+      this.activeDepartmentTitle = this.activeDepartmentId || 'Department Catalog';
+      this.activeDepartmentIcon = '🐾';
+      this.activeDepartmentSubtitle = 'Verified products available for direct store dispatch in Thiruvananthapuram.';
+    }
   }
 
   loadProducts(): void {
@@ -172,15 +312,21 @@ export class ShopComponent implements OnInit {
 
     let url = `${environment.apiUrl}/products?page=${this.currentPage}&size=${this.pageSize}&sort=${this.sortBy}`;
 
+    // Apply department constraints
+    if (this.activeDepartmentId === 'dog-food') {
+      url += `&petType=Dog&categorySlug=dog-food`;
+    } else if (this.activeDepartmentId === 'cat-food') {
+      url += `&petType=Cat&categorySlug=cat-food`;
+    } else if (this.activeDepartmentId === 'dog-care') {
+      url += `&petType=Dog`;
+    } else if (this.activeDepartmentId === 'cat-care') {
+      url += `&petType=Cat`;
+    } else if (this.activeDepartmentId === 'grooming') {
+      url += `&categorySlug=grooming`;
+    }
+
     if (this.searchQuery.trim()) {
       url += `&query=${encodeURIComponent(this.searchQuery.trim())}`;
-    }
-    if (this.selectedPetType !== 'All') {
-      url += `&petType=${encodeURIComponent(this.selectedPetType)}`;
-    }
-    if (this.selectedCategory !== 'All') {
-      const slug = this.selectedCategory.toLowerCase().replace(/[\s&]+/g, '-');
-      url += `&categorySlug=${encodeURIComponent(slug)}`;
     }
     if (this.selectedBrand !== 'All') {
       const slug = this.selectedBrand.toLowerCase().replace(/[\s&]+/g, '-');
@@ -193,80 +339,148 @@ export class ShopComponent implements OnInit {
     this.http.get<{ success: boolean; data: { content: any[]; totalElements: number; totalPages: number; last: boolean } }>(url).subscribe({
       next: (res) => {
         const items = res?.data?.content || [];
-        this.products = items.map(p => this.mapToCard(p));
-        this.totalElements = res?.data?.totalElements ?? this.products.length;
-        this.totalPages = res?.data?.totalPages ?? Math.ceil(this.totalElements / this.pageSize);
-        this.isLoading = false;
+        if (items.length > 0) {
+          this.products = items.map(p => this.mapToCard(p));
+          this.totalElements = res?.data?.totalElements ?? this.products.length;
+          this.totalPages = res?.data?.totalPages ?? Math.ceil(this.totalElements / this.pageSize);
+          this.populateAvailableBrands(this.products);
+          this.isLoading = false;
+        } else {
+          // If backend returns empty, apply high-precision client fallback
+          this.applyFallbackFilter();
+        }
       },
       error: () => {
-        // Robust Client-Side Fallback Filtering when backend is offline
         this.applyFallbackFilter();
       }
     });
   }
 
-  // Filter & Search Triggers (Synchronizes with URL and resets page to 0)
   onFilterChange(): void {
     this.currentPage = 0;
     const queryParams: any = {};
 
+    if (this.activeDepartmentId) {
+      queryParams['department'] = this.activeDepartmentId;
+    }
     if (this.searchQuery.trim()) {
       queryParams['query'] = this.searchQuery.trim();
-    } else {
-      queryParams['query'] = null;
     }
-
-    if (this.selectedCategory !== 'All') {
-      queryParams['category'] = this.selectedCategory.toLowerCase().replace(/[\s&]+/g, '-');
-    } else {
-      queryParams['category'] = null;
-    }
-
     if (this.selectedBrand !== 'All') {
-      queryParams['brand'] = this.selectedBrand.toLowerCase().replace(/[\s&]+/g, '-');
-    } else {
-      queryParams['brand'] = null;
+      queryParams['brand'] = this.selectedBrand;
     }
-
-    if (this.selectedPetType !== 'All') {
-      queryParams['petType'] = this.selectedPetType;
-    } else {
-      queryParams['petType'] = null;
-    }
-
     if (this.inStockOnly) {
       queryParams['inStock'] = 'true';
-    } else {
-      queryParams['inStock'] = null;
     }
-
     if (this.sortBy !== 'id,desc') {
       queryParams['sort'] = this.sortBy;
-    } else {
-      queryParams['sort'] = null;
     }
 
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams,
-      queryParamsHandling: 'merge'
+      queryParams
     });
 
     this.loadProducts();
   }
 
-  // Exclusive Accordion Toggle
-  toggleSection(section: 'category' | 'brand' | 'petType' | 'availability'): void {
-    this.expandedSection = this.expandedSection === section ? null : section;
+  resetDepartmentFilters(): void {
+    this.searchQuery = '';
+    this.selectedBrand = 'All';
+    this.inStockOnly = false;
+    this.sortBy = 'id,desc';
+    this.onFilterChange();
   }
 
-  // Mobile Filter Drawer Controls
-  toggleMobileFilter(): void {
-    this.isMobileFilterOpen = !this.isMobileFilterOpen;
+  private populateAvailableBrands(items: ProductCardData[]): void {
+    const brandsSet = new Set<string>();
+    items.forEach(item => {
+      if (item.brand) {
+        brandsSet.add(item.brand);
+      }
+    });
+    this.availableBrandsForDepartment = ['All', ...Array.from(brandsSet)];
   }
 
-  closeMobileFilter(): void {
-    this.isMobileFilterOpen = false;
+  private applyFallbackFilter(): void {
+    let items = this.getFallbackCatalog();
+
+    // 1. Department Filter
+    if (this.activeDepartmentId === 'dog-food') {
+      items = items.filter(p =>
+        p.petType === 'Dog' &&
+        (p.category.toLowerCase().includes('food') ||
+         p.name.toLowerCase().includes('food') ||
+         p.name.toLowerCase().includes('kibble') ||
+         p.name.toLowerCase().includes('rice') ||
+         p.name.toLowerCase().includes('gravy'))
+      );
+    } else if (this.activeDepartmentId === 'dog-care') {
+      items = items.filter(p =>
+        (p.petType === 'Dog' || p.petType === 'All Pets') &&
+        (p.category === 'Grooming' || p.category === 'Hygiene' || p.category === 'Accessories' || p.category === 'Supplements') &&
+        !p.name.toLowerCase().includes('cat')
+      );
+    } else if (this.activeDepartmentId === 'cat-food') {
+      items = items.filter(p =>
+        p.petType === 'Cat' &&
+        (p.category.toLowerCase().includes('food') ||
+         p.name.toLowerCase().includes('food') ||
+         p.name.toLowerCase().includes('gravy') ||
+         p.name.toLowerCase().includes('pate') ||
+         p.name.toLowerCase().includes('fish'))
+      );
+    } else if (this.activeDepartmentId === 'cat-care') {
+      items = items.filter(p =>
+        (p.petType === 'Cat' || p.petType === 'All Pets') &&
+        (p.category === 'Hygiene' || p.category === 'Grooming' || p.category === 'Accessories') &&
+        !p.name.toLowerCase().includes('puppy') &&
+        !p.name.toLowerCase().includes('dog')
+      );
+    } else if (this.activeDepartmentId === 'grooming') {
+      items = items.filter(p => p.category === 'Grooming' || p.category === 'Hygiene');
+    }
+
+    // Populate available brands based on this department
+    this.populateAvailableBrands(items);
+
+    // 2. Search Query Filter
+    if (this.searchQuery.trim()) {
+      const q = this.searchQuery.trim().toLowerCase();
+      items = items.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+      );
+    }
+
+    // 3. Brand Filter
+    if (this.selectedBrand !== 'All') {
+      const b = this.selectedBrand.toLowerCase();
+      items = items.filter(p => p.brand.toLowerCase() === b || p.brand.toLowerCase().includes(b));
+    }
+
+    // 4. In-Stock Filter
+    if (this.inStockOnly) {
+      items = items.filter(p => p.inStock);
+    }
+
+    // 5. Sort
+    if (this.sortBy === 'basePrice,asc') {
+      items.sort((a, b) => (a.discountedPrice ?? a.price) - (b.discountedPrice ?? b.price));
+    } else if (this.sortBy === 'basePrice,desc') {
+      items.sort((a, b) => (b.discountedPrice ?? b.price) - (a.discountedPrice ?? a.price));
+    } else {
+      items.sort((a, b) => b.id - a.id);
+    }
+
+    this.totalElements = items.length;
+    this.totalPages = Math.ceil(this.totalElements / this.pageSize);
+
+    // 6. Paginate
+    const start = this.currentPage * this.pageSize;
+    this.products = items.slice(start, start + this.pageSize);
+    this.isLoading = false;
   }
 
   // Page-based Pagination Controls
@@ -338,131 +552,6 @@ export class ShopComponent implements OnInit {
     this.cartService.addItem(event.product.id, event.variant?.id, 1).subscribe();
     this.cartMessage = `Added "${event.product.name}" to cart!`;
     setTimeout(() => { this.cartMessage = ''; }, 3000);
-  }
-
-  selectDepartment(dept: 'all' | 'dog-food' | 'dog-care' | 'cat-food' | 'cat-care'): void {
-    this.activeDepartment = dept;
-    this.currentPage = 0;
-    this.selectedNeed = 'All';
-
-    if (dept === 'all') {
-      this.selectedCategory = 'All';
-      this.selectedPetType = 'All';
-    } else if (dept === 'dog-food') {
-      this.selectedCategory = 'Dog Food';
-      this.selectedPetType = 'Dog';
-    } else if (dept === 'dog-care') {
-      this.selectedCategory = 'Grooming';
-      this.selectedPetType = 'Dog';
-    } else if (dept === 'cat-food') {
-      this.selectedCategory = 'Cat Food';
-      this.selectedPetType = 'Cat';
-    } else if (dept === 'cat-care') {
-      this.selectedCategory = 'Hygiene';
-      this.selectedPetType = 'Cat';
-    }
-
-    this.onFilterChange();
-  }
-
-  selectNeed(need: string): void {
-    this.selectedNeed = need;
-    this.currentPage = 0;
-    if (need === 'All') {
-      this.searchQuery = '';
-    } else {
-      this.searchQuery = need;
-    }
-    this.onFilterChange();
-  }
-
-  resetFilters(): void {
-    this.activeDepartment = 'all';
-    this.selectedNeed = 'All';
-    this.searchQuery = '';
-    this.selectedPetType = 'All';
-    this.selectedCategory = 'All';
-    this.selectedBrand = 'All';
-    this.inStockOnly = false;
-    this.sortBy = 'id,desc';
-    this.currentPage = 0;
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: {}
-    });
-    this.loadProducts();
-  }
-
-  private applyFallbackFilter(): void {
-    let items = this.getFallbackCatalog();
-
-    // 1. Search Query Filter
-    if (this.searchQuery.trim()) {
-      const q = this.searchQuery.trim().toLowerCase();
-      items = items.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
-      );
-    }
-
-    // 2. Category Filter
-    if (this.selectedCategory !== 'All') {
-      const cat = this.selectedCategory.toLowerCase();
-      items = items.filter(p => {
-        const pCat = p.category.toLowerCase();
-        if (cat === 'cat food') {
-          return pCat.includes('cat food') || p.petType.toLowerCase() === 'cat';
-        } else if (cat === 'dog food') {
-          return pCat.includes('dog food') || p.petType.toLowerCase() === 'dog';
-        } else if (cat === 'grooming') {
-          return pCat.includes('grooming') || pCat.includes('shampoo') || p.name.toLowerCase().includes('shampoo') || p.name.toLowerCase().includes('comb');
-        } else if (cat === 'hygiene') {
-          return pCat.includes('hygiene') || pCat.includes('litter') || pCat.includes('pad') || p.name.toLowerCase().includes('litter') || p.name.toLowerCase().includes('pads');
-        } else if (cat === 'accessories') {
-          return pCat.includes('accessories') || pCat.includes('toy') || p.name.toLowerCase().includes('toy') || p.name.toLowerCase().includes('harness');
-        } else if (cat === 'supplements') {
-          return pCat.includes('supplement') || pCat.includes('vitamin');
-        }
-        return pCat.includes(cat);
-      });
-    }
-
-    // 3. Brand Filter
-    if (this.selectedBrand !== 'All') {
-      const b = this.selectedBrand.toLowerCase();
-      items = items.filter(p => p.brand.toLowerCase() === b || p.brand.toLowerCase().includes(b));
-    }
-
-    // 4. Pet Type Filter
-    if (this.selectedPetType !== 'All') {
-      const pt = this.selectedPetType.toLowerCase();
-      items = items.filter(p =>
-        p.petType.toLowerCase() === pt || p.petType.toLowerCase() === 'all pets'
-      );
-    }
-
-    // 5. In-Stock Filter
-    if (this.inStockOnly) {
-      items = items.filter(p => p.inStock);
-    }
-
-    // 6. Sort
-    if (this.sortBy === 'basePrice,asc') {
-      items.sort((a, b) => (a.discountedPrice ?? a.price) - (b.discountedPrice ?? b.price));
-    } else if (this.sortBy === 'basePrice,desc') {
-      items.sort((a, b) => (b.discountedPrice ?? b.price) - (a.discountedPrice ?? a.price));
-    } else {
-      items.sort((a, b) => b.id - a.id);
-    }
-
-    this.totalElements = items.length;
-    this.totalPages = Math.ceil(this.totalElements / this.pageSize);
-
-    // 7. Paginate
-    const start = this.currentPage * this.pageSize;
-    this.products = items.slice(start, start + this.pageSize);
-    this.isLoading = false;
   }
 
   private getFallbackCatalog(): ProductCardData[] {

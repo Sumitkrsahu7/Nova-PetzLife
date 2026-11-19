@@ -1,331 +1,278 @@
 <div class="shop-page">
   <div class="container">
-    <!-- Breadcrumb & Header -->
-    <div class="shop-header">
-      <div>
-        <nav class="breadcrumb">
-          <a routerLink="/">Home</a> &gt; <span>Shop Catalog</span>
+    <div *ngIf="cartMessage" class="cart-toast" role="alert">{{ cartMessage }}</div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: INITIAL DEPARTMENT HUB (Shown when !isDepartmentSelected)          -->
+    <!-- Contains: Enhanced Header (Black box) + 4 Medium Cards + Full Catalog CTA -->
+    <!-- All Red-Box items (pills, chips, sidebar, mixed products) are hidden      -->
+    <!-- ========================================================================= -->
+    <ng-container *ngIf="!isDepartmentSelected">
+      <!-- Enhanced Header (Marked in Black in reference image) -->
+      <header class="hub-header">
+        <nav class="hub-breadcrumb" aria-label="Breadcrumb">
+          <a routerLink="/">Home</a> &gt; <span>Shop Departments</span>
         </nav>
-        <h1>All Pet Products & Essentials</h1>
-        <p class="subtitle">
-          In stock at <strong>our store</strong>. Fast local fulfillment across Thiruvananthapuram.
-        </p>
-      </div>
-
-      <div *ngIf="cartMessage" class="cart-toast">{{ cartMessage }}</div>
-    </div>
-
-    <!-- 4 Department Pillars Quick-Jump Deck -->
-    <div class="department-pillars-grid">
-      <div class="pillar-card" [class.active]="activeDepartment === 'dog-food'" (click)="selectDepartment('dog-food')">
-        <div class="pillar-icon">🥩</div>
-        <div class="pillar-details">
-          <h3>Dog Food</h3>
-          <p>Dry Kibble, Wet Gravy & Puppy Nutrition</p>
-          <span class="pillar-action">Explore Dog Food →</span>
+        <div class="hub-title-row">
+          <div class="hub-badge-pill">
+            <span class="hub-dot"></span>
+            <span>Verified Physical Store Inventory</span>
+          </div>
+          <h1 class="hub-title">All Pet Products & Essentials</h1>
+          <p class="hub-subtitle">
+            Authentic nutrition, healthcare, grooming & hygiene supplies in stock at our store.
+            Choose a department below to explore verified products with fast local fulfillment across Thiruvananthapuram.
+          </p>
         </div>
-      </div>
 
-      <div class="pillar-card" [class.active]="activeDepartment === 'dog-care'" (click)="selectDepartment('dog-care')">
-        <div class="pillar-icon">🐕</div>
-        <div class="pillar-details">
-          <h3>Dog Care</h3>
-          <p>Grooming, Flea & Tick, Collars & Supplements</p>
-          <span class="pillar-action">Explore Dog Care →</span>
-        </div>
-      </div>
-
-      <div class="pillar-card" [class.active]="activeDepartment === 'cat-food'" (click)="selectDepartment('cat-food')">
-        <div class="pillar-icon">🐟</div>
-        <div class="pillar-details">
-          <h3>Cat Food</h3>
-          <p>Kitten & Adult Kibble, Gravy Pouches & Treats</p>
-          <span class="pillar-action">Explore Cat Food →</span>
-        </div>
-      </div>
-
-      <div class="pillar-card" [class.active]="activeDepartment === 'cat-care'" (click)="selectDepartment('cat-care')">
-        <div class="pillar-icon">🐈</div>
-        <div class="pillar-details">
-          <h3>Cat Care</h3>
-          <p>Clumping Litter, Deodorizers, Scratchers & Brushes</p>
-          <span class="pillar-action">Explore Cat Care →</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Department Sub-Nav & Life-Stage Need Chips -->
-    <div class="department-subnav-bar">
-      <div class="dept-pills">
-        <button type="button" class="dept-pill" [class.active]="activeDepartment === 'all'" (click)="selectDepartment('all')">
-          🐾 All Departments
-        </button>
-        <button type="button" class="dept-pill" [class.active]="activeDepartment === 'dog-food'" (click)="selectDepartment('dog-food')">
-          🥩 Dog Food
-        </button>
-        <button type="button" class="dept-pill" [class.active]="activeDepartment === 'dog-care'" (click)="selectDepartment('dog-care')">
-          🐕 Dog Care
-        </button>
-        <button type="button" class="dept-pill" [class.active]="activeDepartment === 'cat-food'" (click)="selectDepartment('cat-food')">
-          🐟 Cat Food
-        </button>
-        <button type="button" class="dept-pill" [class.active]="activeDepartment === 'cat-care'" (click)="selectDepartment('cat-care')">
-          🐈 Cat Care
-        </button>
-      </div>
-
-      <!-- Quick Need Chips -->
-      <div class="need-chips-strip">
-        <span class="need-label">Shop by Need:</span>
-        <button type="button" class="need-chip" [class.active]="selectedNeed === 'All'" (click)="selectNeed('All')">All</button>
-        <button type="button" class="need-chip" [class.active]="selectedNeed === 'Puppy'" (click)="selectNeed('Puppy')">🍼 Puppy & Kitten</button>
-        <button type="button" class="need-chip" [class.active]="selectedNeed === 'Adult'" (click)="selectNeed('Adult')">🐕 Adult Health</button>
-        <button type="button" class="need-chip" [class.active]="selectedNeed === 'Gravy'" (click)="selectNeed('Gravy')">🥫 Wet Gravy</button>
-        <button type="button" class="need-chip" [class.active]="selectedNeed === 'Litter'" (click)="selectNeed('Litter')">✨ Litter & Hygiene</button>
-        <button type="button" class="need-chip" [class.active]="selectedNeed === 'Grooming'" (click)="selectNeed('Grooming')">🛁 Grooming & Coat</button>
-      </div>
-    </div>
-
-    <!-- Mobile Filter Toggle Button -->
-    <div class="mobile-filter-bar">
-      <button type="button" class="btn-toggle-filters" (click)="toggleMobileFilter()">
-        <span>🌪️ Filters & Categories</span>
-        <span class="filter-badge" *ngIf="selectedCategory !== 'All' || selectedBrand !== 'All' || selectedPetType !== 'All' || inStockOnly">Active</span>
-      </button>
-      <span class="mobile-results-count">{{ totalElements }} Products</span>
-    </div>
-
-    <!-- Layout: Sidebar Filters + Main Product Grid -->
-    <div class="shop-layout">
-      <!-- Backdrop for mobile drawer -->
-      <div class="mobile-filter-backdrop" *ngIf="isMobileFilterOpen" (click)="closeMobileFilter()"></div>
-
-      <!-- Left Filters Sidebar (Exclusive Accordion) -->
-      <aside class="filters-sidebar" [class.mobile-open]="isMobileFilterOpen">
-        <div class="filter-card">
-          <div class="filter-header">
-            <h3>Filters</h3>
-            <div class="filter-header-actions">
-              <button type="button" class="reset-link" (click)="resetFilters()">Reset All</button>
-              <button type="button" class="mobile-close-btn" (click)="closeMobileFilter()">✕</button>
+        <!-- Physical Store Assurance Strip -->
+        <div class="hub-assurance-strip">
+          <div class="assurance-item">
+            <div class="assurance-icon-box">⚡</div>
+            <div class="assurance-text">
+              <strong>Express 2-Hour Delivery</strong>
+              <p>Dispatched direct from our store</p>
             </div>
           </div>
-
-          <!-- 1. Category Filter Accordion (Expanded by default) -->
-          <div class="accordion-item" [class.open]="expandedSection === 'category'">
-            <button
-              type="button"
-              class="accordion-header"
-              (click)="toggleSection('category')"
-              [attr.aria-expanded]="expandedSection === 'category'"
-            >
-              <span class="header-title">Product Category</span>
-              <span class="accordion-icon">{{ expandedSection === 'category' ? '▲' : '▼' }}</span>
-            </button>
-            <div class="accordion-body" *ngIf="expandedSection === 'category'">
-              <div class="radio-list">
-                <label *ngFor="let cat of categories" class="radio-label">
-                  <input
-                    type="radio"
-                    name="category"
-                    [value]="cat"
-                    [(ngModel)]="selectedCategory"
-                    (change)="onFilterChange()"
-                  />
-                  <span>{{ cat }}</span>
-                </label>
-              </div>
+          <div class="assurance-item">
+            <div class="assurance-icon-box">🛡️</div>
+            <div class="assurance-text">
+              <strong>100% Genuine Brands</strong>
+              <p>Fresh batches, zero dropshipping</p>
             </div>
           </div>
-
-          <!-- 2. Brand Filter Accordion -->
-          <div class="accordion-item" [class.open]="expandedSection === 'brand'">
-            <button
-              type="button"
-              class="accordion-header"
-              (click)="toggleSection('brand')"
-              [attr.aria-expanded]="expandedSection === 'brand'"
-            >
-              <span class="header-title">Brand / Manufacturer</span>
-              <span class="accordion-icon">{{ expandedSection === 'brand' ? '▲' : '▼' }}</span>
-            </button>
-            <div class="accordion-body" *ngIf="expandedSection === 'brand'">
-              <div class="radio-list">
-                <label *ngFor="let b of brands" class="radio-label">
-                  <input
-                    type="radio"
-                    name="brand"
-                    [value]="b"
-                    [(ngModel)]="selectedBrand"
-                    (change)="onFilterChange()"
-                  />
-                  <span>{{ b }}</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. Pet Type Filter Accordion -->
-          <div class="accordion-item" [class.open]="expandedSection === 'petType'">
-            <button
-              type="button"
-              class="accordion-header"
-              (click)="toggleSection('petType')"
-              [attr.aria-expanded]="expandedSection === 'petType'"
-            >
-              <span class="header-title">Pet Type</span>
-              <span class="accordion-icon">{{ expandedSection === 'petType' ? '▲' : '▼' }}</span>
-            </button>
-            <div class="accordion-body" *ngIf="expandedSection === 'petType'">
-              <div class="pill-group">
-                <button
-                  *ngFor="let pt of petTypes"
-                  type="button"
-                  class="pill-btn"
-                  [class.active]="selectedPetType === pt"
-                  (click)="selectedPetType = pt; onFilterChange()"
-                >
-                  {{ pt }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 4. Availability / Stock Filter Accordion -->
-          <div class="accordion-item" [class.open]="expandedSection === 'availability'">
-            <button
-              type="button"
-              class="accordion-header"
-              (click)="toggleSection('availability')"
-              [attr.aria-expanded]="expandedSection === 'availability'"
-            >
-              <span class="header-title">Stock Availability</span>
-              <span class="accordion-icon">{{ expandedSection === 'availability' ? '▲' : '▼' }}</span>
-            </button>
-            <div class="accordion-body" *ngIf="expandedSection === 'availability'">
-              <div class="checkbox-group">
-                <label class="checkbox-label">
-                  <input
-                    type="checkbox"
-                    [(ngModel)]="inStockOnly"
-                    (change)="onFilterChange()"
-                  />
-                  <span>In Stock Only</span>
-                </label>
-              </div>
+          <div class="assurance-item">
+            <div class="assurance-icon-box">↩️</div>
+            <div class="assurance-text">
+              <strong>7-Day Replacement</strong>
+              <p>Verified physical store warranty</p>
             </div>
           </div>
         </div>
+      </header>
 
-        <!-- our store Delivery Note -->
-        <div class="delivery-notice-box">
-          <span class="icon">📍</span>
+      <!-- 4 Medium-Sized Department Cards Grid (Expandable dynamically if admin adds categories) -->
+      <section class="department-hub-section" aria-label="Pet Departments">
+        <div class="hub-section-header">
           <div>
-            <strong>Our Storefront</strong>
-            <p>Fast, direct delivery across Thiruvananthapuram from our physical store.</p>
+            <h2 class="section-title">Shop by Pet Department</h2>
+            <p class="section-subtitle">Select a category to view specialized nutrition and supplies</p>
+          </div>
+          <span class="dept-count-badge">{{ departmentCards.length }} Departments Available</span>
+        </div>
+
+        <div class="department-cards-grid">
+          <div
+            *ngFor="let dept of departmentCards"
+            class="medium-department-card"
+            (click)="selectDepartment(dept.id)"
+            [attr.aria-label]="'Explore ' + dept.name"
+            role="button"
+            tabindex="0"
+            (keydown.enter)="selectDepartment(dept.id)"
+            (keydown.space)="selectDepartment(dept.id)"
+          >
+            <div class="card-top">
+              <div class="card-icon-wrapper" [attr.data-dept]="dept.id">
+                <span class="dept-emoji">{{ dept.icon }}</span>
+              </div>
+              <span class="dept-badge" *ngIf="dept.isCustom">New Category</span>
+            </div>
+
+            <div class="card-body">
+              <h3 class="card-title">{{ dept.name }}</h3>
+              <p class="card-subtitle">{{ dept.subtitle }}</p>
+              <div class="card-tags">
+                <span *ngFor="let tag of dept.tags" class="dept-tag-chip">{{ tag }}</span>
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <span class="card-action-text">Explore {{ dept.name }}</span>
+              <span class="card-action-arrow">→</span>
+            </div>
           </div>
         </div>
-      </aside>
 
-      <!-- Right Products Content -->
-      <main class="products-main">
-        <!-- Top Controls: Search & Sort -->
-        <div class="controls-bar">
-          <div class="search-box">
-            <span class="icon">🔍</span>
-            <input
-              type="text"
-              [(ngModel)]="searchQuery"
-              (keyup.enter)="onFilterChange()"
-              placeholder="Search by product name or brand..."
-            />
-            <button type="button" (click)="onFilterChange()">Filter</button>
+        <!-- Optional Full Catalog Link -->
+        <div class="hub-browse-all-strip">
+          <div class="browse-all-info">
+            <span class="browse-icon">📦</span>
+            <div>
+              <strong>Looking for all products combined?</strong>
+              <p>Browse our entire catalog of 16+ verified pet items across all categories.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-browse-all" (click)="viewAllCatalog()">
+            <span>Browse Full Catalog</span>
+            <span class="arrow">→</span>
+          </button>
+        </div>
+      </section>
+    </ng-container>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: DEDICATED DEPARTMENT VIEW (Shown when isDepartmentSelected)        -->
+    <!-- Displays: Back Button + Department Hero + Department Search/Filters + Grid-->
+    <!-- ========================================================================= -->
+    <ng-container *ngIf="isDepartmentSelected">
+      <!-- Back Navigation Bar -->
+      <div class="dept-view-header">
+        <button
+          type="button"
+          class="btn-back-departments"
+          (click)="backToDepartments()"
+          aria-label="Back to All Departments"
+        >
+          <span class="back-arrow">←</span>
+          <span>Back to All Departments</span>
+        </button>
+
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a routerLink="/">Home</a> &gt;
+          <a href="javascript:void(0)" (click)="backToDepartments()">Departments</a> &gt;
+          <span>{{ activeDepartmentTitle }}</span>
+        </nav>
+      </div>
+
+      <!-- Department Hero Card -->
+      <section class="department-hero-card">
+        <div class="hero-left">
+          <div class="hero-icon-box">{{ activeDepartmentIcon }}</div>
+          <div class="hero-text">
+            <h2>{{ activeDepartmentTitle }}</h2>
+            <p>{{ activeDepartmentSubtitle }}</p>
+          </div>
+        </div>
+        <div class="hero-right">
+          <span class="dept-stock-badge">{{ totalElements }} Products Available</span>
+        </div>
+      </section>
+
+      <!-- Department Toolbar: In-department Search, Brand Filter, In-Stock, Sort -->
+      <div class="department-toolbar">
+        <div class="toolbar-search">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onFilterChange()"
+            placeholder="Search in {{ activeDepartmentTitle }}..."
+            class="dept-search-input"
+            aria-label="Search within this department"
+          />
+          <button
+            *ngIf="searchQuery"
+            type="button"
+            class="search-clear-btn"
+            (click)="searchQuery = ''; onFilterChange()"
+            aria-label="Clear search"
+          >
+            ✕
+          </button>
+          <button type="button" class="btn-search-go" (click)="onFilterChange()">Search</button>
+        </div>
+
+        <div class="toolbar-filters">
+          <!-- Brand Filter Dropdown -->
+          <div class="filter-control-group" *ngIf="availableBrandsForDepartment.length > 1">
+            <label for="brandSelect">Brand:</label>
+            <select id="brandSelect" [(ngModel)]="selectedBrand" (change)="onFilterChange()" class="toolbar-select">
+              <option *ngFor="let b of availableBrandsForDepartment" [value]="b">{{ b }}</option>
+            </select>
           </div>
 
-          <div class="sort-box">
-            <label for="sortBySelect">Sort By:</label>
-            <select id="sortBySelect" [(ngModel)]="sortBy" (change)="onFilterChange()">
+          <!-- In-Stock Only Toggle -->
+          <label class="instock-checkbox-label">
+            <input type="checkbox" [(ngModel)]="inStockOnly" (change)="onFilterChange()" />
+            <span>In Stock Only</span>
+          </label>
+
+          <!-- Sort Dropdown -->
+          <div class="filter-control-group">
+            <label for="sortSelect">Sort:</label>
+            <select id="sortSelect" [(ngModel)]="sortBy" (change)="onFilterChange()" class="toolbar-select">
               <option value="id,desc">Newest First</option>
               <option value="basePrice,asc">Price: Low to High</option>
               <option value="basePrice,desc">Price: High to Low</option>
             </select>
           </div>
         </div>
+      </div>
 
-        <!-- Active Results Count -->
-        <div class="results-meta">
-          <span>
-            Showing <strong>{{ products.length }}</strong> of <strong>{{ totalElements }}</strong> products
-            <span *ngIf="totalPages > 1"> &bull; Page {{ currentPage + 1 }} of {{ totalPages }}</span>
-          </span>
+      <!-- Active Filters Pill Strip -->
+      <div class="active-filter-pills" *ngIf="searchQuery || selectedBrand !== 'All' || inStockOnly">
+        <span class="pill-label">Active:</span>
+        <span class="filter-pill" *ngIf="searchQuery">
+          "{{ searchQuery }}"
+          <button type="button" (click)="searchQuery = ''; onFilterChange()" aria-label="Remove query filter">✕</button>
+        </span>
+        <span class="filter-pill" *ngIf="selectedBrand !== 'All'">
+          Brand: {{ selectedBrand }}
+          <button type="button" (click)="selectedBrand = 'All'; onFilterChange()" aria-label="Remove brand filter">✕</button>
+        </span>
+        <span class="filter-pill" *ngIf="inStockOnly">
+          In Stock Only
+          <button type="button" (click)="inStockOnly = false; onFilterChange()" aria-label="Remove in-stock filter">✕</button>
+        </span>
+        <button type="button" class="btn-clear-dept-filters" (click)="resetDepartmentFilters()">Reset Filters</button>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading {{ activeDepartmentTitle }} products from store inventory...</p>
+      </div>
+
+      <!-- Department Product Cards Grid (Strictly 2 columns on mobile) -->
+      <div *ngIf="!isLoading && products.length > 0" class="dept-products-grid">
+        <app-product-card
+          *ngFor="let product of products"
+          [product]="product"
+          (addToCart)="handleAddToCart($event)"
+        ></app-product-card>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!isLoading && products.length === 0" class="empty-dept-state">
+        <div class="empty-icon">📦</div>
+        <h3>No products found</h3>
+        <p>We couldn't find any items matching your criteria in {{ activeDepartmentTitle }}.</p>
+        <button type="button" class="btn-primary-reset" (click)="resetDepartmentFilters()">Clear Filters</button>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="pagination-bar" *ngIf="!isLoading && totalPages > 1">
+        <button
+          type="button"
+          class="page-btn nav-btn"
+          [disabled]="currentPage === 0"
+          (click)="prevPage()"
+        >
+          ← Prev
+        </button>
+
+        <div class="page-numbers">
+          <button
+            type="button"
+            *ngFor="let page of pageNumbers"
+            class="page-btn num-btn"
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)"
+          >
+            {{ page + 1 }}
+          </button>
         </div>
 
-        <!-- Loading State -->
-        <div *ngIf="isLoading" class="loading-state">
-          <div class="spinner"></div>
-          <p>Loading products from our inventory...</p>
-        </div>
-
-        <!-- Empty State -->
-        <div *ngIf="!isLoading && products.length === 0" class="empty-state">
-          <span class="empty-icon">🐾</span>
-          <h3>No products found</h3>
-          <p>No products match your selected filter criteria. Try clearing or modifying your filters.</p>
-          <button type="button" class="btn-reset" (click)="resetFilters()">Clear All Filters</button>
-        </div>
-
-        <!-- Products Grid -->
-        <div *ngIf="!isLoading && products.length > 0" class="products-grid">
-          <app-product-card
-            *ngFor="let p of products"
-            [product]="p"
-            (addToCart)="handleAddToCart($event)"
-          ></app-product-card>
-        </div>
-
-        <!-- True Page-Based Pagination Controls (Visible only when totalPages > 1) -->
-        <nav class="pagination-wrapper" *ngIf="!isLoading && totalPages > 1" aria-label="Product Catalog Pagination">
-          <div class="pagination-controls">
-            <button
-              type="button"
-              class="page-btn page-arrow"
-              [disabled]="currentPage === 0"
-              (click)="prevPage()"
-              aria-label="Previous Page"
-            >
-              ← Previous
-            </button>
-
-            <div class="page-numbers">
-              <button
-                *ngFor="let p of pageNumbers"
-                type="button"
-                class="page-btn page-num"
-                [class.active]="currentPage === p"
-                [attr.aria-current]="currentPage === p ? 'page' : null"
-                (click)="goToPage(p)"
-              >
-                {{ p + 1 }}
-              </button>
-            </div>
-
-            <button
-              type="button"
-              class="page-btn page-arrow"
-              [disabled]="currentPage >= totalPages - 1"
-              (click)="nextPage()"
-              aria-label="Next Page"
-            >
-              Next →
-            </button>
-          </div>
-
-          <div class="pagination-meta">
-            <span>Page <strong>{{ currentPage + 1 }}</strong> of <strong>{{ totalPages }}</strong></span>
-          </div>
-        </nav>
-      </main>
-    </div>
+        <button
+          type="button"
+          class="page-btn nav-btn"
+          [disabled]="currentPage >= totalPages - 1"
+          (click)="nextPage()"
+        >
+          Next →
+        </button>
+      </div>
+    </ng-container>
   </div>
 </div>
-

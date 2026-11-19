@@ -153,13 +153,7 @@
       <a routerLink="/shop" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeMobileMenu()" class="nav-item">
         🛍️ All Products
       </a>
-      <a [routerLink]="['/shop']" [queryParams]="{category: 'cat-food'}" (click)="closeMobileMenu()" class="nav-item">
-        🐱 Cat Care & Food
-      </a>
-      <a [routerLink]="['/shop']" [queryParams]="{category: 'dog-food'}" (click)="closeMobileMenu()" class="nav-item">
-        🐶 Dog Care & Food
-      </a>
-      <a [routerLink]="['/shop']" [queryParams]="{category: 'grooming'}" (click)="closeMobileMenu()" class="nav-item">
+      <a [routerLink]="['/shop']" [queryParams]="{department: 'grooming'}" (click)="closeMobileMenu()" class="nav-item">
         ✨ Grooming & Hygiene
       </a>
       <a routerLink="/brands" routerLinkActive="active" (click)="closeMobileMenu()" class="nav-item">
