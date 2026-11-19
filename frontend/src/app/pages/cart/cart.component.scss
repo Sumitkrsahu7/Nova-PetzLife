@@ -136,13 +136,23 @@
       .item-quantity-col {
         grid-column: 2;
         text-align: left;
+        margin-top: 0.25rem;
       }
       .item-price-col {
         grid-column: 2;
         text-align: left;
         display: flex;
-        align-items: baseline;
-        gap: 0.75rem;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.25rem;
+
+        .btn-remove {
+          margin-left: auto;
+          font-size: 0.75rem;
+          padding: 0.2rem 0.5rem;
+        }
       }
     }
 

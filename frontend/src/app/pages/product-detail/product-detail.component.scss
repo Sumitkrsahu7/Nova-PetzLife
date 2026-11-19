@@ -646,3 +646,110 @@
     }
   }
 }
+
+/* Mobile Sticky Floating Buy Bar */
+.mobile-sticky-buy-bar {
+  display: none;
+
+  @media (max-width: 768px) {
+    display: flex;
+    position: fixed;
+    bottom: 60px;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: #FFFFFF;
+    border-top: 1px solid #C8EBD1;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+    z-index: 999;
+    padding: 0.5rem 1rem;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+
+    .sticky-buy-price-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+
+      .sticky-price {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #155C3B;
+        line-height: 1.1;
+      }
+
+      .sticky-delivery-note {
+        font-size: 0.68rem;
+        color: #248B58;
+        font-weight: 600;
+      }
+    }
+
+    .sticky-buy-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .sticky-quantity-stepper {
+        display: flex;
+        align-items: center;
+        background: #F1F5F9;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        overflow: hidden;
+
+        button {
+          width: 30px;
+          height: 32px;
+          border: none;
+          background: transparent;
+          font-size: 1rem;
+          font-weight: 700;
+          color: #334155;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          &:active {
+            background: #E2E8F0;
+          }
+        }
+
+        .sticky-qty-num {
+          font-size: 0.85rem;
+          font-weight: 700;
+          min-width: 24px;
+          text-align: center;
+          color: #0F172A;
+        }
+      }
+
+      .btn-sticky-add-cart {
+        background: #248B58;
+        color: #FFFFFF;
+        border: none;
+        border-radius: 8px;
+        padding: 0.55rem 0.95rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(36, 139, 88, 0.3);
+        transition: all 0.15s ease;
+
+        &:hover:not(:disabled) {
+          background: #155C3B;
+        }
+
+        &:disabled {
+          background: #E2E8F0;
+          color: #94A3B8;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+      }
+    }
+  }
+}

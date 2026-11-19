@@ -226,4 +226,26 @@
       </div>
     </div>
   </div>
+  <!-- Mobile Sticky Bottom Navigation Bar (Visible only on mobile <= 768px) -->
+  <nav class="mobile-bottom-nav" aria-label="Mobile Bottom Quick Navigation">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="bottom-nav-item">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Home</span>
+    </a>
+    <a routerLink="/shop" routerLinkActive="active" class="bottom-nav-item">
+      <span class="nav-icon">🛍️</span>
+      <span class="nav-label">Shop</span>
+    </a>
+    <a routerLink="/cart" routerLinkActive="active" class="bottom-nav-item cart-bottom-item">
+      <div class="nav-icon-wrap">
+        <span class="nav-icon">🛒</span>
+        <span class="nav-badge" *ngIf="cartCount > 0">{{ cartCount }}</span>
+      </div>
+      <span class="nav-label">Cart</span>
+    </a>
+    <a [routerLink]="(authService.currentUser$ | async) ? '/account' : '/login'" routerLinkActive="active" class="bottom-nav-item">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">{{ (authService.currentUser$ | async) ? 'Account' : 'Login' }}</span>
+    </a>
+  </nav>
 </header>

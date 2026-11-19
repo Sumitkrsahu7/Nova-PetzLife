@@ -178,7 +178,7 @@
 
           <div class="field-group">
             <label>Phone Number *</label>
-            <input type="tel" [(ngModel)]="inquiryForm.phone" name="phone" placeholder="Enter your 10-digit mobile number" required>
+            <input type="tel" [(ngModel)]="inquiryForm.phone" name="phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" placeholder="Enter your 10-digit mobile number" required>
           </div>
 
           <div class="field-group">

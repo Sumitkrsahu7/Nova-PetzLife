@@ -69,6 +69,14 @@ export class DeliverySettingsComponent implements OnInit, AfterViewInit, OnDestr
     return this.slots.length;
   }
 
+  getActiveSlotCount(): number {
+    return this.slots.filter(s => s.isActive).length;
+  }
+
+  getTotalCapacity(): number {
+    return this.slots.reduce((sum, s) => sum + (s.maxOrders || 0), 0);
+  }
+
   onSlotPageChange(page: number): void {
     this.slotPage = page;
   }

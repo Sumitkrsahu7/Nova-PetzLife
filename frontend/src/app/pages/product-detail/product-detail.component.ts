@@ -120,6 +120,15 @@ export class ProductDetailComponent implements OnInit {
     this.selectedImageUrl = url;
   }
 
+  get currentDisplayPrice(): number {
+    if (!this.product) return 0;
+    if (this.selectedVariantId && this.product.variants) {
+      const v = this.product.variants.find(x => x.id === this.selectedVariantId);
+      if (v) return v.discountedPrice || v.price;
+    }
+    return this.product.discountedPrice || this.product.basePrice || 0;
+  }
+
   setRating(star: number): void {
     this.newRating = star;
   }

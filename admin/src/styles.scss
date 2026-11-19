@@ -75,6 +75,24 @@ body {
   min-width: 680px;
 }
 
+@media (max-width: 768px) {
+  .table-card {
+    border-radius: 8px;
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 transparent;
+
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+  }
+}
+
 /* Responsive Modals */
 .modal-backdrop {
   position: fixed;
