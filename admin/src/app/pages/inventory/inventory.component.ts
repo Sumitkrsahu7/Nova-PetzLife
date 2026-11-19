@@ -92,7 +92,7 @@ export class InventoryComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private route: ActivatedRoute
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.fetchInventory();

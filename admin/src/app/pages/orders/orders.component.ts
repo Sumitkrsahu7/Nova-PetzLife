@@ -44,7 +44,7 @@ export class OrdersComponent implements OnInit {
   isCancellingItem = false;
   cancelItemError = '';
 
-  constructor(private adminOrderService: AdminOrderService) {}
+  constructor(private adminOrderService: AdminOrderService) { }
 
   ngOnInit(): void {
     this.fetchOrders();
