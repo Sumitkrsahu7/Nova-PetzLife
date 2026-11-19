@@ -2,11 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminAuditService, AuditLogItem } from '../../core/services/admin-audit.service';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { PaginationComponent } from '../../components/pagination/pagination.component';
 
 @Component({
   selector: 'app-audit',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BackButtonComponent, PaginationComponent],
   templateUrl: './audit.component.html',
   styleUrls: ['./audit.component.scss']
 })
@@ -18,6 +20,7 @@ export class AuditComponent implements OnInit {
   selectedEntity: string = 'ALL';
   selectedAction: string = 'ALL';
   currentPage: number = 0;
+  pageSize: number = 10;
   totalPages: number = 1;
   totalElements: number = 0;
 
@@ -35,7 +38,7 @@ export class AuditComponent implements OnInit {
 
   loadLogs(): void {
     this.isLoading = true;
-    this.auditService.getAuditLogs(this.selectedEntity, this.selectedAction, this.currentPage, 20).subscribe({
+    this.auditService.getAuditLogs(this.selectedEntity, this.selectedAction, this.currentPage, this.pageSize).subscribe({
       next: (res) => {
         this.logs = res.content || [];
         this.totalPages = res.totalPages || 1;
@@ -54,18 +57,15 @@ export class AuditComponent implements OnInit {
     this.loadLogs();
   }
 
-  nextPage(): void {
-    if (this.currentPage < this.totalPages - 1) {
-      this.currentPage++;
-      this.loadLogs();
-    }
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.loadLogs();
   }
 
-  prevPage(): void {
-    if (this.currentPage > 0) {
-      this.currentPage--;
-      this.loadLogs();
-    }
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0;
+    this.loadLogs();
   }
 
   inspectLog(log: AuditLogItem): void {

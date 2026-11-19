@@ -1,4 +1,5 @@
 <div class="page-container">
+  <app-back-button></app-back-button>
   <div class="page-header">
     <div>
       <h1>Store Location & Delivery Settings</h1>
@@ -19,10 +20,12 @@
     <div class="store-top">
       <div>
         <h2>{{ shopLocation.shopName }}</h2>
-        <p class="store-addr">📍 {{ shopLocation.addressLine }}, {{ shopLocation.city }}, {{ shopLocation.state }} - {{ shopLocation.pinCode }}</p>
+        <p class="store-addr">📍 {{ shopLocation.addressLine }}, {{ shopLocation.city }}, {{ shopLocation.state }} - {{
+          shopLocation.pinCode }}</p>
       </div>
       <div class="top-pills">
-        <div class="verification-pill" [class.verified]="shopLocation.isVerified" [class.unverified]="!shopLocation.isVerified">
+        <div class="verification-pill" [class.verified]="shopLocation.isVerified"
+          [class.unverified]="!shopLocation.isVerified">
           {{ shopLocation.isVerified ? '✅ VERIFIED & ACTIVE' : '⏳ PENDING OWNER APPROVAL' }}
         </div>
         <button class="btn-action-edit" (click)="openEditLocation()" title="Modify Coordinates or Address">
@@ -54,21 +57,19 @@
     <div class="map-preview-wrap">
       <div class="map-header">
         <span class="map-label">🗺️ Store Geographic Location & Delivery Boundary</span>
-        <a [href]="'https://www.google.com/maps/search/?api=1&query=' + shopLocation.latitude + ',' + shopLocation.longitude" target="_blank" rel="noopener" class="map-external-link">Open in Google Maps ↗</a>
+        <a [href]="'https://www.google.com/maps/search/?api=1&query=' + shopLocation.latitude + ',' + shopLocation.longitude"
+          target="_blank" rel="noopener" class="map-external-link">Open in Google Maps ↗</a>
       </div>
       <div id="admin-overview-map" class="admin-leaflet-map-view"></div>
     </div>
 
     <div class="verify-action-bar">
-      <button
-        class="btn"
-        [class.btn-verify]="!shopLocation.isVerified"
-        [class.btn-unverify]="shopLocation.isVerified"
-        (click)="toggleOwnerVerification()"
-      >
+      <button class="btn" [class.btn-verify]="!shopLocation.isVerified" [class.btn-unverify]="shopLocation.isVerified"
+        (click)="toggleOwnerVerification()">
         {{ shopLocation.isVerified ? 'Revoke Store Location Approval' : '👑 Approve & Activate Store Delivery Radius' }}
       </button>
-      <span class="owner-note">Owner verification is required before customer checkout permits 20 km local delivery.</span>
+      <span class="owner-note">Owner verification is required before customer checkout permits 20 km local
+        delivery.</span>
     </div>
   </div>
 
@@ -87,12 +88,7 @@
         <div class="preset-section">
           <span class="preset-label">Quick Trivandrum Location Presets:</span>
           <div class="preset-chips">
-            <button
-              type="button"
-              *ngFor="let p of locationPresets"
-              class="preset-chip"
-              (click)="applyPreset(p)"
-            >
+            <button type="button" *ngFor="let p of locationPresets" class="preset-chip" (click)="applyPreset(p)">
               {{ p.name }}
             </button>
           </div>
@@ -102,41 +98,21 @@
           <div class="form-row">
             <div class="form-group flex-2">
               <label for="shopName">Shop / Business Name</label>
-              <input
-                id="shopName"
-                type="text"
-                [(ngModel)]="editForm.shopName"
-                name="shopName"
-                placeholder="e.g. NOVA PETZLIFE"
-                required
-              />
+              <input id="shopName" type="text" [(ngModel)]="editForm.shopName" name="shopName"
+                placeholder="e.g. NOVA PETZLIFE" required />
             </div>
             <div class="form-group flex-1">
               <label for="deliveryRadiusKm">Delivery Radius (km)</label>
-              <input
-                id="deliveryRadiusKm"
-                type="number"
-                step="0.5"
-                min="1"
-                max="100"
-                [(ngModel)]="editForm.deliveryRadiusKm"
-                (ngModelChange)="onRadiusInputChange()"
-                name="deliveryRadiusKm"
-                required
-              />
+              <input id="deliveryRadiusKm" type="number" step="0.5" min="1" max="100"
+                [(ngModel)]="editForm.deliveryRadiusKm" (ngModelChange)="onRadiusInputChange()" name="deliveryRadiusKm"
+                required />
             </div>
           </div>
 
           <div class="form-group">
             <label for="addressLine">Street Address / Landmark</label>
-            <input
-              id="addressLine"
-              type="text"
-              [(ngModel)]="editForm.addressLine"
-              name="addressLine"
-              placeholder="e.g. Petzlife, Kuravankonam Junction, Kuravankonam Ambalamukku Road"
-              required
-            />
+            <input id="addressLine" type="text" [(ngModel)]="editForm.addressLine" name="addressLine"
+              placeholder="e.g. Petzlife, Kuravankonam Junction, Kuravankonam Ambalamukku Road" required />
           </div>
 
           <div class="form-row">
@@ -150,7 +126,8 @@
             </div>
             <div class="form-group flex-1">
               <label for="pinCode">PIN Code</label>
-              <input id="pinCode" type="text" [(ngModel)]="editForm.pinCode" name="pinCode" placeholder="695003" required />
+              <input id="pinCode" type="text" [(ngModel)]="editForm.pinCode" name="pinCode" placeholder="695003"
+                required />
             </div>
           </div>
 
@@ -165,27 +142,13 @@
             <div class="form-row">
               <div class="form-group flex-1">
                 <label for="latitude">Latitude</label>
-                <input
-                  id="latitude"
-                  type="number"
-                  step="0.000001"
-                  [(ngModel)]="editForm.latitude"
-                  name="latitude"
-                  placeholder="e.g. 8.528448"
-                  required
-                />
+                <input id="latitude" type="number" step="0.000001" [(ngModel)]="editForm.latitude" name="latitude"
+                  placeholder="e.g. 8.528448" required />
               </div>
               <div class="form-group flex-1">
                 <label for="longitude">Longitude</label>
-                <input
-                  id="longitude"
-                  type="number"
-                  step="0.000001"
-                  [(ngModel)]="editForm.longitude"
-                  name="longitude"
-                  placeholder="e.g. 76.953268"
-                  required
-                />
+                <input id="longitude" type="number" step="0.000001" [(ngModel)]="editForm.longitude" name="longitude"
+                  placeholder="e.g. 76.953268" required />
               </div>
             </div>
           </div>
@@ -193,7 +156,8 @@
           <!-- Interactive Drag & Pick Leaflet Map -->
           <div class="modal-map-wrap">
             <div class="map-interact-tip">
-              <span>👆 <strong>Scroll, drag the 🏪 shop marker, or click anywhere on the map</strong> to set store coordinates visually!</span>
+              <span>👆 <strong>Scroll, drag the 🏪 shop marker, or click anywhere on the map</strong> to set store
+                coordinates visually!</span>
             </div>
             <div id="admin-edit-interactive-map" class="admin-leaflet-map-edit"></div>
           </div>
@@ -233,20 +197,15 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let s of slots">
+          <tr *ngFor="let s of paginatedSlots">
             <td><strong>{{ s.slotName }}</strong></td>
             <td><code>{{ s.startTime }} – {{ s.endTime }}</code></td>
             <td>{{ s.maxOrders }} orders</td>
             <td>{{ s.cutoffMinutes }} mins</td>
             <td><small>{{ s.availableDays || 'Mon – Sat' }}</small></td>
             <td>
-              <button
-                type="button"
-                class="status-toggle-btn"
-                [class.active]="s.isActive"
-                (click)="toggleSlotActive(s)"
-                title="Toggle slot active/inactive"
-              >
+              <button type="button" class="status-toggle-btn" [class.active]="s.isActive" (click)="toggleSlotActive(s)"
+                title="Toggle slot active/inactive">
                 {{ s.isActive ? 'Active' : 'Inactive' }}
               </button>
             </td>
@@ -259,6 +218,8 @@
           </tr>
         </tbody>
       </table>
+      <app-pagination [currentPage]="slotPage" [pageSize]="slotPageSize" [totalElements]="totalSlotElements"
+        (pageChange)="onSlotPageChange($event)" (pageSizeChange)="onSlotPageSizeChange($event)"></app-pagination>
     </div>
 
     <div *ngIf="slots.length === 0" class="empty-state">
@@ -278,7 +239,8 @@
         <form (ngSubmit)="saveSlot()">
           <div class="form-group mb-3">
             <label>Slot Name *</label>
-            <input type="text" [(ngModel)]="slotForm.slotName" name="slotName" placeholder="e.g. Morning Express, Afternoon, Evening" required />
+            <input type="text" [(ngModel)]="slotForm.slotName" name="slotName"
+              placeholder="e.g. Morning Express, Afternoon, Evening" required />
           </div>
 
           <div class="form-row mb-3">
@@ -299,13 +261,15 @@
             </div>
             <div class="form-group flex-1">
               <label>Order Cutoff (Minutes Before Start)</label>
-              <input type="number" [(ngModel)]="slotForm.cutoffMinutes" name="cutoffMinutes" min="0" max="720" required />
+              <input type="number" [(ngModel)]="slotForm.cutoffMinutes" name="cutoffMinutes" min="0" max="720"
+                required />
             </div>
           </div>
 
           <div class="form-group mb-3">
             <label>Applicable Days (Comma Separated)</label>
-            <input type="text" [(ngModel)]="slotForm.availableDays" name="availableDays" placeholder="Monday,Tuesday,Wednesday,Thursday,Friday,Saturday" />
+            <input type="text" [(ngModel)]="slotForm.availableDays" name="availableDays"
+              placeholder="Monday,Tuesday,Wednesday,Thursday,Friday,Saturday" />
           </div>
 
           <div class="form-group checkbox-group mb-3">
@@ -317,7 +281,8 @@
 
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" (click)="showSlotModal = false">Cancel</button>
-            <button type="submit" class="btn btn-primary">{{ isEditingSlot ? 'Save Changes' : 'Create Window' }}</button>
+            <button type="submit" class="btn btn-primary">{{ isEditingSlot ? 'Save Changes' : 'Create Window'
+              }}</button>
           </div>
         </form>
       </div>

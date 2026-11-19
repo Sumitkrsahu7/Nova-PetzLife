@@ -1,4 +1,5 @@
 <div class="coupons-page">
+  <app-back-button></app-back-button>
   <div class="page-header">
     <div>
       <h1>Promotions & Discount Coupons</h1>
@@ -43,7 +44,7 @@
         <tr *ngIf="!isLoading && coupons.length === 0">
           <td colspan="8" class="empty-cell">No promotional coupons created yet. Click "+ Create New Coupon" to start.</td>
         </tr>
-        <tr *ngFor="let coupon of coupons">
+        <tr *ngFor="let coupon of paginatedCoupons">
           <td>
             <div class="code-wrapper">
               <span class="code-badge">{{ coupon.code }}</span>
@@ -88,6 +89,13 @@
         </tr>
       </tbody>
     </table>
+    <app-pagination
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalElements]="totalElements"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    ></app-pagination>
   </div>
 
   <!-- Create Coupon Modal -->

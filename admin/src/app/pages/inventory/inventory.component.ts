@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { PaginationComponent } from '../../components/pagination/pagination.component';
 
 export interface InventoryRecord {
   id: number;
@@ -20,7 +22,7 @@ export interface InventoryRecord {
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BackButtonComponent, PaginationComponent],
   templateUrl: './inventory.component.html',
   styleUrls: ['./inventory.component.scss']
 })
@@ -31,12 +33,9 @@ export class InventoryComponent implements OnInit {
   searchQuery = '';
   sortBy: 'stock-asc' | 'stock-desc' | 'name-asc' | 'name-desc' = 'stock-asc';
 
-  // Adjust Modal
-  showModal = false;
-  selectedItem: InventoryRecord | null = null;
-  adjustmentQty = 0;
-  adjustReason = 'Stock shipment arrival';
-  modalErrorMessage = '';
+  // Pagination state
+  currentPage = 0;
+  pageSize = 10;
 
   get displayedInventory(): InventoryRecord[] {
     let list = [...this.inventoryList];
@@ -65,10 +64,35 @@ export class InventoryComponent implements OnInit {
     }
   }
 
+  get paginatedInventory(): InventoryRecord[] {
+    const start = this.currentPage * this.pageSize;
+    return this.displayedInventory.slice(start, start + this.pageSize);
+  }
+
+  get totalElements(): number {
+    return this.displayedInventory.length;
+  }
+
+  onPageChange(page: number): void {
+    this.currentPage = page;
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0;
+  }
+
+  // Adjust Modal
+  showModal = false;
+  selectedItem: InventoryRecord | null = null;
+  adjustmentQty = 0;
+  adjustReason = 'Stock shipment arrival';
+  modalErrorMessage = '';
+
   constructor(
     private http: HttpClient,
     private route: ActivatedRoute
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.fetchInventory();

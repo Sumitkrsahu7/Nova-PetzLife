@@ -3,11 +3,23 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AdminOrderService, AdminOrderSummary, AdminOrderDetail, AdminOrderItem } from '../../core/services/admin-order.service';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { PaginationComponent } from '../../components/pagination/pagination.component';
+
+export interface ReturnPolicyParsed {
+  isJson: boolean;
+  returnAllowed: boolean;
+  returnWindowDays: number;
+  originalPackagingRequired: boolean;
+  unusedConditionRequired: boolean;
+  customConditions?: string;
+  rawText?: string;
+}
 
 @Component({
   selector: 'app-orders',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent, PaginationComponent],
   templateUrl: './orders.component.html',
   styleUrls: ['./orders.component.scss']
 })
@@ -20,6 +32,11 @@ export class OrdersComponent implements OnInit {
 
   statusTabs = ['ALL', 'PENDING_PAYMENT', 'CONFIRMED', 'PACKED', 'DISPATCHED', 'DELIVERED', 'CANCELLED'];
 
+  // Pagination state
+  currentPage = 0;
+  pageSize = 10;
+  totalElements = 0;
+
   // Out of Stock Item Cancellation Modal State
   showCancelItemModal = false;
   selectedCancelItem: AdminOrderItem | null = null;
@@ -27,7 +44,7 @@ export class OrdersComponent implements OnInit {
   isCancellingItem = false;
   cancelItemError = '';
 
-  constructor(private adminOrderService: AdminOrderService) {}
+  constructor(private adminOrderService: AdminOrderService) { }
 
   ngOnInit(): void {
     this.fetchOrders();
@@ -35,29 +52,81 @@ export class OrdersComponent implements OnInit {
 
   fetchOrders(): void {
     this.isLoading = true;
-    this.adminOrderService.getOrders(this.activeTab, this.searchQuery).subscribe({
+    this.adminOrderService.getOrders(this.activeTab, this.searchQuery, this.currentPage, this.pageSize).subscribe({
       next: res => {
         this.isLoading = false;
         if (res?.success && res.data?.content) {
           this.orders = res.data.content;
+          this.totalElements = res.data.totalElements ?? res.data.content.length;
         } else {
           this.orders = [];
+          this.totalElements = 0;
         }
       },
       error: () => {
         this.isLoading = false;
         this.orders = [];
+        this.totalElements = 0;
       }
     });
   }
 
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.fetchOrders();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0;
+    this.fetchOrders();
+  }
+
   setTab(tab: string): void {
     this.activeTab = tab;
+    this.currentPage = 0;
     this.fetchOrders();
   }
 
   onSearch(): void {
+    this.currentPage = 0;
     this.fetchOrders();
+  }
+
+  parsePolicy(snapshot: string | undefined): ReturnPolicyParsed {
+    if (!snapshot) {
+      return {
+        isJson: false,
+        returnAllowed: false,
+        returnWindowDays: 0,
+        originalPackagingRequired: false,
+        unusedConditionRequired: false,
+        rawText: 'Standard return policy applies'
+      };
+    }
+    try {
+      const parsed = JSON.parse(snapshot);
+      if (typeof parsed === 'object' && parsed !== null) {
+        return {
+          isJson: true,
+          returnAllowed: !!parsed.returnAllowed,
+          returnWindowDays: Number(parsed.returnWindowDays ?? 0),
+          originalPackagingRequired: !!parsed.originalPackagingRequired,
+          unusedConditionRequired: !!parsed.unusedConditionRequired,
+          customConditions: parsed.customConditions || ''
+        };
+      }
+    } catch {
+      // not a json string
+    }
+    return {
+      isJson: false,
+      returnAllowed: true,
+      returnWindowDays: 7,
+      originalPackagingRequired: false,
+      unusedConditionRequired: false,
+      rawText: snapshot
+    };
   }
 
   viewOrder(order: AdminOrderSummary): void {

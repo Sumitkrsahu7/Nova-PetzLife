@@ -1,8 +1,9 @@
 <div class="orders-page">
+  <app-back-button></app-back-button>
   <div class="page-header">
     <div>
       <h1>Orders & Local Fulfillment</h1>
-      <p class="subtitle">Live order dispatch from Petzlife, Kuravankonam store (Strict 20 km radius)</p>
+      <p class="subtitle">Live order fulfillment & dispatch (Strict 20 km delivery radius)</p>
     </div>
     <button (click)="fetchOrders()" class="btn-refresh">🔄 Refresh Orders</button>
   </div>
@@ -85,6 +86,13 @@
         </tr>
       </tbody>
     </table>
+    <app-pagination
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalElements]="totalElements"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    ></app-pagination>
   </div>
 
   <!-- Order Detail Modal -->
@@ -125,8 +133,24 @@
               <strong>{{ item.productName }}</strong>
               <div class="item-sub">Brand: {{ item.brandName }} | SKU: {{ item.sku }} | Qty: {{ item.quantity }}</div>
               <div class="snapshot-box">
-                <span class="snap-title">Immutable Return Policy Snapshot at Purchase:</span>
-                <code>{{ item.returnPolicySnapshot }}</code>
+                <span class="snap-title">Return Policy Snapshot at Purchase:</span>
+                <ng-container *ngIf="parsePolicy(item.returnPolicySnapshot) as pol">
+                  <div *ngIf="pol.isJson" class="policy-formatted">
+                    <div class="policy-badges">
+                      <span class="policy-status-pill" [class.allowed]="pol.returnAllowed" [class.disallowed]="!pol.returnAllowed">
+                        {{ pol.returnAllowed ? ('✓ Returnable (' + pol.returnWindowDays + ' days)') : '✕ Non-Returnable' }}
+                      </span>
+                      <span *ngIf="pol.originalPackagingRequired" class="policy-tag">Original Packaging Required</span>
+                      <span *ngIf="pol.unusedConditionRequired" class="policy-tag">Unused Condition Required</span>
+                    </div>
+                    <div *ngIf="pol.customConditions" class="policy-condition-text">
+                      <strong>Terms:</strong> {{ pol.customConditions }}
+                    </div>
+                  </div>
+                  <div *ngIf="!pol.isJson" class="policy-plain-text">
+                    {{ pol.rawText }}
+                  </div>
+                </ng-container>
               </div>
             </div>
             <div class="item-pricing">

@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AdminReturnService, ReturnRequestSummary, InspectPayload } from '../../core/services/admin-return.service';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { PaginationComponent } from '../../components/pagination/pagination.component';
 
 @Component({
   selector: 'app-returns',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent, PaginationComponent],
   templateUrl: './returns.component.html',
   styleUrls: ['./returns.component.scss']
 })
@@ -17,6 +19,11 @@ export class ReturnsComponent implements OnInit {
   isLoading = false;
   activeTab = 'ALL';
   statusTabs = ['ALL', 'REQUESTED', 'PICKUP_SCHEDULED', 'RECEIVED', 'CLOSED', 'REJECTED'];
+
+  // Pagination state
+  currentPage = 0;
+  pageSize = 10;
+  totalElements = 0;
 
   // Inspection Modal State
   showInspectModal = false;
@@ -35,24 +42,39 @@ export class ReturnsComponent implements OnInit {
 
   fetchReturns(): void {
     this.isLoading = true;
-    this.returnService.getReturnRequests(this.activeTab).subscribe({
+    this.returnService.getReturnRequests(this.activeTab, this.currentPage, this.pageSize).subscribe({
       next: res => {
         this.isLoading = false;
         if (res?.success && res.data?.content) {
           this.returnRequests = res.data.content;
+          this.totalElements = res.data.totalElements ?? res.data.content.length;
         } else {
           this.returnRequests = [];
+          this.totalElements = 0;
         }
       },
       error: () => {
         this.isLoading = false;
         this.returnRequests = [];
+        this.totalElements = 0;
       }
     });
   }
 
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.fetchReturns();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0;
+    this.fetchReturns();
+  }
+
   setTab(tab: string): void {
     this.activeTab = tab;
+    this.currentPage = 0;
     this.fetchReturns();
   }
 

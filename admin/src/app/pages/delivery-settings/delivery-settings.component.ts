@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { PaginationComponent } from '../../components/pagination/pagination.component';
 
 declare const L: any;
 
@@ -36,11 +38,32 @@ export interface DeliverySlotData {
 @Component({
   selector: 'app-delivery-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BackButtonComponent, PaginationComponent],
   templateUrl: './delivery-settings.component.html',
   styleUrls: ['./delivery-settings.component.scss']
 })
 export class DeliverySettingsComponent implements OnInit, AfterViewInit, OnDestroy {
+  // Slots pagination state
+  slotPage = 0;
+  slotPageSize = 10;
+
+  get paginatedSlots(): DeliverySlotData[] {
+    const start = this.slotPage * this.slotPageSize;
+    return this.slots.slice(start, start + this.slotPageSize);
+  }
+
+  get totalSlotElements(): number {
+    return this.slots.length;
+  }
+
+  onSlotPageChange(page: number): void {
+    this.slotPage = page;
+  }
+
+  onSlotPageSizeChange(size: number): void {
+    this.slotPageSize = size;
+    this.slotPage = 0;
+  }
   shopLocation: ShopLocationData = {
     shopName: 'NOVA PETZLIFE',
     addressLine: 'Petzlife, Kuravankonam Junction, Kuravankonam Ambalamukku Road',

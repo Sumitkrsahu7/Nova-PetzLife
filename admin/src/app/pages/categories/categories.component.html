@@ -1,4 +1,5 @@
 <div class="page-container">
+  <app-back-button></app-back-button>
   <div class="page-header">
     <div>
       <h1>Category Management</h1>
@@ -21,7 +22,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let c of categories">
+        <tr *ngFor="let c of paginatedCategories">
           <td><strong>{{ c.name }}</strong></td>
           <td><code>{{ c.slug }}</code></td>
           <td>{{ c.description || '—' }}</td>
@@ -47,6 +48,14 @@
         </tr>
       </tbody>
     </table>
+
+    <app-pagination
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalElements]="totalElements"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    ></app-pagination>
   </div>
 
   <!-- Create Modal -->

@@ -71,13 +71,13 @@ import { filter } from 'rxjs/operators';
       min-width: 0;
     }
     .admin-main-viewport {
-      padding: 2rem;
+      padding: 1rem;
       flex: 1;
       overflow-y: auto;
     }
     @media (max-width: 768px) {
       .admin-main-viewport {
-        padding: 1rem;
+        padding: 0.5rem;
       }
     }
   `]

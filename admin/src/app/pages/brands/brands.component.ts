@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { PaginationComponent } from '../../components/pagination/pagination.component';
 
 export interface BrandItem {
   id: number;
@@ -16,13 +18,35 @@ export interface BrandItem {
 @Component({
   selector: 'app-brands',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BackButtonComponent, PaginationComponent],
   templateUrl: './brands.component.html',
   styleUrls: ['./brands.component.scss']
 })
 export class BrandsComponent implements OnInit {
   brands: BrandItem[] = [];
   isLoading = false;
+
+  // Pagination state
+  currentPage = 0;
+  pageSize = 10;
+
+  get paginatedBrands(): BrandItem[] {
+    const start = this.currentPage * this.pageSize;
+    return this.brands.slice(start, start + this.pageSize);
+  }
+
+  get totalElements(): number {
+    return this.brands.length;
+  }
+
+  onPageChange(page: number): void {
+    this.currentPage = page;
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0;
+  }
 
   showModal = false;
   brandForm = {

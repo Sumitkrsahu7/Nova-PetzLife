@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AdminCouponService, AdminCoupon, CreateCouponPayload } from '../../core/services/admin-coupon.service';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { PaginationComponent } from '../../components/pagination/pagination.component';
 
 @Component({
   selector: 'app-coupons',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent, PaginationComponent],
   templateUrl: './coupons.component.html',
   styleUrls: ['./coupons.component.scss']
 })
@@ -18,6 +20,28 @@ export class CouponsComponent implements OnInit {
   showCreateModal = false;
   successMessage = '';
   errorMessage = '';
+
+  // Pagination state
+  currentPage = 0;
+  pageSize = 10;
+
+  get paginatedCoupons(): AdminCoupon[] {
+    const start = this.currentPage * this.pageSize;
+    return this.coupons.slice(start, start + this.pageSize);
+  }
+
+  get totalElements(): number {
+    return this.coupons.length;
+  }
+
+  onPageChange(page: number): void {
+    this.currentPage = page;
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0;
+  }
 
   newCoupon: CreateCouponPayload = {
     code: '',

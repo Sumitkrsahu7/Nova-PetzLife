@@ -1,4 +1,5 @@
 <div class="returns-page">
+  <app-back-button></app-back-button>
   <div class="page-header">
     <div>
       <h1>Returns, Inspections & Refunds</h1>
@@ -81,6 +82,13 @@
         </tr>
       </tbody>
     </table>
+    <app-pagination
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalElements]="totalElements"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    ></app-pagination>
   </div>
 
   <!-- Return Request Detail Modal -->

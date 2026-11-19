@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminReviewService, AdminReviewDto } from '../../core/services/admin-review.service';
 import { AdminGoogleService, AdminGoogleReviewDto } from '../../core/services/admin-google.service';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { PaginationComponent } from '../../components/pagination/pagination.component';
 
 @Component({
   selector: 'app-reviews',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BackButtonComponent, PaginationComponent],
   templateUrl: './reviews.component.html',
   styleUrls: ['./reviews.component.scss']
 })
@@ -20,6 +22,28 @@ export class ReviewsComponent implements OnInit {
   isLoadingReviews: boolean = true;
   actionMessage: string = '';
 
+  // Product reviews pagination
+  reviewPage = 0;
+  reviewPageSize = 10;
+
+  get paginatedReviews(): AdminReviewDto[] {
+    const start = this.reviewPage * this.reviewPageSize;
+    return this.reviews.slice(start, start + this.reviewPageSize);
+  }
+
+  get totalReviewElements(): number {
+    return this.reviews.length;
+  }
+
+  onReviewPageChange(page: number): void {
+    this.reviewPage = page;
+  }
+
+  onReviewPageSizeChange(size: number): void {
+    this.reviewPageSize = size;
+    this.reviewPage = 0;
+  }
+
   // Reply Modal / Drawer
   replyingReview: AdminReviewDto | null = null;
   replyText: string = '';
@@ -29,6 +53,28 @@ export class ReviewsComponent implements OnInit {
   isLoadingGoogle: boolean = false;
   isSyncing: boolean = false;
   syncMessage: string = '';
+
+  // Google reviews pagination
+  googlePage = 0;
+  googlePageSize = 10;
+
+  get paginatedGoogleReviews(): AdminGoogleReviewDto[] {
+    const start = this.googlePage * this.googlePageSize;
+    return this.googleReviews.slice(start, start + this.googlePageSize);
+  }
+
+  get totalGoogleElements(): number {
+    return this.googleReviews.length;
+  }
+
+  onGooglePageChange(page: number): void {
+    this.googlePage = page;
+  }
+
+  onGooglePageSizeChange(size: number): void {
+    this.googlePageSize = size;
+    this.googlePage = 0;
+  }
 
   // KPI Metrics
   totalReviewsCount: number = 0;
