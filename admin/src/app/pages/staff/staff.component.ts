@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminStaffService, StaffMember, StaffPermission } from '../../core/services/admin-staff.service';
 import { AdminAuthService } from '../../core/services/admin-auth.service';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { PaginationComponent } from '../../components/pagination/pagination.component';
 
 @Component({
   selector: 'app-staff',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BackButtonComponent, PaginationComponent],
   templateUrl: './staff.component.html',
   styleUrls: ['./staff.component.scss']
 })
@@ -17,6 +19,28 @@ export class StaffComponent implements OnInit {
   isLoading = false;
   successMessage = '';
   errorMessage = '';
+
+  // Pagination state
+  currentPage = 0;
+  pageSize = 10;
+
+  get paginatedStaff(): StaffMember[] {
+    const start = this.currentPage * this.pageSize;
+    return this.staffList.slice(start, start + this.pageSize);
+  }
+
+  get totalElements(): number {
+    return this.staffList.length;
+  }
+
+  onPageChange(page: number): void {
+    this.currentPage = page;
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0;
+  }
 
   // Create Staff Modal
   showCreateModal = false;

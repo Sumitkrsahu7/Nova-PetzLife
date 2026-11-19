@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { PaginationComponent } from '../../components/pagination/pagination.component';
 
 export interface ProductItem {
   id: number;
@@ -31,7 +33,7 @@ export interface TaxConfigItem {
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BackButtonComponent, PaginationComponent],
   templateUrl: './products.component.html',
   styleUrls: ['./products.component.scss']
 })
@@ -44,6 +46,10 @@ export class ProductsComponent implements OnInit {
   searchQuery = '';
   selectedCategoryId = 'ALL';
   sortBy: 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' = 'name-asc';
+
+  // Catalog Pagination
+  catalogPage = 0;
+  catalogPageSize = 10;
 
   get sortedProducts(): ProductItem[] {
     let list = [...this.products];
@@ -63,6 +69,46 @@ export class ProductsComponent implements OnInit {
       default:
         return list;
     }
+  }
+
+  get paginatedProducts(): ProductItem[] {
+    const start = this.catalogPage * this.catalogPageSize;
+    return this.sortedProducts.slice(start, start + this.catalogPageSize);
+  }
+
+  get totalCatalogElements(): number {
+    return this.sortedProducts.length;
+  }
+
+  onCatalogPageChange(page: number): void {
+    this.catalogPage = page;
+  }
+
+  onCatalogPageSizeChange(size: number): void {
+    this.catalogPageSize = size;
+    this.catalogPage = 0;
+  }
+
+  // Pricing Table Pagination
+  pricingPage = 0;
+  pricingPageSize = 10;
+
+  get paginatedPricingProducts(): ProductItem[] {
+    const start = this.pricingPage * this.pricingPageSize;
+    return this.products.slice(start, start + this.pricingPageSize);
+  }
+
+  get totalPricingElements(): number {
+    return this.products.length;
+  }
+
+  onPricingPageChange(page: number): void {
+    this.pricingPage = page;
+  }
+
+  onPricingPageSizeChange(size: number): void {
+    this.pricingPageSize = size;
+    this.pricingPage = 0;
   }
 
   // Tax Configurations
@@ -141,7 +187,8 @@ export class ProductsComponent implements OnInit {
 
   fetchProducts(): void {
     this.isLoading = true;
-    let url = `${environment.apiUrl}/products?page=0&size=50`;
+    this.catalogPage = 0;
+    let url = `${environment.apiUrl}/products?page=0&size=200`;
     if (this.searchQuery.trim()) url += `&query=${encodeURIComponent(this.searchQuery.trim())}`;
     if (this.selectedCategoryId !== 'ALL') url += `&categoryId=${encodeURIComponent(this.selectedCategoryId)}`;
 

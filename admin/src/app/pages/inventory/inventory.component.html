@@ -1,8 +1,9 @@
 <div class="page-container">
+  <app-back-button></app-back-button>
   <div class="page-header">
     <div>
       <h1>Inventory & Stock Control</h1>
-      <p>Real-time stock balance, reservations, and re-order thresholds at Kuravankonam store</p>
+      <p>Real-time stock balance, reservations, and re-order thresholds at store</p>
     </div>
     <button class="btn btn-primary" (click)="fetchInventory()">🔄 Refresh Stock</button>
   </div>
@@ -48,7 +49,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let item of displayedInventory">
+        <tr *ngFor="let item of paginatedInventory">
           <td>
             <strong>{{ item.productName }}</strong>
             <div class="sku-tag">{{ item.sku }}</div>
@@ -72,6 +73,14 @@
         </tr>
       </tbody>
     </table>
+
+    <app-pagination
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalElements]="totalElements"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    ></app-pagination>
 
     <div *ngIf="!isLoading && displayedInventory.length === 0" class="empty-state">
       <p>No inventory records matching your filter or search criteria.</p>

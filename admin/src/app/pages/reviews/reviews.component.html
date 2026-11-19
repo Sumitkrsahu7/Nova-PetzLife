@@ -1,4 +1,5 @@
 <div class="reviews-management-page">
+  <app-back-button></app-back-button>
   <div class="page-header">
     <div>
       <h1>Customer Reviews & Google Profile</h1>
@@ -88,7 +89,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let r of reviews">
+          <tr *ngFor="let r of paginatedReviews">
             <td>#{{ r.id }}</td>
             <td class="product-cell">
               <strong>{{ r.productName }}</strong>
@@ -160,6 +161,13 @@
           </tr>
         </tbody>
       </table>
+      <app-pagination
+        [currentPage]="reviewPage"
+        [pageSize]="reviewPageSize"
+        [totalElements]="totalReviewElements"
+        (pageChange)="onReviewPageChange($event)"
+        (pageSizeChange)="onReviewPageSizeChange($event)"
+      ></app-pagination>
     </div>
   </div>
 
@@ -209,7 +217,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let gr of googleReviews">
+          <tr *ngFor="let gr of paginatedGoogleReviews">
             <td class="reviewer-cell">
               <div class="avatar">{{ gr.authorName.charAt(0) }}</div>
               <strong>{{ gr.authorName }}</strong>
@@ -244,6 +252,13 @@
           </tr>
         </tbody>
       </table>
+      <app-pagination
+        [currentPage]="googlePage"
+        [pageSize]="googlePageSize"
+        [totalElements]="totalGoogleElements"
+        (pageChange)="onGooglePageChange($event)"
+        (pageSizeChange)="onGooglePageSizeChange($event)"
+      ></app-pagination>
     </div>
   </div>
 

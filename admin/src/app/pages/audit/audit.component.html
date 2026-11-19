@@ -1,4 +1,5 @@
 <div class="audit-page">
+  <app-back-button></app-back-button>
   <div class="page-header">
     <div>
       <h1>Audit & Security Trail</h1>
@@ -80,14 +81,13 @@
       </tbody>
     </table>
 
-    <!-- Pagination -->
-    <div *ngIf="totalPages > 1" class="pagination-bar">
-      <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
-      <div class="page-buttons">
-        <button type="button" [disabled]="currentPage === 0" (click)="prevPage()">← Previous</button>
-        <button type="button" [disabled]="currentPage >= totalPages - 1" (click)="nextPage()">Next →</button>
-      </div>
-    </div>
+    <app-pagination
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalElements]="totalElements"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    ></app-pagination>
   </div>
 
   <!-- Detail Inspection Modal -->
