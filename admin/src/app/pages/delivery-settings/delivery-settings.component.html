@@ -84,15 +84,7 @@
       <div class="modal-body">
         <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
 
-        <!-- Quick Presets -->
-        <div class="preset-section">
-          <span class="preset-label">Quick Trivandrum Location Presets:</span>
-          <div class="preset-chips">
-            <button type="button" *ngFor="let p of locationPresets" class="preset-chip" (click)="applyPreset(p)">
-              {{ p.name }}
-            </button>
-          </div>
-        </div>
+
 
         <form (ngSubmit)="saveLocation()" class="location-form">
           <div class="form-row">

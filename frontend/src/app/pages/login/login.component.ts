@@ -146,7 +146,7 @@ export class LoginComponent implements OnInit {
       },
       error: err => {
         this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Invalid email/mobile number or password. Please try again.';
+        this.errorMessage = err.error?.message || err.message || 'Invalid email/mobile number or password. Please try again.';
       }
     });
   }
@@ -199,7 +199,7 @@ export class LoginComponent implements OnInit {
       },
       error: err => {
         this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Registration failed. An account with this email may already exist.';
+        this.errorMessage = err.error?.message || err.message || 'Registration failed. Please verify your details.';
       }
     });
   }
