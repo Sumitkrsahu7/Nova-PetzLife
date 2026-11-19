@@ -58,6 +58,12 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.ok(productService.getFeaturedProducts()));
     }
 
+    @GetMapping("/api/v1/products/suggestions")
+    @Operation(summary = "Get product search autocomplete suggestions", description = "Returns active matching products by name, brand, or category")
+    public ResponseEntity<ApiResponse<List<ProductSuggestionDto>>> getSuggestions(@RequestParam(required = false, defaultValue = "") String query) {
+        return ResponseEntity.ok(ApiResponse.ok(productService.getSearchSuggestions(query)));
+    }
+
     @GetMapping("/api/v1/products/{idOrSlug}")
     @Operation(summary = "Get product details by slug or ID", description = "Retrieve full product details including variants, images, and owner return policy snapshot")
     public ResponseEntity<ApiResponse<ProductDetailDto>> getProduct(@PathVariable String idOrSlug) {
@@ -70,7 +76,7 @@ public class ProductController {
     }
 
     @PostMapping("/api/v1/admin/products")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'PRODUCT_CREATE')")
     @Operation(summary = "Create product (Admin)", description = "Add a new product with brand, category, variants, images, return policy, and initial inventory")
     public ResponseEntity<ApiResponse<ProductDetailDto>> createProduct(@Valid @RequestBody ProductCreateRequest request) {
         ProductDetailDto created = productService.createProduct(request);
@@ -78,7 +84,7 @@ public class ProductController {
     }
 
     @PutMapping("/api/v1/admin/products/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'PRODUCT_EDIT')")
     @Operation(summary = "Update product (Admin)", description = "Update product details, brand, category, pricing, and return policy")
     public ResponseEntity<ApiResponse<ProductDetailDto>> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductCreateRequest request) {
         ProductDetailDto updated = productService.updateProduct(id, request);
@@ -86,7 +92,7 @@ public class ProductController {
     }
 
     @RequestMapping(value = {"/api/v1/admin/products/{id}/status", "/api/v1/admin/products/{id}/toggle-status"}, method = {RequestMethod.PATCH, RequestMethod.DELETE})
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'PRODUCT_EDIT')")
     @Operation(summary = "Toggle active status (Admin)", description = "Activate or deactivate a product from customer catalog view")
     public ResponseEntity<ApiResponse<ProductDetailDto>> toggleProductStatus(@PathVariable Long id) {
         ProductDetailDto updated = productService.toggleProductStatus(id);

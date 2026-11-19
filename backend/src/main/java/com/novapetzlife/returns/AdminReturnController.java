@@ -61,7 +61,7 @@ public class AdminReturnController {
     }
 
     @PostMapping("/{id}/receive")
-    @Operation(summary = "Mark returned item received at store", description = "Confirms package received back at Kuravankonam shop location")
+    @Operation(summary = "Mark returned item received at store", description = "Confirms package received back at store location")
     public ResponseEntity<ApiResponse<ReturnRequestDto>> receiveReturn(
             @PathVariable Long id,
             @RequestBody(required = false) Map<String, String> body,

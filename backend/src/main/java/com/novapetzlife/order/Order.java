@@ -62,6 +62,12 @@ public class Order {
     @Column(name = "cancellation_reason", length = 255)
     private String cancellationReason;
 
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
+
+    @Column(name = "cancelled_by", length = 100)
+    private String cancelledBy;
+
     @Column(name = "delivery_otp_hash", length = 255)
     private String deliveryOtpHash;
 
@@ -259,6 +265,26 @@ public class Order {
 
     public void setCancellationReason(String cancellationReason) {
         this.cancellationReason = cancellationReason;
+    }
+
+    public BigDecimal getSubtotal() {
+        return totalAmount;
+    }
+
+    public Instant getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(Instant cancelledAt) {
+        this.cancelledAt = cancelledAt;
+    }
+
+    public String getCancelledBy() {
+        return cancelledBy;
+    }
+
+    public void setCancelledBy(String cancelledBy) {
+        this.cancelledBy = cancelledBy;
     }
 
     public List<OrderItem> getItems() {

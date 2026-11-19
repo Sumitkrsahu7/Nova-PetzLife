@@ -361,13 +361,13 @@ class CartAndCheckoutIntegrationTest {
         // Available stock reserved: 15 - 3 = 12
         assertEquals(12, inventoryService.getAvailableStock(testProduct.getId(), null));
 
-        // 2. Admin advances to PROCESSING
-        OrderStatusUpdateRequest processingReq = new OrderStatusUpdateRequest("PROCESSING", "Dispatched to packing station");
+        // 2. Admin advances to PACKED
+        OrderStatusUpdateRequest processingReq = new OrderStatusUpdateRequest("PACKED", "Order packed at fulfillment station");
         mockMvc.perform(patch("/api/v1/admin/orders/" + orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(processingReq)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.orderStatus").value("PROCESSING"));
+                .andExpect(jsonPath("$.data.orderStatus").value("PACKED"));
 
         // 3. Admin cancels order -> Reserved stock should be released back!
         OrderStatusUpdateRequest cancelReq = new OrderStatusUpdateRequest("CANCELLED", "Customer requested cancellation");

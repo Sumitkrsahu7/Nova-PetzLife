@@ -10,6 +10,7 @@ export interface AdminAuthResponse {
   firstName: string;
   lastName: string;
   roles: string[];
+  permissions?: string[];
 }
 
 export interface AdminUser {
@@ -17,6 +18,7 @@ export interface AdminUser {
   firstName: string;
   lastName: string;
   roles: string[];
+  permissions?: string[];
 }
 
 @Injectable({
@@ -74,13 +76,21 @@ export class AdminAuthService {
     return !!user && user.roles.includes(role);
   }
 
+  hasPermission(permission: string): boolean {
+    const user = this.getCurrentUser();
+    if (!user) return false;
+    if (user.roles?.includes('ROLE_SUPER_ADMIN')) return true;
+    return !!user.permissions?.includes(permission);
+  }
+
   private handleAuthSuccess(auth: AdminAuthResponse): void {
     localStorage.setItem(this.TOKEN_KEY, auth.token);
     const user: AdminUser = {
       email: auth.email,
       firstName: auth.firstName,
       lastName: auth.lastName,
-      roles: auth.roles
+      roles: auth.roles,
+      permissions: auth.permissions || []
     };
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
     this.currentUserSubject.next(user);

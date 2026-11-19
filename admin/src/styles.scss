@@ -144,3 +144,18 @@ body {
 .admin-btn:hover {
   background-color: var(--admin-primary);
 }
+
+/* Global 90% Desktop Page Container & Responsive Standardization */
+.page-container {
+  width: 90%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    width: 100%;
+    padding: 1rem 0.85rem 2.5rem;
+  }
+}

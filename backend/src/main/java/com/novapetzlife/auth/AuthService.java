@@ -1,6 +1,7 @@
 package com.novapetzlife.auth;
 
 import com.novapetzlife.security.JwtTokenProvider;
+import com.novapetzlife.user.Permission;
 import com.novapetzlife.user.Role;
 import com.novapetzlife.user.RoleRepository;
 import com.novapetzlife.user.User;
@@ -59,7 +60,11 @@ public class AuthService {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-        return AuthResponse.of(jwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles);
+        List<String> permissions = user.getPermissions() != null
+                ? user.getPermissions().stream().map(Permission::getName).toList()
+                : List.of();
+
+        return AuthResponse.of(jwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles, permissions);
     }
 
     @Transactional
@@ -117,9 +122,13 @@ public class AuthService {
                 .map(Role::getName)
                 .toList();
 
+        List<String> permissions = user.getPermissions() != null
+                ? user.getPermissions().stream().map(Permission::getName).toList()
+                : List.of();
+
         String jwt = tokenProvider.generateToken(auth);
 
-        return AuthResponse.of(jwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles);
+        return AuthResponse.of(jwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles, permissions);
     }
 
     public void logout() {

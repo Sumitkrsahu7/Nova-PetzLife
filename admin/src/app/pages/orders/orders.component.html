@@ -77,9 +77,9 @@
             <div class="action-buttons">
               <button (click)="viewOrder(order)" class="btn-action view">View</button>
               <button (click)="printInvoice(order.orderNumber)" class="btn-action invoice">Invoice</button>
-              <button *ngIf="order.orderStatus === 'CONFIRMED'" (click)="updateStatus(order.id, 'PROCESSING')" class="btn-action process">Pack</button>
-              <button *ngIf="order.orderStatus === 'PROCESSING'" (click)="updateStatus(order.id, 'OUT_FOR_DELIVERY')" class="btn-action dispatch">Dispatch</button>
-              <button *ngIf="order.orderStatus === 'OUT_FOR_DELIVERY'" (click)="updateStatus(order.id, 'DELIVERED')" class="btn-action deliver">Deliver</button>
+              <button *ngIf="order.orderStatus === 'CONFIRMED'" (click)="updateStatus(order.id, 'PACKED')" class="btn-action process">Pack</button>
+              <button *ngIf="order.orderStatus === 'PACKED'" (click)="updateStatus(order.id, 'DISPATCHED')" class="btn-action dispatch">Dispatch</button>
+              <button *ngIf="order.orderStatus === 'DISPATCHED' || order.orderStatus === 'OUT_FOR_DELIVERY'" (click)="updateStatus(order.id, 'DELIVERED')" class="btn-action deliver">Deliver</button>
             </div>
           </td>
         </tr>
@@ -110,7 +110,7 @@
           </div>
           <div class="meta-item">
             <span class="lbl">Store Distance:</span>
-            <strong>📍 {{ selectedOrder.shopDistanceKm }} km from Kuravankonam store</strong>
+            <strong>📍 {{ selectedOrder.shopDistanceKm }} km from store</strong>
           </div>
           <div class="meta-item">
             <span class="lbl">Payment:</span>
@@ -130,7 +130,16 @@
               </div>
             </div>
             <div class="item-pricing">
-              ₹{{ item.totalPrice | number:'1.2-2' }}
+              <span>₹{{ item.totalPrice | number:'1.2-2' }}</span>
+              <button
+                *ngIf="selectedOrder.orderStatus !== 'CANCELLED' && selectedOrder.orderStatus !== 'DELIVERED'"
+                type="button"
+                class="btn-item-cancel"
+                (click)="openCancelItemModal(item)"
+                title="Cancel out-of-stock item and trigger refund"
+              >
+                Out of Stock
+              </button>
             </div>
           </div>
         </div>
@@ -142,9 +151,9 @@
 
         <div class="modal-actions">
           <button (click)="printInvoice(selectedOrder.orderNumber)" class="btn-invoice-print">🖨️ Print Official GST Invoice</button>
-          <button *ngIf="selectedOrder.orderStatus === 'CONFIRMED'" (click)="updateStatus(selectedOrder.id, 'PROCESSING')" class="btn-process">Start Packing</button>
-          <button *ngIf="selectedOrder.orderStatus === 'PROCESSING'" (click)="updateStatus(selectedOrder.id, 'OUT_FOR_DELIVERY')" class="btn-dispatch">Hand to Rider</button>
-          <button *ngIf="selectedOrder.orderStatus === 'OUT_FOR_DELIVERY'" (click)="confirmDeliveryWithOtp(selectedOrder.id)" class="btn-deliver">Verify OTP & Deliver</button>
+          <button *ngIf="selectedOrder.orderStatus === 'CONFIRMED'" (click)="updateStatus(selectedOrder.id, 'PACKED')" class="btn-process">Mark Packed</button>
+          <button *ngIf="selectedOrder.orderStatus === 'PACKED'" (click)="updateStatus(selectedOrder.id, 'DISPATCHED')" class="btn-dispatch">Hand to Rider (Dispatch)</button>
+          <button *ngIf="selectedOrder.orderStatus === 'DISPATCHED' || selectedOrder.orderStatus === 'OUT_FOR_DELIVERY'" (click)="confirmDeliveryWithOtp(selectedOrder.id)" class="btn-deliver">Verify OTP & Deliver</button>
           <button *ngIf="selectedOrder.orderStatus !== 'CANCELLED' && selectedOrder.orderStatus !== 'DELIVERED'" (click)="updateStatus(selectedOrder.id, 'CANCELLED')" class="btn-cancel">Cancel Order (Release Stock)</button>
         </div>
       </div>
@@ -182,6 +191,43 @@
         <div class="otp-actions">
           <button (click)="submitDeliveryOtp()" class="btn-deliver">Verify OTP & Mark Delivered</button>
           <button (click)="showOtpModal = false" class="btn-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Out-of-Stock Item Cancellation Modal -->
+  <div *ngIf="showCancelItemModal" class="modal-backdrop" (click)="showCancelItemModal = false">
+    <div class="modal-card cancel-item-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>⚠️ Cancel Out-of-Stock Item</h2>
+        <button (click)="showCancelItemModal = false" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="cancelItemError" class="alert alert-danger">{{ cancelItemError }}</div>
+        <p>
+          You are cancelling: <strong>{{ selectedCancelItem?.productName }}</strong> (Qty: {{ selectedCancelItem?.quantity }}).
+        </p>
+        <p class="modal-help-text">
+          Reserved inventory stock will be restored to store shelves. If the order was already paid online, a pro-rated gateway refund will be automatically triggered.
+        </p>
+
+        <div class="form-group mb-3">
+          <label>Staff Cancellation Reason *</label>
+          <input
+            type="text"
+            [(ngModel)]="cancelItemReason"
+            placeholder="e.g. Batch damaged, out of stock, supplier delayed"
+            class="form-control"
+            required
+          />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="showCancelItemModal = false" [disabled]="isCancellingItem">Keep Item</button>
+          <button type="button" class="btn btn-danger" (click)="confirmCancelItem()" [disabled]="isCancellingItem">
+            {{ isCancellingItem ? 'Processing Refund...' : 'Confirm Out-of-Stock & Refund' }}
+          </button>
         </div>
       </div>
     </div>

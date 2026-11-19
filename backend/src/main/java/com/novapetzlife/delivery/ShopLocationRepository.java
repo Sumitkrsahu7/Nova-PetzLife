@@ -8,4 +8,8 @@ import java.util.Optional;
 @Repository
 public interface ShopLocationRepository extends JpaRepository<ShopLocation, Long> {
     Optional<ShopLocation> findFirstByOrderByIdAsc();
+
+    default Optional<ShopLocation> findByIsActiveTrue() {
+        return findFirstByOrderByIdAsc();
+    }
 }

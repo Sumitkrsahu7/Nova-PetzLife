@@ -20,7 +20,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("NOVA PETZLIFE E-Commerce API")
-                        .description("Production REST API for NOVA PETZLIFE pet shop e-commerce platform (Kuravankonam, Thiruvananthapuram, Kerala, India)")
+                        .description("Production REST API for NOVA PETZLIFE pet shop e-commerce platform (Thiruvananthapuram, Kerala, India)")
                         .version("1.0.0")
                         .contact(new Contact()
                                 .name("NOVA PETZLIFE Operations")

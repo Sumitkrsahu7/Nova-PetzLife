@@ -360,3 +360,106 @@
     }
   }
 }
+
+.whatsapp-support-banner {
+  background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+  border: 1.5px solid #81C784;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.1);
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .wa-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .wa-icon {
+      font-size: 2rem;
+    }
+
+    .wa-text {
+      strong {
+        font-size: 1.05rem;
+        color: #1B5E20;
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+      p {
+        margin: 0;
+        font-size: 0.88rem;
+        color: #2E7D32;
+      }
+    }
+  }
+
+  .btn-whatsapp-chat {
+    background: #25D366;
+    color: #FFFFFF;
+    text-decoration: none;
+    padding: 0.75rem 1.4rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    box-shadow: 0 3px 10px rgba(37, 211, 102, 0.35);
+    transition: background 0.2s, transform 0.15s;
+
+    &:hover {
+      background: #1EBE5D;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+.linked-order-box {
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+
+  .order-box-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.5rem;
+  }
+
+  .order-box-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.5rem;
+    font-size: 0.825rem;
+    color: #475569;
+
+    strong {
+      color: #0F172A;
+    }
+
+    .badge-payment {
+      background: #FEF3C7;
+      color: #92400E;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+  }
+
+  .cancellation-reason-row {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed #CBD5E1;
+    font-size: 0.8rem;
+    color: #B91C1C;
+  }
+}

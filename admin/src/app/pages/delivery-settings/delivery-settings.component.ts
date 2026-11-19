@@ -23,13 +23,14 @@ export interface ShopLocationData {
 }
 
 export interface DeliverySlotData {
-  id: number;
+  id?: number;
   slotName: string;
   startTime: string;
   endTime: string;
   cutoffMinutes: number;
   maxOrders: number;
   isActive: boolean;
+  availableDays?: string;
 }
 
 @Component({
@@ -497,6 +498,159 @@ export class DeliverySettingsComponent implements OnInit, AfterViewInit, OnDestr
       },
       error: err => {
         this.errorMessage = err.error?.message || 'Failed to update store verification status';
+        setTimeout(() => this.errorMessage = '', 4000);
+      }
+    });
+  }
+
+  // --- Delivery Slot Management CRUD ---
+  showSlotModal = false;
+  isEditingSlot = false;
+  editingSlotId: number | null = null;
+  slotModalError = '';
+  slotForm: DeliverySlotData = {
+    slotName: '',
+    startTime: '09:00',
+    endTime: '13:00',
+    cutoffMinutes: 60,
+    maxOrders: 20,
+    isActive: true,
+    availableDays: 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday'
+  };
+
+  fetchSlots(): void {
+    this.http.get<any>(`${environment.apiUrl}/admin/delivery/slots`).subscribe({
+      next: res => {
+        if (res?.success && res.data) {
+          this.slots = res.data;
+        }
+      },
+      error: () => {
+        // Fallback to public endpoint
+        this.http.get<any>(`${environment.apiUrl}/delivery/slots`).subscribe(res => {
+          if (res?.success && res.data) {
+            this.slots = res.data;
+          }
+        });
+      }
+    });
+  }
+
+  openCreateSlotModal(): void {
+    this.isEditingSlot = false;
+    this.editingSlotId = null;
+    this.slotForm = {
+      slotName: '',
+      startTime: '09:00',
+      endTime: '13:00',
+      cutoffMinutes: 60,
+      maxOrders: 20,
+      isActive: true,
+      availableDays: 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday'
+    };
+    this.slotModalError = '';
+    this.showSlotModal = true;
+  }
+
+  openEditSlotModal(slot: DeliverySlotData): void {
+    this.isEditingSlot = true;
+    this.editingSlotId = slot.id || null;
+    this.slotForm = {
+      slotName: slot.slotName,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      cutoffMinutes: slot.cutoffMinutes,
+      maxOrders: slot.maxOrders,
+      isActive: slot.isActive,
+      availableDays: slot.availableDays || 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday'
+    };
+    this.slotModalError = '';
+    this.showSlotModal = true;
+  }
+
+  saveSlot(): void {
+    if (!this.slotForm.slotName.trim()) {
+      this.slotModalError = 'Slot name is required (e.g. Morning, Afternoon, Evening)';
+      return;
+    }
+    if (!this.slotForm.startTime || !this.slotForm.endTime) {
+      this.slotModalError = 'Start time and End time are required';
+      return;
+    }
+
+    const payload = {
+      slotName: this.slotForm.slotName.trim(),
+      startTime: this.slotForm.startTime,
+      endTime: this.slotForm.endTime,
+      cutoffMinutes: Number(this.slotForm.cutoffMinutes) || 60,
+      maxOrders: Number(this.slotForm.maxOrders) || 20,
+      isActive: this.slotForm.isActive,
+      availableDays: this.slotForm.availableDays
+    };
+
+    if (this.isEditingSlot && this.editingSlotId) {
+      this.http.put<any>(`${environment.apiUrl}/admin/delivery/slots/${this.editingSlotId}`, payload).subscribe({
+        next: res => {
+          if (res?.success) {
+            this.showSlotModal = false;
+            this.fetchSlots();
+            this.successMessage = 'Delivery window updated successfully!';
+            setTimeout(() => this.successMessage = '', 4000);
+          }
+        },
+        error: err => {
+          this.slotModalError = err.error?.message || 'Failed to update delivery window';
+        }
+      });
+    } else {
+      this.http.post<any>(`${environment.apiUrl}/admin/delivery/slots`, payload).subscribe({
+        next: res => {
+          if (res?.success) {
+            this.showSlotModal = false;
+            this.fetchSlots();
+            this.successMessage = 'New delivery window added successfully!';
+            setTimeout(() => this.successMessage = '', 4000);
+          }
+        },
+        error: err => {
+          this.slotModalError = err.error?.message || 'Failed to create delivery window';
+        }
+      });
+    }
+  }
+
+  toggleSlotActive(slot: DeliverySlotData): void {
+    if (!slot.id) return;
+    this.http.patch<any>(`${environment.apiUrl}/admin/delivery/slots/${slot.id}/status`, {}).subscribe({
+      next: res => {
+        if (res?.success) {
+          slot.isActive = !slot.isActive;
+          this.successMessage = `Delivery slot '${slot.slotName}' is now ${slot.isActive ? 'Active' : 'Inactive'}`;
+          setTimeout(() => this.successMessage = '', 3000);
+        }
+      },
+      error: err => {
+        this.errorMessage = err.error?.message || 'Failed to toggle delivery slot status';
+        setTimeout(() => this.errorMessage = '', 4000);
+      }
+    });
+  }
+
+  deleteSlot(slot: DeliverySlotData): void {
+    if (!slot.id) return;
+    const confirmed = confirm(`Are you sure you want to permanently delete delivery slot '${slot.slotName}' (${slot.startTime} - ${slot.endTime})?`);
+    if (!confirmed) return;
+
+    this.http.delete<any>(`${environment.apiUrl}/admin/delivery/slots/${slot.id}`).subscribe({
+      next: res => {
+        if (res?.success) {
+          this.slots = this.slots.filter(s => s.id !== slot.id);
+          this.successMessage = `Delivery slot '${slot.slotName}' was deleted.`;
+          setTimeout(() => this.successMessage = '', 3000);
+        }
+      },
+      error: err => {
+        this.errorMessage = err.error?.message || 'Failed to delete delivery slot';
         setTimeout(() => this.errorMessage = '', 4000);
       }
     });

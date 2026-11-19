@@ -37,7 +37,7 @@ app:
       - http://localhost:4201
   shop:
     name: "NOVA PETZLIFE"
-    address: "Petzlife, Kuravankonam Junction, Kuravankonam Ambalamukku Road, Thiruvananthapuram, Kerala 695003, India"
+    address: ${SHOP_ADDRESS:NOVA PETZLIFE, Thiruvananthapuram, Kerala 695003, India}
     city: "Thiruvananthapuram"
     state: "Kerala"
     country: "India"

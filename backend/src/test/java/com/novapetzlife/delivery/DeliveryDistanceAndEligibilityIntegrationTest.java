@@ -104,7 +104,7 @@ class DeliveryDistanceAndEligibilityIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.isEligible").value(false))
                 .andExpect(jsonPath("$.data.distanceKm", greaterThan(40.0)))
-                .andExpect(jsonPath("$.data.message", containsString("exceeds our strict 20.00 km store delivery radius")));
+                .andExpect(jsonPath("$.data.message", containsString("Sorry, delivery is currently unavailable at this location")));
     }
 
     @Test

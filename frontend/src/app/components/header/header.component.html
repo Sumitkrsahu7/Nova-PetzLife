@@ -2,7 +2,7 @@
 <div class="top-announcement-bar">
   <div class="container announcement-content">
     <div class="announcement-left">
-      <span class="location-tag">📍 Petzlife, Kuravankonam Junction, Thiruvananthapuram</span>
+      <span class="location-tag">📍 NOVA PETZLIFE Store & Dispatch Hub, Thiruvananthapuram</span>
       <span class="delivery-tag">⚡ Fast Local Delivery Across Thiruvananthapuram</span>
     </div>
     <div class="announcement-right">
@@ -19,22 +19,59 @@
       <div class="brand-badge">🐾</div>
       <div class="brand-details">
         <span class="brand-name">NOVA PETZLIFE</span>
-        <span class="brand-sub">Pet Shop • Kuravankonam</span>
+        <span class="brand-sub">Pet Shop & Local Delivery</span>
       </div>
     </a>
 
-    <!-- Search Form -->
+    <!-- Search Form with Autocomplete -->
     <div class="header-search">
       <div class="search-input-wrapper">
         <span class="search-icon">🔍</span>
         <input
           type="text"
           [(ngModel)]="searchQuery"
-          (keyup.enter)="onSearch()"
+          (input)="onSearchInput()"
+          (keydown)="onKeyDown($event)"
+          (focus)="showSuggestions = suggestions.length > 0"
           placeholder="Search cat food, dog kibble, shampoos, toys..."
           aria-label="Search products"
+          autocomplete="off"
         />
+        <button
+          *ngIf="searchQuery"
+          type="button"
+          class="search-clear-btn"
+          (click)="clearSearch()"
+          title="Clear search"
+          aria-label="Clear search"
+        >
+          ✕
+        </button>
         <button type="button" class="search-submit-btn" (click)="onSearch()">Search</button>
+
+        <!-- Autocomplete Suggestions Dropdown -->
+        <div class="search-suggestions-dropdown" *ngIf="showSuggestions && suggestions.length > 0">
+          <div
+            *ngFor="let item of suggestions; let i = index"
+            class="suggestion-item"
+            [class.selected]="i === selectedSuggestionIndex"
+            (click)="selectSuggestion(item)"
+          >
+            <div class="suggestion-thumb">
+              <img [src]="item.imageUrl || 'assets/images/placeholder-product.svg'" [alt]="item.name" />
+            </div>
+            <div class="suggestion-info">
+              <span class="suggestion-name">{{ item.name }}</span>
+              <div class="suggestion-meta">
+                <span class="suggestion-brand" *ngIf="item.brandName">{{ item.brandName }}</span>
+                <span class="suggestion-cat" *ngIf="item.categoryName">• {{ item.categoryName }}</span>
+              </div>
+            </div>
+            <div class="suggestion-price" *ngIf="item.price != null">
+              ₹{{ item.price }}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

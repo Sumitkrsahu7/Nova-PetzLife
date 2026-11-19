@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/inventory")
-@PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+@PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'INVENTORY_VIEW')")
 @Tag(name = "Admin Inventory Operations", description = "Stock control, pessimistic concurrency, low-stock alerts, and batch expiry monitoring")
 public class InventoryController {
 

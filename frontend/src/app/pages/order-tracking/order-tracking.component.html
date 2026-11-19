@@ -90,10 +90,15 @@
       <a routerLink="/" class="btn-continue">Continue Shopping</a>
       <a [routerLink]="['/invoice', tracking.orderNumber]" class="btn-invoice">📄 View & Print GST Invoice</a>
 
-      <!-- Cancel Order Button (Pre-Dispatch) -->
+      <!-- Cancel Order Button (Only allowed before Packed) -->
       <button *ngIf="isCancellable" (click)="openCancelModal()" class="btn-cancel-action">
         ✕ Cancel Order
       </button>
+
+      <!-- Explanatory Notice When Order Cannot Be Cancelled Online -->
+      <span *ngIf="isPackedOrDispatched" class="cancellation-lock-note">
+        🔒 Cannot be cancelled online once packed or dispatched. Need help? Contact Support.
+      </span>
 
       <!-- Return / Refund Button (Delivered Orders) -->
       <button *ngIf="isDelivered" (click)="openReturnModal()" class="btn-return-action">

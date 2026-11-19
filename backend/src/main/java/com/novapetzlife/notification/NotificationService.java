@@ -73,10 +73,10 @@ public class NotificationService {
         // 1. Email Notification
         String emailSubject = "Order Confirmed: #" + order.getOrderNumber() + " - NOVA PETZLIFE";
         String emailContent = String.format(
-                "Dear %s,\n\nThank you for shopping at NOVA PETZLIFE, Kuravankonam!\n" +
+                "Dear %s,\n\nThank you for shopping at NOVA PETZLIFE!\n" +
                         "Your order #%s of ₹%s has been successfully received.\n" +
                         "Delivery window: %s\n" +
-                        "Dispatching straight from our store at Petzlife, Kuravankonam Junction, Thiruvananthapuram.%s\n\n" +
+                        "Dispatching straight from our store for fast local delivery.%s\n\n" +
                         "Track your order: https://novapetzlife.in/track/%s\n\n" +
                         "Best regards,\nNOVA PETZLIFE Team",
                 customer != null ? customer.getFirstName() : "Pet Parent",
@@ -90,7 +90,7 @@ public class NotificationService {
 
         // 2. WhatsApp Notification
         String waContent = String.format(
-                "🐾 *NOVA PETZLIFE Order Confirmed!*\nOrder #%s of ₹%s is confirmed. We are packing your pet supplies at Kuravankonam.%s Track: https://novapetzlife.in/track/%s",
+                "🐾 *NOVA PETZLIFE Order Confirmed!*\nOrder #%s of ₹%s is confirmed. We are packing your pet supplies.%s Track: https://novapetzlife.in/track/%s",
                 order.getOrderNumber(),
                 order.getFinalPayableAmount(),
                 deliveryOtp != null ? " Your Delivery OTP: " + deliveryOtp + "." : "",
@@ -107,7 +107,7 @@ public class NotificationService {
         String subject = "Payment Received: Order #" + order.getOrderNumber() + " (Razorpay ID: " + payment.getGatewayPaymentId() + ")";
         String content = String.format(
                 "Dear Customer,\n\nWe have successfully received your online payment of ₹%s via Razorpay (Transaction ID: %s).\n" +
-                        "Order #%s is now processing for fast local delivery from Kuravankonam.\n\nNOVA PETZLIFE",
+                        "Order #%s is confirmed and packed for fast local delivery.\n\nNOVA PETZLIFE",
                 payment.getAmount(),
                 payment.getGatewayPaymentId(),
                 order.getOrderNumber()
@@ -124,8 +124,8 @@ public class NotificationService {
         String subject = "Order Status Update: #" + order.getOrderNumber() + " is now " + newStatus;
         String content;
 
-        if ("OUT_FOR_DELIVERY".equalsIgnoreCase(newStatus)) {
-            content = String.format("Great news! Order #%s has been dispatched from our Kuravankonam store and is out for delivery to your doorstep.", order.getOrderNumber());
+        if ("OUT_FOR_DELIVERY".equalsIgnoreCase(newStatus) || "DISPATCHED".equalsIgnoreCase(newStatus)) {
+            content = String.format("Great news! Order #%s has been dispatched from our store and is on its way for delivery to your doorstep.", order.getOrderNumber());
             recordAndDispatch(customer, recipientPhone, "SMS", "ORDER_OUT_FOR_DELIVERY", subject, content);
         } else if ("DELIVERED".equalsIgnoreCase(newStatus)) {
             content = String.format("Order #%s has been successfully delivered! Thank you for trusting NOVA PETZLIFE for your pet's care.", order.getOrderNumber());
@@ -147,7 +147,7 @@ public class NotificationService {
         String subject = "Return Request Received: #" + request.getRequestNumber();
         String content = String.format(
                 "Dear Customer,\n\nYour return request #%s for Order #%s has been received.\n" +
-                        "Our store team at Kuravankonam is reviewing your request. A pickup rider will be scheduled shortly.\n\n" +
+                        "Our store team is reviewing your request. A pickup rider will be scheduled shortly.\n\n" +
                         "Estimated refund: ₹%s\n\nNOVA PETZLIFE",
                 request.getRequestNumber(),
                 request.getOrder().getOrderNumber(),
@@ -166,7 +166,7 @@ public class NotificationService {
         String subject = "Refund Processed: ₹" + refund.getAmount() + " (Ref: " + refundRef + ")";
         String content = String.format(
                 "Dear Customer,\n\nYour refund of ₹%s for Order #%s has been processed via %s.\n" +
-                        "Transaction Reference: %s\n\nNOVA PETZLIFE Kuravankonam",
+                        "Transaction Reference: %s\n\nNOVA PETZLIFE",
                 refund.getAmount(),
                 refund.getOrder().getOrderNumber(),
                 paymentMethod,
@@ -181,7 +181,7 @@ public class NotificationService {
         String subject = "⚠️ LOW STOCK ALERT: " + product.getName() + " (" + product.getSku() + ")";
         String content = String.format(
                 "Store Management Alert:\n\nProduct '%s' (SKU: %s) stock has reached %d units, which is at or below the minimum threshold of %d units.\n" +
-                        "Please arrange restocking at Petzlife, Kuravankonam store.\n\nAutomated Inventory Monitor",
+                        "Please arrange restocking at the store.\n\nAutomated Inventory Monitor",
                 product.getName(),
                 product.getSku(),
                 currentStock,

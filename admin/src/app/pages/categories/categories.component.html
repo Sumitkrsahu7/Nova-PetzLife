@@ -32,14 +32,17 @@
             </span>
           </td>
           <td>
-            <button
-              class="btn-sm"
-              [class.btn-danger]="c.isActive"
-              [class.btn-success]="!c.isActive"
-              (click)="toggleStatus(c)"
-            >
-              {{ c.isActive ? 'Deactivate' : 'Activate' }}
-            </button>
+            <div class="actions-group">
+              <button class="btn-sm btn-outline" (click)="openEditModal(c)">Edit</button>
+              <button
+                class="btn-sm"
+                [class.btn-danger]="c.isActive"
+                [class.btn-success]="!c.isActive"
+                (click)="toggleStatus(c)"
+              >
+                {{ c.isActive ? 'Deactivate' : 'Activate' }}
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>
@@ -50,7 +53,7 @@
   <div *ngIf="showModal" class="modal-backdrop">
     <div class="modal-card">
       <div class="modal-header">
-        <h2>Add Category</h2>
+        <h2>{{ isEditing ? 'Edit Category' : 'Add Category' }}</h2>
         <button (click)="showModal = false" class="close-btn">&times;</button>
       </div>
       <div class="modal-body">
@@ -69,7 +72,7 @@
             <input type="number" [(ngModel)]="categoryForm.displayOrder" name="displayOrder" />
           </div>
           <div class="modal-actions">
-            <button type="submit" class="btn btn-primary">Create Category</button>
+            <button type="submit" class="btn btn-primary">{{ isEditing ? 'Save Changes' : 'Create Category' }}</button>
             <button type="button" (click)="showModal = false" class="btn btn-outline">Cancel</button>
           </div>
         </form>

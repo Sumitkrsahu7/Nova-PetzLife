@@ -3,6 +3,7 @@ package com.novapetzlife.user;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.Set;
 
 public record CreateStaffRequest(
         @NotBlank(message = "Email is required")
@@ -18,5 +19,6 @@ public record CreateStaffRequest(
 
         String lastName,
         String phone,
-        String role
+        String role,
+        Set<String> permissions
 ) {}

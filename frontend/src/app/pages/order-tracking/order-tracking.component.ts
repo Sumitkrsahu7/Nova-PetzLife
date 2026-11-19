@@ -20,8 +20,8 @@ export class OrderTrackingComponent implements OnInit {
 
   stages = [
     { key: 'CONFIRMED', label: 'Order Confirmed', icon: '📝' },
-    { key: 'PROCESSING', label: 'Packed at Store', icon: '📦' },
-    { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', icon: '🛵' },
+    { key: 'PACKED', label: 'Packed at Store', icon: '📦' },
+    { key: 'DISPATCHED', label: 'Out for Delivery', icon: '🛵' },
     { key: 'DELIVERED', label: 'Delivered', icon: '🎉' }
   ];
 
@@ -89,7 +89,13 @@ export class OrderTrackingComponent implements OnInit {
   get isCancellable(): boolean {
     if (!this.tracking) return false;
     const status = this.tracking.orderStatus.toUpperCase();
-    return status === 'PENDING_PAYMENT' || status === 'CONFIRMED' || status === 'PROCESSING';
+    return status === 'PENDING_PAYMENT' || status === 'CONFIRMED' || status === 'PAID';
+  }
+
+  get isPackedOrDispatched(): boolean {
+    if (!this.tracking) return false;
+    const status = this.tracking.orderStatus.toUpperCase();
+    return status === 'PACKED' || status === 'DISPATCHED' || status === 'OUT_FOR_DELIVERY';
   }
 
   get isDelivered(): boolean {

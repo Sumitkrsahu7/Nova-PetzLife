@@ -20,7 +20,7 @@ public class InvoiceController {
     }
 
     @GetMapping("/api/v1/orders/{orderNumber}/invoice")
-    @Operation(summary = "Get official GST invoice for order", description = "Retrieves itemized GST tax invoice with Kuravankonam store GSTIN, state code 32, HSN breakdown, and return policy snapshot")
+    @Operation(summary = "Get official GST invoice for order", description = "Retrieves itemized GST tax invoice with store GSTIN, state code 32, HSN breakdown, and return policy snapshot")
     public ResponseEntity<ApiResponse<InvoiceDto>> getOrderInvoice(@PathVariable String orderNumber) {
         InvoiceDto invoice = invoiceService.getInvoiceDtoByOrderNumber(orderNumber);
         return ResponseEntity.ok(ApiResponse.ok(invoice));
