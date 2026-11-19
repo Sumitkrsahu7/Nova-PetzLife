@@ -223,131 +223,6 @@
   }
 }
 
-/* Tabs: Quick Search vs Detailed Street Address */
-.address-tab-bar {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid #E2E8F0;
-  padding-bottom: 0.5rem;
-
-  .tab-btn {
-    background: transparent;
-    border: none;
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #64748B;
-    padding: 0.5rem 0.85rem;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-      color: #155C3B;
-      background: #F1F5F9;
-    }
-
-    &.active {
-      background: #E7F5E9;
-      color: #155C3B;
-    }
-  }
-}
-
-.checker-input-row {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-
-  .area-input {
-    flex: 1 1 220px;
-    min-width: 0;
-    padding: 0.75rem 1.15rem;
-    border: 1.5px solid #DDE7DF;
-    border-radius: 9999px;
-    font-size: 0.925rem;
-    outline: none;
-    transition: border-color 0.2s;
-
-    &:focus {
-      border-color: #248B58;
-    }
-  }
-
-  .btn-gps {
-    background: #E7F5E9;
-    color: #155C3B;
-    border: 1px solid #C8EBD1;
-    padding: 0.75rem 1rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background: #C8EBD1;
-    }
-  }
-}
-
-/* Detailed Address Form Box */
-.address-form-box {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  border-radius: 12px;
-  padding: 1.25rem;
-  margin-bottom: 1.25rem;
-
-  .form-row {
-    display: flex;
-    gap: 0.75rem;
-    margin-bottom: 0.85rem;
-    flex-wrap: wrap;
-
-    .flex-1 { flex: 1 1 140px; }
-    .flex-2 { flex: 2 1 200px; }
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-
-    label {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: #475569;
-    }
-
-    input {
-      padding: 0.6rem 0.85rem;
-      border: 1px solid #CBD5E1;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      outline: none;
-      background: #FFFFFF;
-
-      &:focus {
-        border-color: #248B58;
-      }
-
-      &[readonly] {
-        background: #F1F5F9;
-        color: #64748B;
-        cursor: not-allowed;
-      }
-    }
-  }
-
-  .btn-block {
-    width: 100%;
-    margin-top: 0.5rem;
-  }
-}
-
 .map-interactive-tip {
   display: flex;
   align-items: center;
@@ -410,12 +285,6 @@
   }
 
   .result-body {
-    .address-matched {
-      font-size: 0.875rem;
-      margin-bottom: 0.35rem;
-      color: #334155;
-    }
-
     .result-desc {
       font-size: 0.85rem;
       line-height: 1.5;
@@ -737,16 +606,6 @@
       margin-bottom: 1rem;
     }
 
-    .contact-pill {
-      background: #E7F5E9;
-      color: #155C3B;
-      font-weight: 600;
-      font-size: 0.825rem;
-      padding: 0.35rem 0.65rem;
-      border-radius: 6px;
-      display: inline-block;
-    }
-
     .hours-row {
       display: flex;
       justify-content: space-between;
@@ -756,12 +615,6 @@
 
       .day { font-weight: 600; color: #334155; }
       .time { color: #155C3B; font-weight: 700; }
-    }
-
-    .holiday-note {
-      font-size: 0.78rem;
-      color: #64748B;
-      margin-top: 0.75rem;
     }
 
     .assurance-list {
@@ -787,39 +640,161 @@
   }
 
   .checker-right-col .interactive-leaflet-map {
-    height: 400px;
+    height: 380px;
   }
 }
 
-@media (max-width: 600px) {
-  .page-header h1 {
-    font-size: 1.65rem;
+@media (max-width: 640px) {
+  .delivery-page {
+    padding: 1rem 0 3rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.25rem;
+
+    h1 {
+      font-size: 1.5rem;
+      line-height: 1.25;
+    }
+
+    .subtitle {
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
   }
 
   .checker-card {
-    padding: 1.25rem 0.85rem;
+    padding: 1.15rem 0.85rem;
     border-radius: 12px;
+    gap: 1.5rem;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
-  .address-tab-bar {
-    flex-direction: column;
-    gap: 0.35rem;
-    .tab-btn {
-      width: 100%;
-      text-align: center;
+  .compact-delivery-form {
+    max-width: 100%;
+
+    .compact-checker-wrapper .compact-input-bar {
+      border-radius: 14px;
+      flex-wrap: wrap;
+      padding: 0.65rem 0.75rem;
+      gap: 0.5rem;
+
+      .compact-input-field {
+        flex: 1 1 calc(100% - 2.2rem);
+        width: calc(100% - 2.2rem);
+        min-width: 150px;
+        padding: 0.25rem 0;
+        font-size: 0.92rem;
+      }
+
+      .btn-check-submit {
+        flex: 1 1 auto;
+        text-align: center;
+        justify-content: center;
+        padding: 0.65rem 1rem;
+        font-size: 0.88rem;
+        min-height: 44px;
+      }
+
+      .btn-gps-pill {
+        flex: 0 0 auto;
+        padding: 0.65rem 0.95rem;
+        font-size: 0.88rem;
+        min-height: 44px;
+      }
     }
   }
 
-  .checker-input-row {
-    flex-direction: column;
-    .btn-gps, .btn-primary {
-      width: 100%;
-      justify-content: center;
+  .checker-result {
+    padding: 1rem 0.85rem;
+
+    .result-header {
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .result-headline {
+        h3 {
+          font-size: 1.05rem;
+        }
+
+        .distance-pill {
+          display: inline-block;
+          font-size: 0.78rem;
+          line-height: 1.4;
+          white-space: normal;
+          border-radius: 6px;
+          padding: 0.35rem 0.6rem;
+          word-break: break-word;
+        }
+      }
+    }
+
+    .result-body .result-actions {
+      flex-direction: column;
+
+      .btn-sm {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+      }
     }
   }
 
-  .checker-right-col .interactive-leaflet-map {
-    height: 350px;
+  .checker-right-col {
+    .map-card-container {
+      border-radius: 12px;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .map-card-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.75rem 0.85rem;
+
+      .btn-reset-map {
+        align-self: flex-start;
+        padding: 0.35rem 0.75rem;
+      }
+    }
+
+    .interactive-leaflet-map {
+      height: 280px;
+      min-height: 260px;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .map-card-footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.45rem;
+      padding: 0.75rem 0.85rem;
+    }
+  }
+
+  .store-info-section {
+    padding-top: 1.75rem;
+
+    .section-title-wrap {
+      margin-bottom: 1.25rem;
+
+      h2 {
+        font-size: 1.35rem;
+      }
+    }
+
+    .store-info-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+
+      .info-card {
+        padding: 1.15rem 1rem;
+      }
+    }
   }
 }
 
@@ -861,39 +836,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 0.85rem;
-  }
-
-  .input-with-button {
-    display: flex;
-    gap: 0.5rem;
-
-    input {
-      flex: 1;
-    }
-
-    .btn-gps {
-      padding: 0.75rem 1rem;
-      background: #F1F5F9;
-      border: 1.5px solid #CBD5E1;
-      border-radius: 8px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: #334155;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.2s;
-
-      &:hover {
-        background: #E2E8F0;
-      }
-    }
-  }
-
-  .check-btn {
-    padding: 0.9rem;
-    font-size: 1.05rem;
-    font-weight: 700;
-    margin-top: 0.5rem;
   }
 }
 

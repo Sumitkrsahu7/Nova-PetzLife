@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
 export interface Address {
   id?: number;
@@ -37,7 +38,7 @@ export interface CustomerOrderSummary {
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent],
   templateUrl: './account.component.html',
   styleUrls: ['./account.component.scss']
 })

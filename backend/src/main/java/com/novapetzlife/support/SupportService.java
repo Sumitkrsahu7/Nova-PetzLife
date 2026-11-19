@@ -94,6 +94,33 @@ public class SupportService {
         );
     }
 
+    public WhatsAppConfigDto getWhatsAppConfig(String product, String customMessage) {
+        var contactInfo = websiteSettingService.getContactInfo();
+        String rawNumber = contactInfo.whatsappNumber() != null && !contactInfo.whatsappNumber().isBlank()
+                ? contactInfo.whatsappNumber()
+                : "+91 94471 00000";
+
+        // Extract digits only for wa.me link
+        String digitsOnly = rawNumber.replaceAll("[^0-9]", "");
+        if (!digitsOnly.startsWith("91") && digitsOnly.length() == 10) {
+            digitsOnly = "91" + digitsOnly;
+        }
+
+        String msg;
+        if (customMessage != null && !customMessage.isBlank()) {
+            msg = customMessage.trim();
+        } else if (product != null && !product.isBlank()) {
+            msg = "Hi, I would like to know about " + product.trim();
+        } else {
+            msg = "Hi, I would like to know about this product";
+        }
+
+        String encodedMsg = java.net.URLEncoder.encode(msg, java.nio.charset.StandardCharsets.UTF_8);
+        String url = "https://wa.me/" + digitsOnly + "?text=" + encodedMsg;
+
+        return new WhatsAppConfigDto(digitsOnly, rawNumber, msg, url);
+    }
+
     public List<FaqItemDto> getFaqs() {
         return List.of(
                 new FaqItemDto(

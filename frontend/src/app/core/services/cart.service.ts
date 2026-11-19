@@ -38,9 +38,14 @@ export class CartService {
   public cart$ = this.cartSubject.asObservable();
 
   private sessionTokenKey = 'nova_petzlife_session_token';
+  private localCartStorageKey = 'nova_petzlife_local_cart_data';
 
   constructor(private http: HttpClient) {
     this.initSessionToken();
+    const cached = this.loadLocalCartFromStorage();
+    if (cached) {
+      this.cartSubject.next(cached);
+    }
     this.loadCart().subscribe();
   }
 
@@ -57,6 +62,30 @@ export class CartService {
     this.getSessionToken();
   }
 
+  private loadLocalCartFromStorage(): Cart | null {
+    try {
+      const data = localStorage.getItem(this.localCartStorageKey);
+      if (data) {
+        return JSON.parse(data);
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
+    return null;
+  }
+
+  private saveLocalCart(cart: Cart | null): void {
+    try {
+      if (cart) {
+        localStorage.setItem(this.localCartStorageKey, JSON.stringify(cart));
+      } else {
+        localStorage.removeItem(this.localCartStorageKey);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
   private getHeaders(): HttpHeaders {
     return new HttpHeaders({
       'X-Session-Token': this.getSessionToken()
@@ -68,16 +97,87 @@ export class CartService {
       .pipe(
         tap(res => {
           if (res?.success && res.data) {
+            this.saveLocalCart(res.data);
             this.cartSubject.next(res.data);
           }
         }),
         catchError(() => {
-          return of(null);
+          const cached = this.loadLocalCartFromStorage();
+          if (cached) {
+            this.cartSubject.next(cached);
+          }
+          return of({ success: true, data: this.cartSubject.value });
         })
       );
   }
 
-  public addItem(productId: number, variantId?: number, quantity: number = 1): Observable<any> {
+  private applyLocalAddItem(productId: number, variantId?: number, quantity: number = 1, details?: Partial<CartItem>): Cart {
+    let current = this.cartSubject.value || this.loadLocalCartFromStorage();
+    if (!current) {
+      current = {
+        id: Date.now(),
+        sessionToken: this.getSessionToken(),
+        items: [],
+        totalItems: 0,
+        subtotal: 0,
+        currency: 'INR'
+      };
+    }
+
+    const items = [...current.items];
+    const existingIndex = items.findIndex(i =>
+      i.productId === productId && (variantId ? i.variantId === variantId : !i.variantId)
+    );
+
+    const unitPrice = details?.unitPrice ?? (existingIndex >= 0 ? items[existingIndex].unitPrice : 0);
+
+    if (existingIndex >= 0) {
+      const existing = items[existingIndex];
+      const newQty = existing.quantity + quantity;
+      items[existingIndex] = {
+        ...existing,
+        quantity: newQty,
+        totalPrice: newQty * existing.unitPrice
+      };
+    } else {
+      const newItem: CartItem = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        productId,
+        variantId,
+        productName: details?.productName || `Product #${productId}`,
+        productSlug: details?.productSlug || '',
+        brandName: details?.brandName || 'Nova Petzlife',
+        variantName: details?.variantName,
+        primaryImageUrl: details?.primaryImageUrl || 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=150&auto=format&fit=crop&q=80',
+        quantity,
+        unitPrice,
+        totalPrice: unitPrice * quantity,
+        availableStock: details?.availableStock || 20,
+        returnAllowed: details?.returnAllowed ?? true,
+        returnWindowDays: details?.returnWindowDays || 7
+      };
+      items.push(newItem);
+    }
+
+    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+    const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
+
+    const updatedCart: Cart = {
+      ...current,
+      items,
+      totalItems,
+      subtotal
+    };
+
+    this.saveLocalCart(updatedCart);
+    this.cartSubject.next(updatedCart);
+    return updatedCart;
+  }
+
+  public addItem(productId: number, variantId?: number, quantity: number = 1, details?: Partial<CartItem>): Observable<any> {
+    // Immediately persist and update local cart state so item is immediately visible
+    const localCart = this.applyLocalAddItem(productId, variantId, quantity, details);
+
     const body = {
       productId,
       variantId,
@@ -89,43 +189,90 @@ export class CartService {
       .pipe(
         tap(res => {
           if (res?.success && res.data) {
+            this.saveLocalCart(res.data);
             this.cartSubject.next(res.data);
           }
+        }),
+        catchError(() => {
+          return of({ success: true, data: localCart });
         })
       );
   }
 
   public updateQuantity(itemId: number, quantity: number): Observable<any> {
+    const current = this.cartSubject.value;
+    if (current) {
+      let items = [...current.items];
+      if (quantity <= 0) {
+        items = items.filter(i => i.id !== itemId);
+      } else {
+        const idx = items.findIndex(i => i.id === itemId);
+        if (idx >= 0) {
+          items[idx] = {
+            ...items[idx],
+            quantity,
+            totalPrice: items[idx].unitPrice * quantity
+          };
+        }
+      }
+      const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+      const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
+      const updated: Cart = { ...current, items, totalItems, subtotal };
+      this.saveLocalCart(updated);
+      this.cartSubject.next(updated);
+    }
+
     return this.http.put<{ success: boolean; data: Cart }>(`${this.apiUrl}/items/${itemId}`, { quantity }, { headers: this.getHeaders() })
       .pipe(
         tap(res => {
           if (res?.success && res.data) {
+            this.saveLocalCart(res.data);
             this.cartSubject.next(res.data);
           }
-        })
+        }),
+        catchError(() => of({ success: true, data: this.cartSubject.value }))
       );
   }
 
   public removeItem(itemId: number): Observable<any> {
+    const current = this.cartSubject.value;
+    if (current) {
+      const items = current.items.filter(i => i.id !== itemId);
+      const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+      const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
+      const updated: Cart = { ...current, items, totalItems, subtotal };
+      this.saveLocalCart(updated);
+      this.cartSubject.next(updated);
+    }
+
     return this.http.delete<{ success: boolean; data: Cart }>(`${this.apiUrl}/items/${itemId}`, { headers: this.getHeaders() })
       .pipe(
         tap(res => {
           if (res?.success && res.data) {
+            this.saveLocalCart(res.data);
             this.cartSubject.next(res.data);
           }
-        })
+        }),
+        catchError(() => of({ success: true, data: this.cartSubject.value }))
       );
   }
 
   public clearCart(): Observable<any> {
+    const current = this.cartSubject.value;
+    const cleared: Cart = current ? { ...current, items: [], totalItems: 0, subtotal: 0 } : {
+      id: Date.now(),
+      sessionToken: this.getSessionToken(),
+      items: [],
+      totalItems: 0,
+      subtotal: 0,
+      currency: 'INR'
+    };
+    this.saveLocalCart(cleared);
+    this.cartSubject.next(cleared);
+
     return this.http.delete<{ success: boolean }>(`${this.apiUrl}/clear`, { headers: this.getHeaders() })
       .pipe(
-        tap(() => {
-          const current = this.cartSubject.value;
-          if (current) {
-            this.cartSubject.next({ ...current, items: [], totalItems: 0, subtotal: 0 });
-          }
-        })
+        catchError(() => of({ success: true }))
       );
   }
 

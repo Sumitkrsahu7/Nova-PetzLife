@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { ReviewService, ReviewDto, ReviewSummaryDto, CreateReviewRequest } from '../../core/services/review.service';
 import { CartService } from '../../core/services/cart.service';
 import { environment } from '../../../environments/environment';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
 export interface ProductDetail {
   id: number;
@@ -29,7 +30,7 @@ export interface ProductDetail {
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent],
   templateUrl: './product-detail.component.html',
   styleUrls: ['./product-detail.component.scss']
 })
@@ -135,7 +136,20 @@ export class ProductDetailComponent implements OnInit {
 
   addToCart(): void {
     if (!this.product) return;
-    this.cartService.addItem(this.product.id, this.selectedVariantId || undefined, this.quantity).subscribe();
+    const variant = this.selectedVariantId && this.product.variants
+      ? this.product.variants.find(v => v.id === this.selectedVariantId)
+      : null;
+    const price = variant ? (variant.discountedPrice || variant.price) : (this.product.discountedPrice || this.product.basePrice);
+    this.cartService.addItem(this.product.id, this.selectedVariantId || undefined, this.quantity, {
+      productName: this.product.name,
+      brandName: this.product.brandName || 'Nova Petzlife',
+      primaryImageUrl: this.product.images?.[0]?.imageUrl,
+      unitPrice: price,
+      variantName: variant?.variantName,
+      availableStock: this.product.availableStock || 15,
+      returnAllowed: this.product.returnPolicy?.returnAllowed ?? true,
+      returnWindowDays: this.product.returnPolicy?.returnWindowDays || 7
+    }).subscribe();
     this.cartMessage = `Added ${this.quantity} item(s) to cart!`;
     setTimeout(() => { this.cartMessage = ''; }, 3500);
   }

@@ -134,7 +134,6 @@
     .status-icon { font-size: 1.25rem; }
     strong { color: #155C3B; }
     p { color: #26352D; margin: 0.25rem 0; font-size: 0.85rem; }
-    .metrics { font-size: 0.8rem; color: #248B58; }
   }
 
   &.ineligible {
@@ -426,10 +425,5 @@
       height: 28px;
       font-size: 0.85rem;
     }
-  }
-
-  .order-summary-card {
-    padding: 1.25rem 1rem;
-    border-radius: 12px;
   }
 }

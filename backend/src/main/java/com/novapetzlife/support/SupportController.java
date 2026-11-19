@@ -46,6 +46,14 @@ public class SupportController {
         return ResponseEntity.ok(ApiResponse.ok(supportService.getStoreInfo()));
     }
 
+    @GetMapping("/whatsapp")
+    @Operation(summary = "Get WhatsApp support deep-link", description = "Returns WhatsApp phone number, pre-defined inquiry message, and direct wa.me link")
+    public ResponseEntity<ApiResponse<WhatsAppConfigDto>> getWhatsAppConfig(
+            @RequestParam(required = false) String product,
+            @RequestParam(required = false) String message) {
+        return ResponseEntity.ok(ApiResponse.ok(supportService.getWhatsAppConfig(product, message)));
+    }
+
     @GetMapping("/faqs")
     @Operation(summary = "Get frequently asked questions", description = "Answers on delivery zones, delivery slots, payment modes, and return policies")
     public ResponseEntity<ApiResponse<List<FaqItemDto>>> getFaqs() {

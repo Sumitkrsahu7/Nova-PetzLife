@@ -549,7 +549,17 @@ export class ShopComponent implements OnInit {
   }
 
   handleAddToCart(event: { product: ProductCardData; variant?: ProductVariant }): void {
-    this.cartService.addItem(event.product.id, event.variant?.id, 1).subscribe();
+    const price = event.variant ? (event.variant.discountedPrice || event.variant.price) : (event.product.discountedPrice || event.product.price);
+    this.cartService.addItem(event.product.id, event.variant?.id, 1, {
+      productName: event.product.name,
+      brandName: event.product.brand,
+      primaryImageUrl: event.product.imageUrl,
+      unitPrice: price,
+      variantName: event.variant?.name,
+      availableStock: event.variant?.stock || event.product.stockQuantity || 15,
+      returnAllowed: event.product.returnAllowed ?? true,
+      returnWindowDays: 7
+    }).subscribe();
     this.cartMessage = `Added "${event.product.name}" to cart!`;
     setTimeout(() => { this.cartMessage = ''; }, 3000);
   }

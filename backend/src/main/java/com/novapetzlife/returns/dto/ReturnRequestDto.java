@@ -1,6 +1,5 @@
 package com.novapetzlife.returns.dto;
 
-import com.novapetzlife.returns.ReturnInspection;
 import com.novapetzlife.returns.ReturnRequest;
 import com.novapetzlife.returns.ReturnRequestItem;
 

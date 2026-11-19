@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
 export interface BrandItem {
   id?: number;
@@ -17,7 +18,7 @@ export interface BrandItem {
 @Component({
   selector: 'app-brands',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent],
   templateUrl: './brands.component.html',
   styleUrls: ['./brands.component.scss']
 })

@@ -1,6 +1,5 @@
 package com.novapetzlife.product;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.novapetzlife.brand.Brand;
 import com.novapetzlife.brand.BrandRepository;
 import com.novapetzlife.category.Category;

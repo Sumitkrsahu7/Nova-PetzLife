@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
 declare const L: any;
 
@@ -22,7 +23,7 @@ export interface DeliveryEligibilityResult {
 @Component({
   selector: 'app-delivery',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent],
   templateUrl: './delivery.component.html',
   styleUrls: ['./delivery.component.scss']
 })

@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { SupportService, StoreInfo, FaqItem, SupportTicket, CreateInquiryPayload } from '../../core/services/support.service';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
 @Component({
   selector: 'app-support',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent],
   templateUrl: './support.component.html',
   styleUrls: ['./support.component.scss']
 })
@@ -15,7 +16,7 @@ export class SupportComponent implements OnInit {
   storeInfo: StoreInfo | null = null;
   faqs: FaqItem[] = [];
   openFaqIndex: number | null = 0; // First FAQ open by default
-  whatsappUrl: string = 'https://wa.me/919447100000?text=Hello%20Nova%20Petzlife%2C%20I%20would%20like%20to%20inquire%20about%20your%20pet%20products%20and%20delivery.';
+  whatsappUrl: string = 'https://wa.me/919447100000?text=Hi%2C%20i%20would%20like%20to%20know%20about%20this%20product';
   contactInfo: any = null;
 
   inquiryForm: CreateInquiryPayload = {
@@ -67,6 +68,14 @@ export class SupportComponent implements OnInit {
           if (res.data.whatsappUrl) {
             this.whatsappUrl = res.data.whatsappUrl;
           }
+        }
+      }
+    });
+
+    this.supportService.getWhatsAppConfig().subscribe({
+      next: res => {
+        if (res?.success && res.data?.whatsappUrl) {
+          this.whatsappUrl = res.data.whatsappUrl;
         }
       }
     });

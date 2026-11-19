@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { OrderService, OrderTracking } from '../../core/services/order.service';
 import { ReturnService, ReturnEligibility, ReturnRequestDetail } from '../../core/services/return.service';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
 @Component({
   selector: 'app-order-tracking',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent],
   templateUrl: './order-tracking.component.html',
   styleUrls: ['./order-tracking.component.scss']
 })
