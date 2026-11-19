@@ -40,7 +40,7 @@
 
             <div class="field-group">
               <label>Phone Number (for delivery rider) *</label>
-              <input type="tel" [(ngModel)]="phone" placeholder="Enter your 10-digit mobile number" required>
+              <input type="tel" [(ngModel)]="phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" placeholder="Enter your 10-digit mobile number" required>
             </div>
 
             <div class="field-group full-width">

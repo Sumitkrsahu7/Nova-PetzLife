@@ -90,6 +90,9 @@
               type="tel"
               [(ngModel)]="addressForm.phone"
               name="phone"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="10"
               placeholder="Enter your 10-digit mobile number"
               required
             />
@@ -131,6 +134,9 @@
               type="text"
               [(ngModel)]="addressForm.postalCode"
               name="postalCode"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="6"
               placeholder="Enter your 6-digit PIN code"
               required
             />

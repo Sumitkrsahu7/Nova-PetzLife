@@ -23,7 +23,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0.85rem 0;
+  padding: 0.3rem 0.4rem 0;
 
   .brand-tag {
     background: #E7F5E9;
@@ -55,7 +55,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem;
+  padding: 0.4rem;
   position: relative;
   background: #FFFFFF;
 
@@ -84,7 +84,7 @@
 }
 
 .card-body {
-  padding: 0.85rem;
+  padding: 0.4rem;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -113,7 +113,7 @@
   font-weight: 700;
   color: #26352D;
   line-height: 1.35;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.1rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -158,7 +158,7 @@
   align-items: center;
   gap: 0.3rem;
   font-size: 0.75rem;
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.15rem;
 
   .stars {
     color: #F59E0B;
@@ -185,7 +185,7 @@
   background: #F8FAFC;
   padding: 0.15rem 0.5rem;
   border-radius: 4px;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
   width: fit-content;
 
   &.returnable {
@@ -199,7 +199,7 @@
   justify-content: space-between;
   align-items: baseline;
   margin-top: auto;
-  padding-top: 0.5rem;
+  padding-top: 0.15rem;
   border-top: 1px dashed #E2E8F0;
 
   .price-wrap {
@@ -234,7 +234,7 @@
 }
 
 .card-footer {
-  padding: 0.75rem 0.85rem 0.85rem;
+  padding: 0.35rem 0.45rem 0.45rem;
 
   .add-to-cart-btn {
     width: 100%;
@@ -270,21 +270,81 @@
 }
 
 @media (max-width: 600px) {
+  .card-top-bar {
+    padding: 0.5rem 0.65rem 0;
+
+    .brand-tag {
+      font-size: 0.68rem;
+      padding: 0.15rem 0.45rem;
+    }
+
+    .wishlist-btn {
+      font-size: 0.9rem;
+    }
+  }
+
   .product-image-box {
-    height: 145px;
-    padding: 0.5rem;
+    height: 130px;
+    padding: 0.45rem;
+
+    .discount-pill {
+      font-size: 0.68rem;
+      padding: 0.1rem 0.4rem;
+    }
   }
 
   .card-body {
-    padding: 0.65rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .meta-row {
+    font-size: 0.7rem;
+    margin-bottom: 0.25rem;
   }
 
   .product-title {
-    font-size: 0.85rem;
+    font-size: 0.825rem;
+    height: 2.5em;
     margin-bottom: 0.35rem;
+    line-height: 1.25;
+  }
+
+  .variants-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    margin-bottom: 0.35rem;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .variant-chip {
+      white-space: nowrap;
+      font-size: 0.65rem;
+      padding: 0.1rem 0.35rem;
+    }
+  }
+
+  .rating-strip {
+    font-size: 0.7rem;
+    margin-bottom: 0.35rem;
+
+    .stars {
+      letter-spacing: -2px;
+      font-size: 0.75rem;
+    }
+  }
+
+  /* Progressive Disclosure: Hide verbose return policy pill on mobile browse cards */
+  .policy-pill {
+    display: none;
   }
 
   .pricing-row {
+    padding-top: 0.35rem;
+
     .current-price {
       font-size: 0.95rem;
     }
@@ -299,6 +359,7 @@
     .add-to-cart-btn {
       padding: 0.45rem 0.5rem;
       font-size: 0.78rem;
+      border-radius: 6px;
     }
   }
 }

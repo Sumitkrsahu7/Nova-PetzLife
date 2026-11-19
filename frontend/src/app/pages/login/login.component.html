@@ -137,6 +137,8 @@
           name="regPhone"
           [(ngModel)]="regPhone"
           (input)="onInputChange()"
+          inputmode="numeric"
+          pattern="[0-9]*"
           placeholder="e.g. 9876543210"
           maxlength="14"
           required

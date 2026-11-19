@@ -253,6 +253,29 @@
         </div>
       </div>
     </section>
+
+    <!-- Sticky Mobile Floating Buy Bar (Visible only on mobile <= 768px) -->
+    <div class="mobile-sticky-buy-bar" *ngIf="product && !isLoading">
+      <div class="sticky-buy-price-info">
+        <span class="sticky-price">₹{{ currentDisplayPrice.toFixed(2) }}</span>
+        <span class="sticky-delivery-note">⚡ Express Local Dispatch</span>
+      </div>
+      <div class="sticky-buy-actions">
+        <div class="sticky-quantity-stepper">
+          <button type="button" (click)="quantity = quantity > 1 ? quantity - 1 : 1">−</button>
+          <span class="sticky-qty-num">{{ quantity }}</span>
+          <button type="button" (click)="quantity = quantity + 1">+</button>
+        </div>
+        <button
+          type="button"
+          class="btn-sticky-add-cart"
+          [disabled]="product.availableStock <= 0"
+          (click)="addToCart()"
+        >
+          <span>🛒 Add to Cart</span>
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
