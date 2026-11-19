@@ -619,109 +619,180 @@
 
 @media (max-width: 768px) {
   .top-announcement-bar {
-    font-size: 0.72rem;
-    padding: 0.35rem 0;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.74rem;
 
     .announcement-content {
+      display: flex;
       justify-content: center;
+      align-items: center;
       text-align: center;
+      width: 100%;
     }
 
     .announcement-left {
+      display: flex;
+      align-items: center;
       justify-content: center;
-      gap: 0.5rem;
+      width: 100%;
     }
 
+    .location-tag {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+      text-align: center;
+      font-weight: 600;
+      width: 100%;
+    }
+
+    .announcement-right,
+    .delivery-tag,
     .help-text {
-      display: none; // Hide store phone in tiny header top bar on mobile
+      display: none !important;
     }
   }
 
   .header-container {
-    flex-wrap: wrap;
-    padding: 0.65rem 1rem;
-    gap: 0.5rem;
+    display: flex;
+    flex-wrap: wrap !important;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0.85rem;
+    gap: 0.35rem 0;
+    width: 100%;
   }
 
   .brand-link {
+    order: 1;
+    flex: 0 0 auto;
+    max-width: calc(100% - 150px);
+    min-width: 0;
     gap: 0.45rem;
 
     .brand-badge {
       width: 34px;
       height: 34px;
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       border-radius: 8px;
+      flex-shrink: 0;
+    }
+
+    .brand-details {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
     }
 
     .brand-name {
       font-size: 1.05rem;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.15;
     }
 
     .brand-sub {
       font-size: 0.65rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #64748B;
     }
   }
 
   .header-actions {
+    order: 2;
+    flex: 0 0 auto;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
     gap: 0.35rem;
 
     .header-pets-btn {
-      display: none; // Kept in mobile navigation drawer to save header space
+      display: none !important; // Kept in mobile navigation drawer to save header space
     }
 
     .account-btn {
       padding: 0.35rem 0.55rem;
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+
+      .account-icon {
+        font-size: 1.05rem;
+      }
 
       .account-text {
-        display: none;
+        display: none !important;
       }
     }
 
     .cart-button {
-      padding: 0.35rem 0.65rem;
+      padding: 0.35rem 0.6rem;
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      border-radius: 8px;
+
+      .cart-icon {
+        font-size: 1rem;
+      }
 
       .cart-label {
-        display: none;
+        display: none !important;
+      }
+
+      .cart-badge {
+        font-size: 0.7rem;
+        min-width: 18px;
+        height: 18px;
+        line-height: 18px;
+        padding: 0 4px;
       }
     }
 
     .hamburger-btn {
       width: 34px;
       height: 34px;
+      border-radius: 8px;
+      flex-shrink: 0;
     }
   }
 
   .header-search {
-    width: 100%;
-    max-width: 100%;
     order: 3;
-    margin-top: 0.25rem;
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-top: 0.35rem;
 
     .search-input-wrapper {
       padding: 0.2rem 0.35rem 0.2rem 0.75rem;
 
       input {
-        font-size: 0.825rem;
+        font-size: 0.85rem;
       }
 
       .search-submit-btn {
-        width: 32px;
-        height: 32px;
+        width: 34px;
+        height: 34px;
         padding: 0;
         border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
 
         .search-btn-text {
-          display: none;
+          display: none !important;
         }
 
         .search-btn-icon {
-          display: inline;
-          font-size: 0.85rem;
-          line-height: 1;
+          display: inline-block !important;
+          font-size: 0.9rem;
         }
       }
     }
@@ -830,27 +901,6 @@
   }
 }
 
-/* Mobile Top Announcement Bar Compact Ticker */
-@media (max-width: 768px) {
-  .top-announcement-bar {
-    padding: 0.35rem 0.5rem;
-    font-size: 0.75rem;
-
-    .announcement-right,
-    .delivery-tag {
-      display: none;
-    }
-
-    .location-tag {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: block;
-      text-align: center;
-      width: 100%;
-    }
-  }
-}
 
 /* Mobile Bottom Navigation Bar (Thumb-Zone) */
 .mobile-bottom-nav {
