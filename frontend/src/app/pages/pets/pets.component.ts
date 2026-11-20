@@ -24,6 +24,7 @@ export class PetsComponent implements OnInit {
   showForm = false;
   editingPetId: number | null = null;
   errorMessage = '';
+  modalErrorMessage = '';
   successMessage = '';
 
   // Form Model
@@ -88,6 +89,7 @@ export class PetsComponent implements OnInit {
     this.showForm = true;
     this.successMessage = '';
     this.errorMessage = '';
+    this.modalErrorMessage = '';
   }
 
   editPet(pet: PetProfile): void {
@@ -106,21 +108,24 @@ export class PetsComponent implements OnInit {
     this.showForm = true;
     this.successMessage = '';
     this.errorMessage = '';
+    this.modalErrorMessage = '';
   }
 
   cancelForm(): void {
     this.showForm = false;
     this.editingPetId = null;
+    this.modalErrorMessage = '';
   }
 
   savePet(): void {
     if (!this.petForm.petName.trim() || !this.petForm.petType) {
-      this.errorMessage = 'Pet name and pet species are required.';
+      this.modalErrorMessage = 'Pet name and pet species are required.';
       return;
     }
 
     this.isSaving = true;
     this.errorMessage = '';
+    this.modalErrorMessage = '';
     this.successMessage = '';
 
     const action = this.editingPetId
@@ -131,12 +136,13 @@ export class PetsComponent implements OnInit {
       next: res => {
         this.isSaving = false;
         this.showForm = false;
+        this.modalErrorMessage = '';
         this.successMessage = this.editingPetId ? 'Pet profile updated successfully!' : 'New pet profile registered!';
         this.loadPets();
       },
       error: err => {
         this.isSaving = false;
-        this.errorMessage = err.error?.message || 'Failed to save pet profile.';
+        this.modalErrorMessage = err.error?.message || 'Failed to save pet profile. Please check the details and try again.';
       }
     });
   }

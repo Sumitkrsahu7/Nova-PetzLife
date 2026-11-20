@@ -2,9 +2,9 @@
   <div class="pets-header">
     <div class="header-content">
       <app-back-button></app-back-button>
-      <div class="crumb">
+      <!-- <div class="crumb">
         <a routerLink="/">Home</a> <span>/</span> My Pet Profiles
-      </div>
+      </div> -->
       <h1>My Pets & Personalized Nutrition 🐾</h1>
       <p class="subtitle">
         Tailored nutrition, life-stage food recommendations, and dietary care for your companions in Trivandrum.
@@ -28,6 +28,11 @@
       <div class="modal-header">
         <h2>{{ editingPetId ? 'Edit Pet Profile' : 'Register a New Pet' }}</h2>
         <button (click)="cancelForm()" class="btn-close">✕</button>
+      </div>
+
+      <!-- In-Modal Error Display (Visible directly within overlay) -->
+      <div *ngIf="modalErrorMessage" class="alert alert-error modal-alert" role="alert">
+        ⚠️ {{ modalErrorMessage }}
       </div>
 
       <form (ngSubmit)="savePet()" class="pet-modal-form">

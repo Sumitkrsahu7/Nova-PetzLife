@@ -8,24 +8,6 @@
     <!-- All Red-Box items (pills, chips, sidebar, mixed products) are hidden      -->
     <!-- ========================================================================= -->
     <ng-container *ngIf="!isDepartmentSelected">
-      <!-- Enhanced Header (Marked in Black in reference image) -->
-      <header class="hub-header">
-        <nav class="hub-breadcrumb" aria-label="Breadcrumb">
-          <a routerLink="/">Home</a> &gt; <span>Shop Departments</span>
-        </nav>
-        <div class="hub-title-row">
-          <div class="hub-badge-pill">
-            <span class="hub-dot"></span>
-            <span>Verified Physical Store Inventory</span>
-          </div>
-          <h1 class="hub-title">All Pet Products & Essentials</h1>
-          <p class="hub-subtitle">
-            Authentic nutrition, healthcare, grooming & hygiene supplies in stock at our store.
-            Choose a department below to explore verified products with fast local fulfillment across Thiruvananthapuram.
-          </p>
-        </div>
-      </header>
-
       <!-- 4 Medium-Sized Department Cards Grid (Expandable dynamically if admin adds categories) -->
       <section class="department-hub-section" aria-label="Pet Departments">
         <div class="hub-section-header">
@@ -33,7 +15,6 @@
             <h2 class="section-title">Shop by Pet Department</h2>
             <p class="section-subtitle">Select a category to view specialized nutrition and supplies</p>
           </div>
-          <span class="dept-count-badge">{{ departmentCards.length }} Departments Available</span>
         </div>
 
         <div class="department-cards-grid">
@@ -79,7 +60,7 @@
             </div>
           </div>
           <button type="button" class="btn-browse-all" (click)="viewAllCatalog()">
-            <span>Browse Full Catalog</span>
+            <span>Explore more</span>
             <span class="arrow">→</span>
           </button>
         </div>

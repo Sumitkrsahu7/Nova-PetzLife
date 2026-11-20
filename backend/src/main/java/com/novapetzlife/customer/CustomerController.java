@@ -1,5 +1,6 @@
 package com.novapetzlife.customer;
 
+import com.novapetzlife.auth.AuthResponse;
 import com.novapetzlife.common.ApiResponse;
 import com.novapetzlife.user.User;
 import com.novapetzlife.user.UserRepository;
@@ -12,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/customer")
@@ -66,5 +68,27 @@ public class CustomerController {
         User user = getAuthenticatedUser(authentication);
         customerService.deleteAddress(user, id);
         return ResponseEntity.ok(ApiResponse.ok("Address deleted successfully", null));
+    }
+
+    @PutMapping("/email")
+    @Operation(summary = "Update customer email address", description = "Updates email on user and customer records and returns refreshed JWT credentials")
+    public ResponseEntity<ApiResponse<AuthResponse>> updateEmail(
+            Authentication authentication,
+            @RequestBody Map<String, String> request) {
+        User user = getAuthenticatedUser(authentication);
+        String newEmail = request.get("email");
+        if (newEmail == null || newEmail.trim().isEmpty() || !newEmail.contains("@")) {
+            throw new IllegalArgumentException("A valid email address is required");
+        }
+        AuthResponse response = customerService.updateEmail(user, newEmail);
+        return ResponseEntity.ok(ApiResponse.ok("Email address updated successfully", response));
+    }
+
+    @DeleteMapping("/account")
+    @Operation(summary = "Delete customer account", description = "Permanently deactivates account and clears customer identity")
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(Authentication authentication) {
+        User user = getAuthenticatedUser(authentication);
+        customerService.deleteAccount(user);
+        return ResponseEntity.ok(ApiResponse.ok("Account deleted successfully", null));
     }
 }

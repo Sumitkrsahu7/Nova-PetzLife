@@ -1,6 +1,5 @@
 <div class="auth-page">
   <div class="auth-card">
-    <app-back-button></app-back-button>
     <div class="auth-header">
       <h2>{{ mode === 'login' ? 'Welcome Back' : 'Create Your Account' }}</h2>
       <p>{{ mode === 'login' ? 'Log in to access your NOVA PETZLIFE account and orders' : 'Join NOVA PETZLIFE for fast local delivery & order tracking' }}</p>
@@ -89,8 +88,9 @@
       </div>
     </form>
 
-    <!-- REGISTER FORM -->
-    <form *ngIf="mode === 'register'" (ngSubmit)="onRegisterSubmit()" class="auth-form">
+    <!-- REGISTER FORM (Ultra Compact & Non-Scrollable) -->
+    <form *ngIf="mode === 'register'" (ngSubmit)="onRegisterSubmit()" class="auth-form reg-compact-form">
+      <!-- Row 1: Name -->
       <div class="form-row">
         <div class="form-group col">
           <label for="regFirstName">First Name *</label>
@@ -100,7 +100,7 @@
             name="regFirstName"
             [(ngModel)]="regFirstName"
             (input)="onInputChange()"
-            placeholder="Enter your first name"
+            placeholder="First name"
             required
           />
         </div>
@@ -112,96 +112,101 @@
             name="regLastName"
             [(ngModel)]="regLastName"
             (input)="onInputChange()"
-            placeholder="Enter your last name"
+            placeholder="Last name"
           />
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="regEmail">Email Address *</label>
-        <input
-          type="email"
-          id="regEmail"
-          name="regEmail"
-          [(ngModel)]="regEmail"
-          (input)="onInputChange()"
-          placeholder="name@example.com"
-          required
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="regPhone">Mobile Number * (10 Digits)</label>
-        <input
-          type="tel"
-          id="regPhone"
-          name="regPhone"
-          [(ngModel)]="regPhone"
-          (input)="onInputChange()"
-          inputmode="numeric"
-          pattern="[0-9]*"
-          placeholder="e.g. 9876543210"
-          maxlength="14"
-          required
-        />
-      </div>
-
-      <div class="form-group">
-        <div class="password-label-row">
-          <label for="regPassword">Password *</label>
-          <button
-            type="button"
-            class="toggle-pwd-btn"
-            (click)="toggleRegPasswordVisibility()"
-          >
-            {{ showRegPassword ? '👁️ Hide' : '👁️ Show' }}
-          </button>
+      <!-- Row 2: Email & Phone -->
+      <div class="form-row">
+        <div class="form-group col">
+          <label for="regEmail">Email Address *</label>
+          <input
+            type="email"
+            id="regEmail"
+            name="regEmail"
+            [(ngModel)]="regEmail"
+            (input)="onInputChange()"
+            placeholder="name@example.com"
+            required
+          />
         </div>
-        <input
-          [type]="showRegPassword ? 'text' : 'password'"
-          id="regPassword"
-          name="regPassword"
-          [(ngModel)]="regPassword"
-          (input)="onInputChange()"
-          placeholder="Enter your password"
-          required
-        />
-
-        <!-- Compact Password Requirements Row -->
-        <div class="password-checklist-compact" *ngIf="regPassword">
-          <span class="check-chip" [class.valid]="hasMinLength">{{ hasMinLength ? '✓' : '○' }} 8+ chars</span>
-          <span class="check-chip" [class.valid]="hasUpperCase">{{ hasUpperCase ? '✓' : '○' }} Upper</span>
-          <span class="check-chip" [class.valid]="hasLowerCase">{{ hasLowerCase ? '✓' : '○' }} Lower</span>
-          <span class="check-chip" [class.valid]="hasNumber">{{ hasNumber ? '✓' : '○' }} Number</span>
-          <span class="check-chip" [class.valid]="hasSpecialChar">{{ hasSpecialChar ? '✓' : '○' }} Symbol</span>
+        <div class="form-group col">
+          <label for="regPhone">Mobile *</label>
+          <input
+            type="tel"
+            id="regPhone"
+            name="regPhone"
+            [(ngModel)]="regPhone"
+            (input)="onInputChange()"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            placeholder="10-digit mobile"
+            maxlength="14"
+            required
+          />
         </div>
       </div>
 
-      <div class="form-group">
-        <div class="password-label-row">
-          <label for="regConfirmPassword">Confirm Password *</label>
-          <button
-            type="button"
-            class="toggle-pwd-btn"
-            (click)="toggleRegConfirmVisibility()"
-          >
-            {{ showRegConfirm ? '👁️ Hide' : '👁️ Show' }}
-          </button>
+      <!-- Row 3: Password & Confirm Password -->
+      <div class="form-row">
+        <div class="form-group col">
+          <div class="password-label-row">
+            <label for="regPassword">Password *</label>
+            <button
+              type="button"
+              class="toggle-pwd-btn"
+              (click)="toggleRegPasswordVisibility()"
+            >
+              {{ showRegPassword ? '👁️' : '👁️‍🗨️' }}
+            </button>
+          </div>
+          <input
+            [type]="showRegPassword ? 'text' : 'password'"
+            id="regPassword"
+            name="regPassword"
+            [(ngModel)]="regPassword"
+            (input)="onInputChange()"
+            placeholder="Min 8 chars"
+            required
+          />
         </div>
-        <input
-          [type]="showRegConfirm ? 'text' : 'password'"
-          id="regConfirmPassword"
-          name="regConfirmPassword"
-          [(ngModel)]="regConfirmPassword"
-          (input)="onInputChange()"
-          placeholder="Re-enter your password"
-          required
-        />
-        <div class="match-indicator" *ngIf="regConfirmPassword">
-          <span [class.matched]="regPasswordsMatch" [class.unmatched]="!regPasswordsMatch">
-            {{ regPasswordsMatch ? '✓ Passwords match' : '✕ Passwords do not match' }}
-          </span>
+        <div class="form-group col">
+          <div class="password-label-row">
+            <label for="regConfirmPassword">Confirm *</label>
+            <button
+              type="button"
+              class="toggle-pwd-btn"
+              (click)="toggleRegConfirmVisibility()"
+            >
+              {{ showRegConfirm ? '👁️' : '👁️‍🗨️' }}
+            </button>
+          </div>
+          <input
+            [type]="showRegConfirm ? 'text' : 'password'"
+            id="regConfirmPassword"
+            name="regConfirmPassword"
+            [(ngModel)]="regConfirmPassword"
+            (input)="onInputChange()"
+            placeholder="Re-enter"
+            required
+          />
         </div>
+      </div>
+
+      <!-- Compact Password Checklist Chips -->
+      <div class="password-checklist-compact" *ngIf="regPassword">
+        <span class="check-chip" [class.valid]="hasMinLength">{{ hasMinLength ? '✓' : '○' }} 8+</span>
+        <span class="check-chip" [class.valid]="hasUpperCase">{{ hasUpperCase ? '✓' : '○' }} Upper</span>
+        <span class="check-chip" [class.valid]="hasLowerCase">{{ hasLowerCase ? '✓' : '○' }} Lower</span>
+        <span class="check-chip" [class.valid]="hasNumber">{{ hasNumber ? '✓' : '○' }} Number</span>
+        <span class="check-chip" [class.valid]="hasSpecialChar">{{ hasSpecialChar ? '✓' : '○' }} Symbol</span>
+      </div>
+
+      <div class="match-indicator" *ngIf="regConfirmPassword">
+        <span [class.matched]="regPasswordsMatch" [class.unmatched]="!regPasswordsMatch">
+          {{ regPasswordsMatch ? '✓ Passwords match' : '✕ Passwords do not match' }}
+        </span>
       </div>
 
       <button type="submit" class="btn btn-primary btn-block" [disabled]="isLoading">
@@ -213,10 +218,5 @@
         <p>Already have an account? <button type="button" class="link-btn" (click)="setMode('login')">Log in here</button></p>
       </div>
     </form>
-
-    <div class="store-hint-wrapper">
-      <p class="store-hint">Store pickup & delivery: our store, Thiruvananthapuram</p>
-    </div>
   </div>
 </div>
-

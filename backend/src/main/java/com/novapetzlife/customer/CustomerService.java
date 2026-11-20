@@ -1,6 +1,14 @@
 package com.novapetzlife.customer;
 
+import com.novapetzlife.auth.AuthResponse;
+import com.novapetzlife.security.JwtTokenProvider;
+import com.novapetzlife.user.Permission;
+import com.novapetzlife.user.Role;
 import com.novapetzlife.user.User;
+import com.novapetzlife.user.UserRepository;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,10 +19,18 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final CustomerAddressRepository addressRepository;
+    private final UserRepository userRepository;
+    private final JwtTokenProvider tokenProvider;
 
-    public CustomerService(CustomerRepository customerRepository, CustomerAddressRepository addressRepository) {
+    public CustomerService(
+            CustomerRepository customerRepository,
+            CustomerAddressRepository addressRepository,
+            UserRepository userRepository,
+            JwtTokenProvider tokenProvider) {
         this.customerRepository = customerRepository;
         this.addressRepository = addressRepository;
+        this.userRepository = userRepository;
+        this.tokenProvider = tokenProvider;
     }
 
     @Transactional
@@ -97,5 +113,63 @@ public class CustomerService {
         CustomerAddress address = addressRepository.findByIdAndCustomerId(addressId, customer.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Address not found or does not belong to user"));
         addressRepository.delete(address);
+    }
+
+    @Transactional
+    public AuthResponse updateEmail(User user, String newEmail) {
+        String trimmed = newEmail.trim().toLowerCase();
+        if (user.getEmail().equalsIgnoreCase(trimmed)) {
+            List<String> roles = user.getRoles().stream().map(Role::getName).toList();
+            List<String> permissions = user.getPermissions() != null
+                    ? user.getPermissions().stream().map(Permission::getName).toList()
+                    : List.of();
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            String jwt = tokenProvider.generateToken(auth);
+            return AuthResponse.of(jwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles, permissions);
+        }
+
+        if (userRepository.existsByEmail(trimmed)) {
+            throw new IllegalArgumentException("This email address is already in use by another account.");
+        }
+
+        user.setEmail(trimmed);
+        userRepository.save(user);
+
+        Customer customer = getOrCreateCustomerForUser(user);
+        customer.setEmail(trimmed);
+        customerRepository.save(customer);
+
+        // Update Security Context and issue fresh JWT
+        List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
+                .map(r -> new SimpleGrantedAuthority(r.getName()))
+                .toList();
+        UsernamePasswordAuthenticationToken newAuth = new UsernamePasswordAuthenticationToken(
+                trimmed, null, authorities
+        );
+        SecurityContextHolder.getContext().setAuthentication(newAuth);
+        String jwt = tokenProvider.generateToken(newAuth);
+
+        List<String> roles = user.getRoles().stream().map(Role::getName).toList();
+        List<String> permissions = user.getPermissions() != null
+                ? user.getPermissions().stream().map(Permission::getName).toList()
+                : List.of();
+        return AuthResponse.of(jwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles, permissions);
+    }
+
+    @Transactional
+    public void deleteAccount(User user) {
+        user.setIsActive(false);
+        String deletedSuffix = "deleted_" + user.getId() + "_" + System.currentTimeMillis();
+        user.setEmail(deletedSuffix + "@novapetzlife.deleted");
+        user.setPhone(null);
+        userRepository.save(user);
+
+        customerRepository.findByUserId(user.getId()).ifPresent(customer -> {
+            customer.setEmail(user.getEmail());
+            customer.setPhone("");
+            customerRepository.save(customer);
+        });
+
+        SecurityContextHolder.clearContext();
     }
 }

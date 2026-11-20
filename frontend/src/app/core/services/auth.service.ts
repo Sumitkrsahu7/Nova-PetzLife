@@ -275,6 +275,14 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
+  updateCurrentUser(user: UserProfile, token?: string): void {
+    if (token) {
+      localStorage.setItem(this.TOKEN_KEY, token);
+    }
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    this.currentUserSubject.next(user);
+  }
+
   private handleAuthSuccess(auth: AuthResponse): void {
     localStorage.setItem(this.TOKEN_KEY, auth.token);
     const profile: UserProfile = {

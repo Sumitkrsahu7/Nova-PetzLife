@@ -3,7 +3,7 @@
   <div class="account-header">
     <div class="user-greeting">
       <h1>Hello, {{ user?.firstName || 'Pet Parent' }}!</h1>
-      <p>{{ user?.email }} &bull; Customer Account</p>
+      <p>{{ user?.email }}</p>
     </div>
     <button class="btn btn-outline" (click)="logout()">Sign Out</button>
   </div>
@@ -34,25 +34,43 @@
 
   <!-- Profile Tab -->
   <div *ngIf="activeTab === 'profile'" class="tab-content">
+    <div *ngIf="emailSuccessMessage" class="alert alert-success">
+      ✓ {{ emailSuccessMessage }}
+    </div>
+
     <div class="card profile-card">
-      <h3>Personal Details</h3>
+      <div class="card-header-flex">
+        <h3>Personal Details</h3>
+      </div>
+
       <div class="detail-row">
         <span class="label">Full Name:</span>
         <span class="value">{{ user?.firstName }} {{ user?.lastName }}</span>
       </div>
+
       <div class="detail-row">
         <span class="label">Email Address:</span>
-        <span class="value">{{ user?.email }}</span>
-      </div>
-      <div class="detail-row">
-        <span class="label">Registered Roles:</span>
-        <span class="value badge" *ngFor="let role of user?.roles">{{ role }}</span>
+        <div class="value-with-action">
+          <span class="value">{{ user?.email }}</span>
+          <button type="button" class="btn-sm-edit" (click)="openEditEmailModal()">✏️ Edit Email</button>
+        </div>
       </div>
 
       <div class="store-info-box">
-        <h4>🏪 Petzlife our</h4>
-        <p>Your local pet supplies are fulfilled straight from our store, our Ambalamukku Road, Thiruvananthapuram, Kerala 695003.</p>
+        <h4>🏪 Petzlife Store</h4>
+        <p>Your local pet supplies are fulfilled straight from our store, Ambalamukku Road, Thiruvananthapuram, Kerala 695003.</p>
         <p class="highlight">Prompt, dependable local pet delivery directly to your door across Trivandrum!</p>
+      </div>
+
+      <!-- Danger Zone: Delete Account -->
+      <div class="danger-zone-box">
+        <div class="danger-info">
+          <h4>⚠️ Danger Zone</h4>
+          <p>Permanently remove your account and stored personal details from NOVA PETZLIFE.</p>
+        </div>
+        <button type="button" class="btn-danger-outline" (click)="openDeleteAccountModal()">
+          Delete Account
+        </button>
       </div>
     </div>
   </div>
@@ -209,9 +227,74 @@
         </div>
 
         <div class="order-actions">
+          <button
+            type="button"
+            class="btn btn-primary btn-sm btn-reorder"
+            (click)="reorder(order)"
+            [disabled]="isReordering === order.orderNumber"
+          >
+            <span *ngIf="isReordering === order.orderNumber" class="spinner-sm"></span>
+            <span *ngIf="isReordering !== order.orderNumber">🔁 Re-Order</span>
+          </button>
           <a [routerLink]="['/track', order.orderNumber]" class="btn btn-outline btn-sm">Track Order</a>
           <a [routerLink]="['/invoice', order.orderNumber]" class="btn btn-outline btn-sm">View Invoice</a>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Email Modal -->
+  <div class="custom-modal-backdrop" *ngIf="showEditEmailModal" (click)="closeEditEmailModal()">
+    <div class="custom-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-badge-icon">✉️</div>
+      <h3>Update Email Address</h3>
+      <p class="modal-desc">Change the email associated with your NOVA PETZLIFE account for order updates and login.</p>
+
+      <div *ngIf="emailErrorMessage" class="alert alert-danger">
+        ⚠️ {{ emailErrorMessage }}
+      </div>
+
+      <div class="modal-input-group">
+        <label for="newEmailInput">New Email Address *</label>
+        <input
+          type="email"
+          id="newEmailInput"
+          [(ngModel)]="newEmail"
+          placeholder="name@example.com"
+          class="modal-input"
+          required
+        />
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="closeEditEmailModal()">Cancel</button>
+        <button type="button" class="btn-confirm" (click)="submitEmailUpdate()" [disabled]="isUpdatingEmail">
+          <span *ngIf="isUpdatingEmail" class="spinner-sm"></span>
+          <span *ngIf="!isUpdatingEmail">Save New Email</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Account Confirmation Modal -->
+  <div class="custom-modal-backdrop" *ngIf="showDeleteAccountModal" (click)="closeDeleteAccountModal()">
+    <div class="custom-modal-card danger-modal" (click)="$event.stopPropagation()">
+      <div class="modal-badge-icon danger">🗑️</div>
+      <h3>Delete NOVA PETZLIFE Account?</h3>
+      <p class="modal-desc">
+        Are you sure you want to permanently delete your account? Your personal profile and saved addresses will be deactivated.
+      </p>
+
+      <div *ngIf="deleteErrorMessage" class="alert alert-danger">
+        ⚠️ {{ deleteErrorMessage }}
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="closeDeleteAccountModal()">Cancel</button>
+        <button type="button" class="btn-danger-confirm" (click)="confirmDeleteAccount()" [disabled]="isDeletingAccount">
+          <span *ngIf="isDeletingAccount" class="spinner-sm"></span>
+          <span *ngIf="!isDeletingAccount">Yes, Delete Account</span>
+        </button>
       </div>
     </div>
   </div>
@@ -229,4 +312,3 @@
     </div>
   </div>
 </div>
-
