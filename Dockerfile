@@ -36,7 +36,7 @@ USER novapetzlife
 # Expose port (Render automatically routes traffic via $PORT)
 EXPOSE 8080
 
-# Production JVM options (container-aware, memory-safe for Render Free/Starter 512MB RAM)
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
+# Production JVM options (container-aware, memory-safe for Render Free/Starter 512MB RAM, prefer IPv4 for cloud DBs)
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom -Djava.net.preferIPv4Stack=true"
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
