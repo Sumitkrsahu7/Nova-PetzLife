@@ -1,9 +1,9 @@
 <div class="checkout-container">
   <div class="checkout-header">
     <app-back-button></app-back-button>
-    <div class="crumb">
+    <!-- <div class="crumb">
       <a routerLink="/">Home</a> <span>/</span> <a routerLink="/cart">Cart</a> <span>/</span> Secure Checkout
-    </div>
+    </div> -->
     <h1>Express Checkout</h1>
     <p class="subtitle">Direct local fulfillment from NOVA PETZLIFE our store</p>
   </div>
@@ -21,17 +21,6 @@
         <div class="step-content">
           <h2>Delivery Address & Contact</h2>
           <p class="step-desc">Enter your Trivandrum delivery location to confirm delivery availability</p>
-
-          <div class="preset-pills">
-            <span class="preset-label">Quick Locations:</span>
-            <button *ngFor="let loc of trivandrumLocations"
-                    type="button"
-                    (click)="selectPreset(loc)"
-                    [class.active]="latitude === loc.lat && longitude === loc.lon"
-                    class="preset-btn">
-              {{ loc.name }}
-            </button>
-          </div>
 
           <div class="form-grid">
             <div class="field-group">
@@ -126,11 +115,6 @@
                 <p>Pay securely via Razorpay payment gateway.</p>
               </div>
             </label>
-          </div>
-
-          <div class="field-group full-width notes-group">
-            <label>Order Notes / Special Delivery Instructions (optional)</label>
-            <textarea [(ngModel)]="orderNotes" rows="2" placeholder="e.g. Call before arrival, leave package with security guard..."></textarea>
           </div>
         </div>
       </div>

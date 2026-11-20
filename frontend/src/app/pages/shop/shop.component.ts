@@ -75,6 +75,15 @@ export class ShopComponent implements OnInit {
       tags: ['Wood Litter', 'Deodorizer', 'Grooming Brushes'],
       petType: 'Cat',
       categorySlug: 'cat-care'
+    },
+    {
+      id: 'grooming',
+      name: 'Grooming & Hygiene',
+      icon: '✨',
+      subtitle: 'Shampoos, Conditioners, Brushes & Oral Care',
+      tags: ['Herbal Shampoos', 'Shedding Brushes', 'Paw & Dental Care'],
+      petType: 'All Pets',
+      categorySlug: 'grooming'
     }
   ];
 
@@ -187,8 +196,8 @@ export class ShopComponent implements OnInit {
           this.allCategories = Array.from(new Set(['All', 'Dog Food', 'Cat Food', 'Grooming', 'Hygiene', ...names]));
 
           // Dynamically append any custom categories created by admin beyond the default 4
-          const coreSlugs = ['dog-food', 'dog-care', 'cat-food', 'cat-care'];
-          const coreNames = ['dog food', 'dog care', 'cat food', 'cat care'];
+          const coreSlugs = ['dog-food', 'dog-care', 'cat-food', 'cat-care', 'grooming', 'grooming-hygiene'];
+          const coreNames = ['dog food', 'dog care', 'cat food', 'cat care', 'grooming & hygiene', 'grooming', 'hygiene'];
 
           for (const c of res.data) {
             const slug = (c.slug || c.name.toLowerCase().replace(/[\s&]+/g, '-')).toLowerCase();
@@ -270,8 +279,8 @@ export class ShopComponent implements OnInit {
       return 'dog-food';
     } else if (lower === 'cat-food' || lower === 'cats' || lower.includes('cat food')) {
       return 'cat-food';
-    } else if (lower === 'grooming' || lower === 'hygiene' || lower === 'accessories') {
-      return 'dog-care';
+    } else if (lower.includes('grooming') || lower.includes('hygiene')) {
+      return 'grooming';
     }
     return lower;
   }

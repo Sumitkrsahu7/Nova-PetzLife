@@ -36,71 +36,6 @@
   }
 }
 
-.hub-header {
-  margin-bottom: 2rem;
-
-  .hub-breadcrumb {
-    font-size: 0.85rem;
-    color: #64748B;
-    margin-bottom: 0.75rem;
-
-    a {
-      color: #248B58;
-      text-decoration: none;
-      font-weight: 500;
-      &:hover { text-decoration: underline; }
-    }
-  }
-
-  .hub-title-row {
-    margin-bottom: 1.5rem;
-
-    .hub-badge-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      background: #E7F5E9;
-      color: #155C3B;
-      padding: 0.3rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      margin-bottom: 0.65rem;
-
-      .hub-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #248B58;
-      }
-    }
-
-    .hub-title {
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: #155C3B;
-      line-height: 1.2;
-      margin: 0 0 0.6rem;
-
-      @media (max-width: 768px) {
-        font-size: 1.65rem;
-      }
-    }
-
-    .hub-subtitle {
-      font-size: 1rem;
-      color: #475569;
-      max-width: 780px;
-      line-height: 1.55;
-      margin: 0;
-
-      @media (max-width: 768px) {
-        font-size: 0.9rem;
-      }
-    }
-  }
-}
-
 .department-hub-section {
   .hub-section-header {
     display: flex;
@@ -120,27 +55,16 @@
       color: #64748B;
       margin: 0;
     }
-
-    .dept-count-badge {
-      font-size: 0.8rem;
-      font-weight: 700;
-      background: #F1F5F9;
-      color: #475569;
-      padding: 0.35rem 0.75rem;
-      border-radius: 6px;
-
-      @media (max-width: 600px) { display: none; }
-    }
   }
 
   .department-cards-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     gap: 1.25rem;
     margin-bottom: 2rem;
 
     @media (max-width: 1024px) {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 1rem;
     }
 
@@ -199,6 +123,7 @@
         &[data-dept="dog-care"] { background: #F0FDF4; border-color: #DCFCE7; }
         &[data-dept="cat-food"] { background: #EFF6FF; border-color: #DBEAFE; }
         &[data-dept="cat-care"] { background: #FAF5FF; border-color: #F3E8FF; }
+        &[data-dept="grooming"] { background: #FFFBEB; border-color: #FEF3C7; }
 
         @media (max-width: 768px) {
           width: 40px;

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
+import { CartService } from '../../core/services/cart.service';
 import { environment } from '../../../environments/environment';
 import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
@@ -47,6 +48,22 @@ export class AccountComponent implements OnInit {
   activeTab: 'profile' | 'addresses' | 'orders' = 'profile';
   showLogoutConfirm = false;
 
+  // Edit Email Modal
+  showEditEmailModal = false;
+  newEmail = '';
+  isUpdatingEmail = false;
+  emailErrorMessage = '';
+  emailSuccessMessage = '';
+
+  // Delete Account Modal
+  showDeleteAccountModal = false;
+  isDeletingAccount = false;
+  deleteErrorMessage = '';
+
+  // Re-Order State
+  isReordering: string | null = null;
+  orderActionMessage = '';
+
   // Addresses
   addresses: Address[] = [];
   isLoadingAddresses = false;
@@ -64,7 +81,7 @@ export class AccountComponent implements OnInit {
   };
   addressSaveMessage = '';
 
-  // Popular Trivandrum neighbourhoods (clean names without exposing internal distance)
+  // Popular Trivandrum neighbourhoods
   trivandrumLocations = [
     { name: 'Pattom Junction', lat: 8.5244, lon: 76.9442, pin: '695004' },
     { name: 'Kowdiar Palace', lat: 8.5241, lon: 76.9602, pin: '695003' },
@@ -80,6 +97,7 @@ export class AccountComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
+    private cartService: CartService,
     private http: HttpClient,
     private router: Router
   ) {}
@@ -105,6 +123,152 @@ export class AccountComponent implements OnInit {
 
   setTab(tab: 'profile' | 'addresses' | 'orders'): void {
     this.activeTab = tab;
+  }
+
+  // --- Edit Email ---
+  openEditEmailModal(): void {
+    this.newEmail = this.user?.email || '';
+    this.emailErrorMessage = '';
+    this.emailSuccessMessage = '';
+    this.showEditEmailModal = true;
+  }
+
+  closeEditEmailModal(): void {
+    this.showEditEmailModal = false;
+  }
+
+  submitEmailUpdate(): void {
+    const trimmed = this.newEmail.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@') || !trimmed.includes('.')) {
+      this.emailErrorMessage = 'Please enter a valid email address.';
+      return;
+    }
+    if (trimmed === this.user?.email?.toLowerCase()) {
+      this.closeEditEmailModal();
+      return;
+    }
+
+    this.isUpdatingEmail = true;
+    this.emailErrorMessage = '';
+
+    this.http.put<any>(`${environment.apiUrl}/customer/email`, { email: trimmed }).subscribe({
+      next: res => {
+        this.isUpdatingEmail = false;
+        if (res?.success) {
+          const authData = res.data;
+          const updatedProfile: UserProfile = {
+            email: authData?.email || trimmed,
+            firstName: authData?.firstName || this.user?.firstName || '',
+            lastName: authData?.lastName || this.user?.lastName || '',
+            phone: this.user?.phone || '',
+            roles: authData?.roles || this.user?.roles || ['ROLE_CUSTOMER']
+          };
+          this.authService.updateCurrentUser(updatedProfile, authData?.token);
+          this.user = updatedProfile;
+          this.closeEditEmailModal();
+          this.emailSuccessMessage = 'Email updated successfully!';
+          setTimeout(() => this.emailSuccessMessage = '', 4000);
+        } else {
+          this.emailErrorMessage = res?.message || 'Failed to update email.';
+        }
+      },
+      error: err => {
+        this.isUpdatingEmail = false;
+        this.emailErrorMessage = err.error?.message || 'Failed to update email address. Please try again.';
+      }
+    });
+  }
+
+  // --- Delete Account ---
+  openDeleteAccountModal(): void {
+    this.deleteErrorMessage = '';
+    this.showDeleteAccountModal = true;
+  }
+
+  closeDeleteAccountModal(): void {
+    this.showDeleteAccountModal = false;
+  }
+
+  confirmDeleteAccount(): void {
+    this.isDeletingAccount = true;
+    this.deleteErrorMessage = '';
+
+    this.http.delete<any>(`${environment.apiUrl}/customer/account`).subscribe({
+      next: () => {
+        this.isDeletingAccount = false;
+        this.showDeleteAccountModal = false;
+        this.authService.logout();
+        this.router.navigate(['/login'], { queryParams: { deleted: 'true' } });
+      },
+      error: err => {
+        this.isDeletingAccount = false;
+        this.deleteErrorMessage = err.error?.message || 'Failed to delete account. Please try again or contact store support.';
+      }
+    });
+  }
+
+  // --- Re-Order Functionality ---
+  reorder(order: CustomerOrderSummary): void {
+    this.isReordering = order.orderNumber;
+    this.orderActionMessage = '';
+
+    this.http.get<any>(`${environment.apiUrl}/customer/orders/${order.orderNumber}`).subscribe({
+      next: res => {
+        const orderDetail = res?.data;
+        const items = orderDetail?.items || [];
+        if (items.length === 0) {
+          this.isReordering = null;
+          alert('No items found in this order to re-order.');
+          return;
+        }
+
+        let addedCount = 0;
+        let completed = 0;
+
+        for (const item of items) {
+          if (item.productId) {
+            this.cartService.addItem(
+              item.productId,
+              undefined,
+              item.quantity || 1,
+              {
+                productName: item.productName,
+                brandName: item.brandName,
+                unitPrice: item.unitPrice
+              }
+            ).subscribe({
+              next: () => {
+                addedCount++;
+                completed++;
+                if (completed === items.length) {
+                  this.finishReorder(order.orderNumber, addedCount);
+                }
+              },
+              error: () => {
+                completed++;
+                if (completed === items.length) {
+                  this.finishReorder(order.orderNumber, addedCount);
+                }
+              }
+            });
+          } else {
+            completed++;
+            if (completed === items.length) {
+              this.finishReorder(order.orderNumber, addedCount);
+            }
+          }
+        }
+      },
+      error: () => {
+        this.isReordering = null;
+        alert('Could not fetch order items for re-ordering.');
+      }
+    });
+  }
+
+  private finishReorder(orderNumber: string, count: number): void {
+    this.isReordering = null;
+    this.router.navigate(['/cart']);
   }
 
   loadAddresses(): void {
