@@ -100,7 +100,7 @@ export class AccountComponent implements OnInit {
     private cartService: CartService,
     private http: HttpClient,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     if (!this.authService.isAuthenticated()) {

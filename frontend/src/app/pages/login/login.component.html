@@ -88,8 +88,8 @@
       </div>
     </form>
 
-    <!-- REGISTER FORM (Ultra Compact & Non-Scrollable) -->
-    <form *ngIf="mode === 'register'" (ngSubmit)="onRegisterSubmit()" class="auth-form reg-compact-form">
+    <!-- REGISTER FORM -->
+    <form *ngIf="mode === 'register'" (ngSubmit)="onRegisterSubmit()" class="auth-form">
       <!-- Row 1: Name -->
       <div class="form-row">
         <div class="form-group col">
@@ -132,7 +132,7 @@
           />
         </div>
         <div class="form-group col">
-          <label for="regPhone">Mobile *</label>
+          <label for="regPhone">Mobile Number *</label>
           <input
             type="tel"
             id="regPhone"
@@ -158,7 +158,7 @@
               class="toggle-pwd-btn"
               (click)="toggleRegPasswordVisibility()"
             >
-              {{ showRegPassword ? '👁️' : '👁️‍🗨️' }}
+              {{ showRegPassword ? '👁️ Hide' : '👁️ Show' }}
             </button>
           </div>
           <input
@@ -167,19 +167,19 @@
             name="regPassword"
             [(ngModel)]="regPassword"
             (input)="onInputChange()"
-            placeholder="Min 8 chars"
+            placeholder="Min 8 characters"
             required
           />
         </div>
         <div class="form-group col">
           <div class="password-label-row">
-            <label for="regConfirmPassword">Confirm *</label>
+            <label for="regConfirmPassword">Confirm Password *</label>
             <button
               type="button"
               class="toggle-pwd-btn"
               (click)="toggleRegConfirmVisibility()"
             >
-              {{ showRegConfirm ? '👁️' : '👁️‍🗨️' }}
+              {{ showRegConfirm ? '👁️ Hide' : '👁️ Show' }}
             </button>
           </div>
           <input
@@ -188,17 +188,17 @@
             name="regConfirmPassword"
             [(ngModel)]="regConfirmPassword"
             (input)="onInputChange()"
-            placeholder="Re-enter"
+            placeholder="Re-enter password"
             required
           />
         </div>
       </div>
 
-      <!-- Compact Password Checklist Chips -->
-      <div class="password-checklist-compact" *ngIf="regPassword">
-        <span class="check-chip" [class.valid]="hasMinLength">{{ hasMinLength ? '✓' : '○' }} 8+</span>
-        <span class="check-chip" [class.valid]="hasUpperCase">{{ hasUpperCase ? '✓' : '○' }} Upper</span>
-        <span class="check-chip" [class.valid]="hasLowerCase">{{ hasLowerCase ? '✓' : '○' }} Lower</span>
+      <!-- Password Requirements Checklist Chips -->
+      <div class="password-checklist" *ngIf="regPassword">
+        <span class="check-chip" [class.valid]="hasMinLength">{{ hasMinLength ? '✓' : '○' }} 8+ Chars</span>
+        <span class="check-chip" [class.valid]="hasUpperCase">{{ hasUpperCase ? '✓' : '○' }} Uppercase</span>
+        <span class="check-chip" [class.valid]="hasLowerCase">{{ hasLowerCase ? '✓' : '○' }} Lowercase</span>
         <span class="check-chip" [class.valid]="hasNumber">{{ hasNumber ? '✓' : '○' }} Number</span>
         <span class="check-chip" [class.valid]="hasSpecialChar">{{ hasSpecialChar ? '✓' : '○' }} Symbol</span>
       </div>
