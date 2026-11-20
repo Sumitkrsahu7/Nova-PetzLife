@@ -9,9 +9,9 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   datasource:
-    url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:mysql://${DB_HOST:db80963.public.databaseasp.net}:${DB_PORT:3306}/${DB_NAME:db80963}?useSSL=${DB_USE_SSL:false}&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8&autoReconnect=true}}
-    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:db80963}}
-    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:X?k38Y-hCt2!}}
+    url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:nova_petzlife}?useSSL=${DB_USE_SSL:false}&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8&autoReconnect=true}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:novapetz}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
     hikari:
       maximum-pool-size: 10
