@@ -1,40 +1,5 @@
 <div class="dashboard-content">
   <!-- Critical Shop Location & 20 km Delivery Coordinates Card -->
-  <section class="location-approval-card" [class.approved]="shopLocationData.isOwnerApproved">
-    <div class="card-icon-col">
-      <span class="loc-icon">{{ shopLocationData.isOwnerApproved ? '✅' : '⚠️' }}</span>
-    </div>
-    <div class="card-details-col">
-      <div class="title-strip">
-        <h3>Shop Location & 20 km Delivery Radius Configuration</h3>
-        <span class="approval-badge" [class.badge-approved]="shopLocationData.isOwnerApproved">
-          {{ shopLocationData.isOwnerApproved ? 'OWNER APPROVED & ACTIVE' : 'PENDING OWNER VERIFICATION' }}
-        </span>
-      </div>
-      <p class="loc-address">
-        <strong>Confirmed Address:</strong> {{ shopLocationData.address }}
-      </p>
-      <div class="coords-strip">
-        <span class="coord-item">Latitude: <strong>{{ shopLocationData.latitude.toFixed(7) }}</strong></span>
-        <span class="coord-item">Longitude: <strong>{{ shopLocationData.longitude.toFixed(7) }}</strong></span>
-        <span class="coord-item">Maximum Radius: <strong>{{ shopLocationData.deliveryRadiusKm }} km (Straight-line)</strong></span>
-        <span class="coord-item" *ngIf="shopLocationData.verifiedDate">Verified At: <strong>{{ shopLocationData.verifiedDate }}</strong></span>
-      </div>
-      <p class="rule-note">
-        <strong>Strict Business Rule:</strong> Automatic delivery distance calculation during customer checkout requires owner approval of these resolved Kuravankonam coordinates.
-      </p>
-    </div>
-    <div class="card-action-col">
-      <button
-        type="button"
-        class="btn-approve"
-        [class.btn-revoke]="shopLocationData.isOwnerApproved"
-        (click)="toggleOwnerLocationApproval()"
-      >
-        {{ shopLocationData.isOwnerApproved ? 'Revoke Approval' : 'Approve Coordinates' }}
-      </button>
-    </div>
-  </section>
 
   <!-- KPI Metric Grid -->
   <section class="kpi-grid">
@@ -105,4 +70,39 @@
       </div>
     </div>
   </div>
+    <section class="location-approval-card" [class.approved]="shopLocationData.isOwnerApproved">
+    <div class="card-icon-col">
+      <span class="loc-icon">{{ shopLocationData.isOwnerApproved ? '✅' : '⚠️' }}</span>
+    </div>
+    <div class="card-details-col">
+      <div class="title-strip">
+        <h3>Shop Location & 20 km Delivery Radius Configuration</h3>
+        <span class="approval-badge" [class.badge-approved]="shopLocationData.isOwnerApproved">
+          {{ shopLocationData.isOwnerApproved ? 'OWNER APPROVED & ACTIVE' : 'PENDING OWNER VERIFICATION' }}
+        </span>
+      </div>
+      <p class="loc-address">
+        <strong>Confirmed Address:</strong> {{ shopLocationData.address }}
+      </p>
+      <div class="coords-strip">
+        <span class="coord-item">Latitude: <strong>{{ shopLocationData.latitude.toFixed(7) }}</strong></span>
+        <span class="coord-item">Longitude: <strong>{{ shopLocationData.longitude.toFixed(7) }}</strong></span>
+        <span class="coord-item">Maximum Radius: <strong>{{ shopLocationData.deliveryRadiusKm }} km (Straight-line)</strong></span>
+        <span class="coord-item" *ngIf="shopLocationData.verifiedDate">Verified At: <strong>{{ shopLocationData.verifiedDate }}</strong></span>
+      </div>
+      <p class="rule-note">
+        <strong>Strict Business Rule:</strong> Automatic delivery distance calculation during customer checkout requires owner approval of these resolved Kuravankonam coordinates.
+      </p>
+    </div>
+    <div class="card-action-col">
+      <button
+        type="button"
+        class="btn-approve"
+        [class.btn-revoke]="shopLocationData.isOwnerApproved"
+        (click)="toggleOwnerLocationApproval()"
+      >
+        {{ shopLocationData.isOwnerApproved ? 'Revoke Approval' : 'Approve Coordinates' }}
+      </button>
+    </div>
+  </section>
 </div>

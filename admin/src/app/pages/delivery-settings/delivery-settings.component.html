@@ -7,7 +7,7 @@
     </div>
     <div class="header-actions">
       <button class="btn btn-edit-location" (click)="openEditLocation()" *ngIf="!isEditingLocation">
-        ✏️ Edit Shop Location & Coordinates
+        Edit Shop Location & Coordinates
       </button>
     </div>
   </div>
@@ -26,10 +26,10 @@
       <div class="top-pills">
         <div class="verification-pill" [class.verified]="shopLocation.isVerified"
           [class.unverified]="!shopLocation.isVerified">
-          {{ shopLocation.isVerified ? '✅ VERIFIED & ACTIVE' : '⏳ PENDING OWNER APPROVAL' }}
+          {{ shopLocation.isVerified ? ' VERIFIED & ACTIVE' : '⏳ PENDING OWNER APPROVAL' }}
         </div>
         <button class="btn-action-edit" (click)="openEditLocation()" title="Modify Coordinates or Address">
-          ✏️ Edit
+           Edit
         </button>
       </div>
     </div>
@@ -186,29 +186,29 @@
       <!-- Status Toggles -->
       <div class="toggles-grid">
         <div class="toggle-card" [class.active]="storeStatus.isShopOpen">
-          <div class="toggle-info">
+          <div class="toggle-header">
             <span class="toggle-icon">{{ storeStatus.isShopOpen ? '🏪' : '🔒' }}</span>
-            <div>
-              <strong>Physical Store Status</strong>
-              <p>{{ storeStatus.isShopOpen ? 'Store is open for walk-in customers and order pickups.' : 'Store is marked closed. Notice displayed on storefront.' }}</p>
-            </div>
+            <strong>Physical Store Status</strong>
           </div>
-          <button type="button" class="btn-toggle-switch" [class.on]="storeStatus.isShopOpen" (click)="toggleShopOpen()">
-            {{ storeStatus.isShopOpen ? 'Switch to Closed' : 'Switch to Open' }}
-          </button>
+          <div class="toggle-action">
+            <p>{{ storeStatus.isShopOpen ? 'Store is open for walk-in customers and order pickups.' : 'Store is marked closed. Notice displayed on storefront.' }}</p>
+            <button type="button" class="btn-toggle-switch" [class.on]="storeStatus.isShopOpen" (click)="toggleShopOpen()">
+              {{ storeStatus.isShopOpen ? 'Switch to Closed' : 'Switch to Open' }}
+            </button>
+          </div>
         </div>
 
         <div class="toggle-card" [class.active]="storeStatus.isDeliveryActive">
-          <div class="toggle-info">
+          <div class="toggle-header">
             <span class="toggle-icon">{{ storeStatus.isDeliveryActive ? '🚚' : '⏸️' }}</span>
-            <div>
-              <strong>Local Delivery Service</strong>
-              <p>{{ storeStatus.isDeliveryActive ? 'Local 20 km dispatch is actively accepting orders.' : 'Local delivery temporarily paused (e.g. heavy rain or store holiday).' }}</p>
-            </div>
+            <strong>Local Delivery Service</strong>
           </div>
-          <button type="button" class="btn-toggle-switch" [class.on]="storeStatus.isDeliveryActive" (click)="toggleDeliveryActive()">
-            {{ storeStatus.isDeliveryActive ? 'Pause Delivery' : 'Activate Delivery' }}
-          </button>
+          <div class="toggle-action">
+            <p>{{ storeStatus.isDeliveryActive ? 'Local 20 km dispatch is actively accepting orders.' : 'Local delivery temporarily paused (e.g. heavy rain or store holiday).' }}</p>
+            <button type="button" class="btn-toggle-switch" [class.on]="storeStatus.isDeliveryActive" (click)="toggleDeliveryActive()">
+              {{ storeStatus.isDeliveryActive ? 'Pause Delivery' : 'Activate Delivery' }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -365,10 +365,10 @@
             <td class="text-right">
               <div class="action-btn-group">
                 <button type="button" class="btn-slot-action btn-edit" (click)="openEditSlotModal(s)" title="Edit slot details">
-                  ✏️ Edit
+                  Edit
                 </button>
                 <button type="button" class="btn-slot-action btn-delete" (click)="deleteSlot(s)" title="Delete delivery slot">
-                  🗑️ Delete
+                  Delete
                 </button>
               </div>
             </td>

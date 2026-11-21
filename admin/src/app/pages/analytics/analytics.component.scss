@@ -110,6 +110,8 @@
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
   align-items: start;
+  width: 100%;
+  min-width: 0;
   @media (max-width: 1000px) { grid-template-columns: 1fr; }
 
   .table-card {
@@ -118,6 +120,8 @@
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    width: 100%;
+    min-width: 0;
 
     .card-toolbar {
       display: flex;
@@ -125,15 +129,29 @@
       align-items: center;
       padding: 1.1rem 1.25rem;
       border-bottom: 1px solid #e2e8f0;
+      gap: 0.5rem;
       h2 { font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0; }
-      .tag-warn { font-size: 0.7rem; font-weight: 700; background: #fee2e2; color: #b91c1c; padding: 0.2rem 0.5rem; border-radius: 4px; }
-      .tag-best { font-size: 0.7rem; font-weight: 700; background: #dcfce7; color: #15803d; padding: 0.2rem 0.5rem; border-radius: 4px; }
+      .tag-warn { font-size: 0.7rem; font-weight: 700; background: #fee2e2; color: #b91c1c; padding: 0.2rem 0.5rem; border-radius: 4px; white-space: nowrap; }
+      .tag-best { font-size: 0.7rem; font-weight: 700; background: #dcfce7; color: #15803d; padding: 0.2rem 0.5rem; border-radius: 4px; white-space: nowrap; }
+
+      @media (max-width: 600px) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+      }
+    }
+
+    .table-scroll-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
   }
 }
 
 .report-table {
   width: 100%;
+  min-width: 520px;
   border-collapse: collapse;
   text-align: left;
   font-size: 0.85rem;
