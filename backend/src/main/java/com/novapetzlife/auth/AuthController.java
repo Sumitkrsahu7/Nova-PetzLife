@@ -1,35 +1,90 @@
 package com.novapetzlife.auth;
 
 import com.novapetzlife.common.ApiResponse;
+import com.novapetzlife.security.ClientIpUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@Tag(name = "Authentication", description = "User authentication, JWT sign-in, and registration")
+@Tag(name = "Authentication", description = "User authentication, JWT sign-in, token refresh, and registration")
 public class AuthController {
 
     private final AuthService authService;
+    private final long refreshExpirationMs;
+    private final boolean cookieSecure;
+    private final String cookieSameSite;
 
-    public AuthController(AuthService authService) {
+    public AuthController(
+            AuthService authService,
+            @Value("${app.jwt.refresh-expiration-ms:604800000}") long refreshExpirationMs,
+            @Value("${app.jwt.cookie-secure:false}") boolean cookieSecure,
+            @Value("${app.jwt.cookie-same-site:Lax}") String cookieSameSite) {
         this.authService = authService;
+        this.refreshExpirationMs = refreshExpirationMs;
+        this.cookieSecure = cookieSecure;
+        this.cookieSameSite = cookieSameSite;
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Authenticate user and issue JWT token")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
+    @Operation(summary = "Authenticate user and issue JWT + refresh token cookie")
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
+        String ipAddress = ClientIpUtil.getClientIp(httpRequest);
+        AuthResult result = authService.login(request, ipAddress);
+
+        ResponseCookie cookie = createRefreshTokenCookie(result.rawRefreshToken(), refreshExpirationMs / 1000);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(ApiResponse.ok("Login successful", result.response()));
     }
 
     @PostMapping("/register")
     @Operation(summary = "Register new customer account")
-    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        AuthResponse response = authService.register(request);
-        return ResponseEntity.ok(ApiResponse.ok("Registration successful", response));
+    public ResponseEntity<ApiResponse<AuthResponse>> register(
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletRequest httpRequest) {
+        String ipAddress = ClientIpUtil.getClientIp(httpRequest);
+        AuthResult result = authService.register(request, ipAddress);
+
+        ResponseCookie cookie = createRefreshTokenCookie(result.rawRefreshToken(), refreshExpirationMs / 1000);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(ApiResponse.ok("Registration successful", result.response()));
+    }
+
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh expired access token using HttpOnly cookie")
+    public ResponseEntity<ApiResponse<AuthResponse>> refresh(
+            @CookieValue(name = "refreshToken", required = false) String cookieRefreshToken,
+            HttpServletRequest httpRequest) {
+
+        if (!StringUtils.hasText(cookieRefreshToken)) {
+            throw new BadCredentialsException("Refresh token cookie is required to renew session");
+        }
+
+        String ipAddress = ClientIpUtil.getClientIp(httpRequest);
+        AuthResult result = authService.refresh(cookieRefreshToken.trim(), ipAddress);
+
+        var responseBuilder = ResponseEntity.ok();
+        // Only set rotated cookie if a new token was generated (initial rotation).
+        // If recovered concurrently within grace period, the active cookie is already held by the client.
+        if (result.rawRefreshToken() != null) {
+            ResponseCookie cookie = createRefreshTokenCookie(result.rawRefreshToken(), refreshExpirationMs / 1000);
+            responseBuilder.header(HttpHeaders.SET_COOKIE, cookie.toString());
+        }
+
+        return responseBuilder.body(ApiResponse.ok("Session refreshed successfully", result.response()));
     }
 
     @GetMapping("/me")
@@ -40,9 +95,41 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @Operation(summary = "Log out user and clear security context")
-    public ResponseEntity<ApiResponse<Void>> logout() {
-        authService.logout();
-        return ResponseEntity.ok(ApiResponse.ok("Logout successful", null));
+    @Operation(summary = "Log out user, invalidate refresh token, and clear security context")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @CookieValue(name = "refreshToken", required = false) String cookieRefreshToken,
+            HttpServletRequest httpRequest) {
+
+        String ipAddress = ClientIpUtil.getClientIp(httpRequest);
+        if (StringUtils.hasText(cookieRefreshToken)) {
+            authService.logout(cookieRefreshToken.trim(), ipAddress);
+        } else {
+            authService.logout(null, ipAddress);
+        }
+
+        ResponseCookie cleanCookie = createCleanRefreshTokenCookie();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cleanCookie.toString())
+                .body(ApiResponse.ok("Logout successful", null));
+    }
+
+    private ResponseCookie createRefreshTokenCookie(String rawRefreshToken, long maxAgeSeconds) {
+        return ResponseCookie.from("refreshToken", rawRefreshToken != null ? rawRefreshToken : "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite(cookieSameSite)
+                .path("/api/v1/auth")
+                .maxAge(maxAgeSeconds)
+                .build();
+    }
+
+    private ResponseCookie createCleanRefreshTokenCookie() {
+        return ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite(cookieSameSite)
+                .path("/api/v1/auth")
+                .maxAge(0)
+                .build();
     }
 }

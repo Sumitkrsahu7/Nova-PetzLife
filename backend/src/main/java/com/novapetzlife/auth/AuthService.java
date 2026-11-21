@@ -26,21 +26,30 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(
             AuthenticationManager authenticationManager,
             UserRepository userRepository,
             RoleRepository roleRepository,
             PasswordEncoder passwordEncoder,
-            JwtTokenProvider tokenProvider) {
+            JwtTokenProvider tokenProvider,
+            RefreshTokenService refreshTokenService) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
+        this.refreshTokenService = refreshTokenService;
     }
 
-    public AuthResponse login(LoginRequest request) {
+    @Transactional
+    public AuthResult login(LoginRequest request) {
+        return login(request, null);
+    }
+
+    @Transactional
+    public AuthResult login(LoginRequest request, String ipAddress) {
         String identifier = request.getIdentifier();
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(identifier, request.password())
@@ -64,11 +73,19 @@ public class AuthService {
                 ? user.getPermissions().stream().map(Permission::getName).toList()
                 : List.of();
 
-        return AuthResponse.of(jwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles, permissions);
+        RefreshTokenService.TokenPair tokenPair = refreshTokenService.createRefreshToken(user, ipAddress);
+        AuthResponse response = AuthResponse.of(jwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles, permissions);
+
+        return new AuthResult(response, tokenPair.rawToken());
     }
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResult register(RegisterRequest request) {
+        return register(request, null);
+    }
+
+    @Transactional
+    public AuthResult register(RegisterRequest request, String ipAddress) {
         String normalizedEmail = request.email().toLowerCase().trim();
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new IllegalArgumentException("An account with this email already exists: " + normalizedEmail);
@@ -99,13 +116,53 @@ public class AuthService {
         );
         String jwt = tokenProvider.generateToken(authentication);
 
-        return AuthResponse.of(
+        RefreshTokenService.TokenPair tokenPair = refreshTokenService.createRefreshToken(savedUser, ipAddress);
+        AuthResponse response = AuthResponse.of(
                 jwt,
                 savedUser.getEmail(),
                 savedUser.getFirstName(),
                 savedUser.getLastName(),
-                List.of("ROLE_CUSTOMER")
+                List.of("ROLE_CUSTOMER"),
+                List.of()
         );
+
+        return new AuthResult(response, tokenPair.rawToken());
+    }
+
+    @Transactional
+    public AuthResult refresh(String rawRefreshToken, String ipAddress) {
+        RefreshTokenService.TokenPair tokenPair = refreshTokenService.rotateRefreshToken(rawRefreshToken, ipAddress);
+        User user = tokenPair.entity().getUser();
+
+        var authorities = user.getRoles().stream()
+                .map(role -> (GrantedAuthority) role::getName)
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (user.getPermissions() != null) {
+            user.getPermissions().forEach(p -> authorities.add(p::getName));
+        }
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(user.getEmail(), null, authorities);
+        String newJwt = tokenProvider.generateToken(auth);
+
+        List<String> roles = user.getRoles().stream().map(Role::getName).toList();
+        List<String> permissions = user.getPermissions() != null
+                ? user.getPermissions().stream().map(Permission::getName).toList()
+                : List.of();
+
+        AuthResponse response = AuthResponse.of(newJwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles, permissions);
+        return new AuthResult(response, tokenPair.rawToken());
+    }
+
+    public void logout() {
+        logout(null, null);
+    }
+
+    public void logout(String rawRefreshToken, String ipAddress) {
+        if (rawRefreshToken != null && !rawRefreshToken.trim().isEmpty()) {
+            refreshTokenService.revokeRefreshToken(rawRefreshToken, ipAddress);
+        }
+        SecurityContextHolder.clearContext();
     }
 
     @Transactional(readOnly = true)
@@ -129,9 +186,5 @@ public class AuthService {
         String jwt = tokenProvider.generateToken(auth);
 
         return AuthResponse.of(jwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles, permissions);
-    }
-
-    public void logout() {
-        SecurityContextHolder.clearContext();
     }
 }

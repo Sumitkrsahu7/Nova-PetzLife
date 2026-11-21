@@ -370,6 +370,6 @@ class AuditAndSecurityIntegrationTest {
     @DisplayName("Security Enforcement: Unauthenticated requests to /api/v1/admin/audit-logs are rejected")
     void testAuditLogEndpointRejectsUnauthenticated() throws Exception {
         mockMvc.perform(get("/api/v1/admin/audit-logs"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }

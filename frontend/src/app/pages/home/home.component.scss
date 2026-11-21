@@ -542,6 +542,10 @@
       gap: 0.5rem;
       width: 100%;
 
+      @media (max-width: 360px) {
+        grid-template-columns: 1fr;
+      }
+
       .trust-pill {
         display: flex;
         align-items: center;
@@ -732,6 +736,15 @@
         font-size: 0.85rem;
         font-weight: 700;
         white-space: nowrap;
+      }
+
+      @media (max-width: 480px) {
+        .btn-gps,
+        .btn-primary {
+          flex: 0 0 100% !important;
+          width: 100% !important;
+          min-height: 44px;
+        }
       }
     }
 

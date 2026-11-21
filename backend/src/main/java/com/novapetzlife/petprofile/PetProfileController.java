@@ -42,8 +42,7 @@ public class PetProfileController {
         if (customerId != null) {
             return customerRepository.findById(customerId).orElse(null);
         }
-        // Fallback: first available customer for anonymous demo or guest testing
-        return customerRepository.findFirstByOrderByIdAsc().orElse(null);
+        return null;
     }
 
     @GetMapping
@@ -52,6 +51,9 @@ public class PetProfileController {
             @AuthenticationPrincipal User user,
             @RequestParam(required = false) Long customerId) {
         Customer customer = resolveCustomer(user, customerId);
+        if (customer == null) {
+            return ResponseEntity.ok(ApiResponse.ok(List.of()));
+        }
         List<PetProfileDto> pets = petProfileService.getCustomerPetProfiles(customer);
         return ResponseEntity.ok(ApiResponse.ok(pets));
     }

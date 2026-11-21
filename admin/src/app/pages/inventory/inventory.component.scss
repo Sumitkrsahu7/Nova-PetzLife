@@ -249,6 +249,33 @@
     gap: 0.75rem;
   }
 
+  .inventory-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+
+    .search-wrap {
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    .toolbar-controls {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+
+      .sort-control {
+        width: 100%;
+        justify-content: space-between;
+
+        .sort-select {
+          flex: 1;
+        }
+      }
+    }
+  }
+
   .modal-card {
     width: 95%;
     margin: 1rem;

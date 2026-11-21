@@ -6,12 +6,6 @@
 
 .cart-header {
   margin-bottom: 2rem;
-  .crumb {
-    font-size: 0.875rem;
-    color: #667085;
-    margin-bottom: 0.5rem;
-    a { color: #248B58; text-decoration: none; &:hover { text-decoration: underline; } }
-  }
   h1 {
     font-size: 2rem;
     font-weight: 800;
@@ -257,6 +251,12 @@
   position: sticky;
   top: 1.5rem;
 
+  @media (max-width: 900px) {
+    position: static;
+    padding: 1.25rem 1rem;
+    margin-top: 1rem;
+  }
+
   h2 { font-size: 1.25rem; font-weight: 800; color: #26352D; margin: 0 0 1.25rem; }
 
   .summary-row {
@@ -306,6 +306,8 @@
     width: 100%;
     background: #248B58;
     color: #fff;
+    border: none;
+    cursor: pointer;
     text-align: center;
     padding: 0.9rem 1.5rem;
     border-radius: 9999px;
@@ -314,7 +316,8 @@
     text-decoration: none;
     box-shadow: 0 4px 14px rgba(36, 139, 88, 0.35);
     transition: all 0.2s;
-    &:hover { background: #155C3B; transform: translateY(-1px); }
+    &:hover:not(:disabled) { background: #155C3B; transform: translateY(-1px); }
+    &:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; transform: none; }
   }
 
   .trust-features {

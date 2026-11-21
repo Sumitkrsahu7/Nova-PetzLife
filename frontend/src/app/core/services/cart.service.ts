@@ -276,6 +276,20 @@ export class CartService {
       );
   }
 
+  public mergeCartOnLogin(): Observable<any> {
+    const token = this.getSessionToken();
+    return this.http.post<{ success: boolean; data: Cart }>(`${this.apiUrl}/merge`, { sessionToken: token }, { headers: this.getHeaders() })
+      .pipe(
+        tap(res => {
+          if (res?.success && res.data) {
+            this.saveLocalCart(res.data);
+            this.cartSubject.next(res.data);
+          }
+        }),
+        catchError(() => this.loadCart())
+      );
+  }
+
   public getCurrentCart(): Cart | null {
     return this.cartSubject.value;
   }

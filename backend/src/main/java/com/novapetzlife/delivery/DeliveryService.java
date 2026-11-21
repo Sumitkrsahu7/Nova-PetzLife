@@ -88,6 +88,9 @@ public class DeliveryService {
         if (destLat == null || destLon == null) {
             throw new IllegalArgumentException("Destination latitude and longitude are required for delivery check");
         }
+        if (destLat < -90.0 || destLat > 90.0 || destLon < -180.0 || destLon > 180.0) {
+            throw new IllegalArgumentException("Destination coordinates are out of valid geographic range (latitude must be between -90 and 90, longitude between -180 and 180)");
+        }
 
         ShopLocation shop = getShopLocation();
         DeliverySettings settings = getDeliverySettings();
@@ -256,7 +259,7 @@ public class DeliveryService {
         return checkDeliveryEligibility(lat, lon, req.orderSubtotal());
     }
 
-    private double[] geocodeAddress(String address) {
+    public double[] geocodeAddress(String address) {
         try {
             String encoded = URLEncoder.encode(address, StandardCharsets.UTF_8);
             String url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encoded;

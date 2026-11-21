@@ -14,6 +14,7 @@ import com.novapetzlife.customer.AddressCreateRequest;
 import com.novapetzlife.customer.Customer;
 import com.novapetzlife.customer.CustomerAddressRepository;
 import com.novapetzlife.customer.CustomerRepository;
+import com.novapetzlife.customer.CustomerService;
 import com.novapetzlife.delivery.ShopLocation;
 import com.novapetzlife.delivery.ShopLocationRepository;
 import com.novapetzlife.inventory.InventoryRepository;
@@ -37,6 +38,8 @@ import com.novapetzlife.support.SupportTicketRepository;
 import com.novapetzlife.support.dto.AddMessageRequest;
 import com.novapetzlife.support.dto.CreateInquiryRequest;
 import com.novapetzlife.tax.InvoiceRepository;
+import com.novapetzlife.user.User;
+import com.novapetzlife.user.UserRepository;
 import com.novapetzlife.review.ReviewRepository;
 import com.novapetzlife.review.ReviewImageRepository;
 import com.novapetzlife.google.GoogleReviewRepository;
@@ -162,6 +165,12 @@ class NotificationAndAnalyticsIntegrationTest {
     @Autowired
     private AnalyticsService analyticsService;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CustomerService customerService;
+
     private Customer testCustomer;
     private Product testProduct;
     private Brand testBrand;
@@ -218,8 +227,10 @@ class NotificationAndAnalyticsIntegrationTest {
 
         // 2. Customer
         String suffix = UUID.randomUUID().toString().substring(0, 6);
-        testCustomer = new Customer(null, "suresh." + suffix + "@example.com", "+9194471" + suffix, "Suresh", "Gopi", true);
-        testCustomer = customerRepository.save(testCustomer);
+        User user = userRepository.findByEmail("suresh.notif@example.com").orElseGet(() ->
+                userRepository.save(new User("suresh.notif@example.com", "Password@123", "Suresh", "Gopi", "+9194471" + suffix))
+        );
+        testCustomer = customerService.getOrCreateCustomerForUser(user);
 
         // 3. Category & Brand
         testCategory = categoryRepository.save(new Category("Dog Treats", "dog-treats-" + suffix, "Dog Treats Category", null, 1));
@@ -257,6 +268,7 @@ class NotificationAndAnalyticsIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "suresh.notif@example.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Notifications: Order checkout triggers automated email and WhatsApp order confirmation notifications")
     void testCheckoutTriggersNotification() throws Exception {
         String sessionToken = "session-notif-" + UUID.randomUUID();

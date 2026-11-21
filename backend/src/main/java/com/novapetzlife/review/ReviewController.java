@@ -42,7 +42,7 @@ public class ReviewController {
         if (customerId != null) {
             return customerRepository.findById(customerId).orElse(null);
         }
-        return customerRepository.findFirstByOrderByIdAsc().orElse(null);
+        return null;
     }
 
     @PostMapping

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, map, tap, catchError, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -24,17 +24,45 @@ export interface AdminUser {
 @Injectable({
   providedIn: 'root'
 })
-export class AdminAuthService {
+export class AdminAuthService implements OnDestroy {
   private readonly TOKEN_KEY = 'nova_admin_token';
   private readonly USER_KEY = 'nova_admin_user';
 
   private currentUserSubject = new BehaviorSubject<AdminUser | null>(this.getStoredUser());
   public currentUser$ = this.currentUserSubject.asObservable();
+  private authChannel: BroadcastChannel | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        this.authChannel = new BroadcastChannel('nova_admin_auth_sync');
+        this.authChannel.onmessage = (event: MessageEvent) => {
+          if (event.data?.type === 'LOGOUT') {
+            this.handleRemoteLogout();
+          }
+        };
+      } catch (_) {
+        this.authChannel = null;
+      }
+    }
+  }
+
+  ngOnDestroy(): void {
+    try {
+      this.authChannel?.close();
+    } catch (_) { }
+  }
+
+  private handleRemoteLogout(): void {
+    try {
+      localStorage.removeItem(this.TOKEN_KEY);
+      localStorage.removeItem(this.USER_KEY);
+    } catch (_) { }
+    this.currentUserSubject.next(null);
+  }
 
   login(credentials: { email: string; password: string }): Observable<any> {
-    return this.http.post<any>(`${environment.apiUrl}/auth/login`, credentials).pipe(
+    return this.http.post<any>(`${environment.apiUrl}/auth/login`, credentials, { withCredentials: true }).pipe(
       map(res => {
         // Normalize backend ApiResponse { success, data, message } or direct object
         return (res && res.data) ? res.data : res;
@@ -48,42 +76,70 @@ export class AdminAuthService {
           }
           this.handleAuthSuccess(authData);
         }
-      }),
-      catchError(err => {
-        if (err.status === 0 || !err.status) {
-          const rawEmail = (credentials.email || '').trim().toLowerCase();
-          if (rawEmail === 'test@gmail.com' && credentials.password === 'Test@123') {
-            const mockAdmin: AdminAuthResponse = {
-              token: `mock-admin-jwt-${Date.now()}`,
-              tokenType: 'Bearer',
-              email: 'test@gmail.com',
-              firstName: 'Super',
-              lastName: 'Admin',
-              roles: ['ROLE_SUPER_ADMIN'],
-              permissions: ['ALL_PERMISSIONS']
-            };
-            this.handleAuthSuccess(mockAdmin);
-            return of(mockAdmin);
-          }
-        }
-        return throwError(() => err);
       })
     );
   }
 
-  logout(): void {
-    this.http.post(`${environment.apiUrl}/auth/logout`, {}).pipe(catchError(() => of(null))).subscribe();
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
+  refreshToken(): Observable<AdminAuthResponse> {
+    return this.http.post<any>(`${environment.apiUrl}/auth/refresh`, {}, {
+      withCredentials: true,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    }).pipe(
+      map(res => (res && res.data) ? res.data : res),
+      tap((authData: AdminAuthResponse) => {
+        if (authData?.token) {
+          this.handleAuthSuccess(authData);
+        }
+      })
+    );
+  }
+
+  logout(callApi: boolean = true, broadcast: boolean = true): void {
+    if (callApi) {
+      this.http.post(`${environment.apiUrl}/auth/logout`, {}, {
+        withCredentials: true,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+        .pipe(catchError(() => of(null)))
+        .subscribe();
+    }
+    try {
+      localStorage.removeItem(this.TOKEN_KEY);
+      localStorage.removeItem(this.USER_KEY);
+    } catch (_) { }
     this.currentUserSubject.next(null);
+
+    if (broadcast && this.authChannel) {
+      try {
+        this.authChannel.postMessage({ type: 'LOGOUT' });
+      } catch (_) { }
+    }
+  }
+
+  setToken(token: string): void {
+    localStorage.setItem(this.TOKEN_KEY, token);
   }
 
   getToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
+  isTokenExpired(token: string | null): boolean {
+    if (!token) return true;
+    try {
+      const parts = token.split('.');
+      if (parts.length < 2) return true;
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (!payload.exp) return false;
+      return Date.now() >= payload.exp * 1000;
+    } catch {
+      return true;
+    }
+  }
+
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    return !!token && !this.isTokenExpired(token);
   }
 
   getCurrentUser(): AdminUser | null {

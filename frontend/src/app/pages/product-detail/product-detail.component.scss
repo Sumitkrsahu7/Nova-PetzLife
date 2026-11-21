@@ -2,24 +2,16 @@
   padding: 2rem 0 4rem;
   background: #fbfdfc;
   min-height: 80vh;
+
+  @media (max-width: 768px) {
+    padding: 1rem 0 135px;
+  }
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1.25rem;
-}
-
-.breadcrumb-nav {
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
-  color: #64748b;
-
-  a {
-    color: #248b58;
-    text-decoration: none;
-    &:hover { text-decoration: underline; }
-  }
 }
 
 .loading-state {
@@ -690,6 +682,10 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+
+      @media (max-width: 375px) {
+        gap: 0.35rem;
+      }
 
       .sticky-quantity-stepper {
         display: flex;

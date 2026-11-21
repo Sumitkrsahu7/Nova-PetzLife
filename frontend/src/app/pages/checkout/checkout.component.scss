@@ -6,12 +6,6 @@
 
 .checkout-header {
   margin-bottom: 2rem;
-  .crumb {
-    font-size: 0.875rem;
-    color: #667085;
-    margin-bottom: 0.5rem;
-    a { color: #248B58; text-decoration: none; &:hover { text-decoration: underline; } }
-  }
   h1 { font-size: 2rem; font-weight: 800; color: #26352D; margin: 0 0 0.25rem; }
   .subtitle { color: #667085; margin: 0; font-size: 0.95rem; }
 }
@@ -65,6 +59,183 @@
     flex: 1;
     h2 { font-size: 1.25rem; font-weight: 800; color: #26352D; margin: 0 0 0.25rem; }
     .step-desc { font-size: 0.875rem; color: #667085; margin: 0 0 1.25rem; }
+
+    .step-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+
+      @media (max-width: 600px) {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    .btn-address-toggle {
+      background: #E7F5E9;
+      color: #248B58;
+      border: 1px solid #248B58;
+      padding: 0.45rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.825rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #248B58;
+        color: #fff;
+      }
+
+      &.btn-secondary {
+        background: #f2f4f7;
+        color: #344054;
+        border-color: #d0d5dd;
+
+        &:hover {
+          background: #e4e7ec;
+          color: #1d2939;
+        }
+      }
+
+      @media (max-width: 600px) {
+        width: 100%;
+        text-align: center;
+        padding: 0.6rem 1rem;
+        min-height: 40px;
+      }
+    }
+
+    .loading-addresses-indicator {
+      padding: 1rem;
+      background: #f9fafb;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      color: #667085;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .saved-addresses-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .saved-address-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border: 1.5px solid #eaecf0;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #248B58;
+        background: #fbfdfb;
+      }
+
+      &.selected {
+        border-color: #248B58;
+        background: #f4faf6;
+        box-shadow: 0 0 0 1px #248B58;
+      }
+
+      .addr-radio {
+        margin-top: 0.2rem;
+        input[type="radio"] {
+          accent-color: #248B58;
+          width: 18px;
+          height: 18px;
+          cursor: pointer;
+        }
+      }
+
+      .addr-details {
+        flex: 1;
+
+        .addr-header {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.35rem;
+          flex-wrap: wrap;
+
+          strong {
+            font-size: 0.95rem;
+            color: #26352D;
+          }
+
+          .badge-default {
+            background: #248B58;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+          }
+
+          .addr-phone {
+            font-size: 0.85rem;
+            color: #475467;
+            margin-left: auto;
+
+            @media (max-width: 600px) {
+              margin-left: 0;
+              width: 100%;
+            }
+          }
+        }
+
+        .addr-line {
+          font-size: 0.875rem;
+          color: #344054;
+          margin: 0 0 0.2rem;
+          line-height: 1.4;
+        }
+
+        .addr-landmark {
+          font-size: 0.8rem;
+          color: #667085;
+          margin: 0 0 0.2rem;
+          font-style: italic;
+        }
+
+        .addr-city-pin {
+          font-size: 0.85rem;
+          color: #475467;
+          margin: 0;
+
+          strong {
+            color: #26352D;
+          }
+        }
+      }
+    }
+
+    .save-address-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: #344054;
+      cursor: pointer;
+
+      input[type="checkbox"] {
+        accent-color: #248B58;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+    }
   }
 }
 
@@ -227,6 +398,12 @@
   position: sticky;
   top: 1.5rem;
 
+  @media (max-width: 900px) {
+    position: static;
+    padding: 1.25rem 1rem;
+    margin-top: 1.5rem;
+  }
+
   h2 { font-size: 1.2rem; font-weight: 800; color: #26352D; margin: 0 0 1rem; }
 
   .checkout-items-list {
@@ -380,6 +557,25 @@
     strong { font-size: 1.4rem; color: #248B58; }
   }
 
+  .address-validation-alert {
+    background: #fff8e6;
+    border: 1px solid #fedf89;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.825rem;
+    color: #b54708;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+
+    .alert-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+  }
+
   .btn-confirm-order {
     width: 100%;
     background: #248B58;
@@ -392,8 +588,13 @@
     cursor: pointer;
     box-shadow: 0 4px 14px rgba(36, 139, 88, 0.35);
     transition: all 0.2s;
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
-    &:hover:not(:disabled) { background: #155C3B; }
+    &:disabled, &.btn-disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+      background: #94a3b8;
+    }
+    &:hover:not(:disabled):not(.btn-disabled) { background: #155C3B; }
   }
 
   .guarantee-text {
@@ -414,7 +615,7 @@
   }
 
   .step-card {
-    padding: 1.25rem 0.85rem;
+    padding: 1rem 0.75rem;
     gap: 0.75rem;
     border-radius: 12px;
 
@@ -423,5 +624,25 @@
       height: 28px;
       font-size: 0.85rem;
     }
+  }
+
+  .slots-grid .slot-tile {
+    padding: 0.75rem;
+    min-height: 44px;
+
+    .slot-body {
+      flex-wrap: wrap;
+      gap: 0.25rem;
+    }
+  }
+
+  .preset-pills .preset-btn {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .payment-methods .payment-tile {
+    min-height: 48px;
   }
 }

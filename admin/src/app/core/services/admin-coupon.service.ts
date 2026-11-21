@@ -51,8 +51,7 @@ export class AdminCouponService {
   constructor(private http: HttpClient) {}
 
   private getAuthHeaders(): HttpHeaders {
-    const token = localStorage.getItem('nova_admin_token');
-    return new HttpHeaders(token ? { 'Authorization': `Bearer ${token}` } : {});
+    return new HttpHeaders();
   }
 
   public getCoupons(page: number = 0, size: number = 20): Observable<{ success: boolean; data: PageResponse<AdminCoupon> }> {

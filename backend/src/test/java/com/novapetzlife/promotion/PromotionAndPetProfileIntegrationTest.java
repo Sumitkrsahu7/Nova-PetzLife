@@ -13,6 +13,7 @@ import com.novapetzlife.customer.AddressCreateRequest;
 import com.novapetzlife.customer.Customer;
 import com.novapetzlife.customer.CustomerAddressRepository;
 import com.novapetzlife.customer.CustomerRepository;
+import com.novapetzlife.customer.CustomerService;
 import com.novapetzlife.delivery.ShopLocation;
 import com.novapetzlife.delivery.ShopLocationRepository;
 import com.novapetzlife.inventory.InventoryRepository;
@@ -33,6 +34,8 @@ import com.novapetzlife.returns.ReturnInspectionRepository;
 import com.novapetzlife.returns.ReturnRequestItemRepository;
 import com.novapetzlife.returns.ReturnRequestRepository;
 import com.novapetzlife.tax.InvoiceRepository;
+import com.novapetzlife.user.User;
+import com.novapetzlife.user.UserRepository;
 import com.novapetzlife.notification.NotificationRepository;
 import com.novapetzlife.support.SupportMessageRepository;
 import com.novapetzlife.support.SupportTicketRepository;
@@ -107,6 +110,12 @@ class PromotionAndPetProfileIntegrationTest {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CustomerService customerService;
 
     @Autowired
     private CartItemRepository cartItemRepository;
@@ -210,8 +219,10 @@ class PromotionAndPetProfileIntegrationTest {
 
         // 2. Customer
         String suffix = UUID.randomUUID().toString().substring(0, 6);
-        testCustomer = new Customer(null, "arun." + suffix + "@example.com", "+9194471" + suffix, "Arun", "Kumar", true);
-        testCustomer = customerRepository.save(testCustomer);
+        User user = userRepository.findByEmail("arun.promo@example.com").orElseGet(() ->
+                userRepository.save(new User("arun.promo@example.com", "Password@123", "Arun", "Kumar", "+9194471" + suffix))
+        );
+        testCustomer = customerService.getOrCreateCustomerForUser(user);
 
         // 3. Category & Brand
         Category cat = categoryRepository.save(new Category("Pet Nutrition", "pet-nutrition-" + suffix, "Pet Nutrition", null, 1));
@@ -341,6 +352,7 @@ class PromotionAndPetProfileIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "arun.promo@example.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Checkout: Apply coupon code, deduct discount, and record coupon usage")
     void testCheckoutWithCouponDeduction() throws Exception {
         // Setup coupon

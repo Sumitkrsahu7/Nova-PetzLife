@@ -1,13 +1,6 @@
 <div class="product-detail-page">
   <div class="container">
     <app-back-button></app-back-button>
-    <!-- Breadcrumb -->
-    <nav class="breadcrumb-nav">
-      <a routerLink="/">Home</a> &gt;
-      <a routerLink="/">Catalog</a> &gt;
-      <span *ngIf="product">{{ product.name }}</span>
-    </nav>
-
     <!-- Loading State -->
     <div *ngIf="isLoading" class="loading-state">
       <div class="spinner"></div>

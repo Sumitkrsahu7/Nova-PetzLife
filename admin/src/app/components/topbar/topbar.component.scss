@@ -116,11 +116,38 @@
   }
 
   .topbar-left {
+    min-width: 0;
+
     .page-title {
       font-size: 1.1rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .store-crumb {
       font-size: 0.72rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
     }
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar-left .store-crumb {
+    display: none;
+  }
+
+  .btn-store-location {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .btn-store-location {
+    padding: 0.4rem 0.45rem;
+    font-size: 0.7rem;
   }
 }

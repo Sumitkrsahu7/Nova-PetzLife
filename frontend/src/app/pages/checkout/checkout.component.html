@@ -1,9 +1,6 @@
 <div class="checkout-container">
   <div class="checkout-header">
     <app-back-button></app-back-button>
-    <!-- <div class="crumb">
-      <a routerLink="/">Home</a> <span>/</span> <a routerLink="/cart">Cart</a> <span>/</span> Secure Checkout
-    </div> -->
     <h1>Express Checkout</h1>
     <p class="subtitle">Direct local fulfillment from NOVA PETZLIFE our store</p>
   </div>
@@ -15,43 +12,108 @@
   <div class="checkout-layout">
     <!-- Form Steps Column -->
     <div class="form-column">
-      <!-- Step 1: Customer & Address Details -->
+      <!-- Step 1: Delivery Address & Contact -->
       <div class="step-card">
         <div class="step-badge">1</div>
         <div class="step-content">
-          <h2>Delivery Address & Contact</h2>
-          <p class="step-desc">Enter your Trivandrum delivery location to confirm delivery availability</p>
+          <div class="step-title-row">
+            <div>
+              <h2>Delivery Address & Contact</h2>
+              <p class="step-desc">Select a saved delivery address or enter a new Trivandrum location</p>
+            </div>
+            <button *ngIf="savedAddresses.length > 0 && !useNewAddress"
+                    type="button"
+                    (click)="switchToNewAddress()"
+                    class="btn-address-toggle">
+              + Add New Address
+            </button>
+            <button *ngIf="savedAddresses.length > 0 && useNewAddress"
+                    type="button"
+                    (click)="cancelNewAddress()"
+                    class="btn-address-toggle btn-secondary">
+              ← Use Saved Addresses
+            </button>
+          </div>
 
-          <div class="form-grid">
-            <div class="field-group">
-              <label>Full Name *</label>
-              <input type="text" [(ngModel)]="recipientName" placeholder="Enter your full name" required>
+          <!-- Loading saved addresses state -->
+          <div *ngIf="isLoadingAddresses" class="loading-addresses-indicator">
+            <span class="spinner-small">⏳</span> Loading your saved addresses...
+          </div>
+
+          <!-- Case A: Saved Addresses Selection -->
+          <div *ngIf="!isLoadingAddresses && savedAddresses.length > 0 && !useNewAddress" class="saved-addresses-list">
+            <label *ngFor="let addr of savedAddresses"
+                   class="saved-address-card"
+                   [class.selected]="selectedAddressId === addr.id">
+              <div class="addr-radio">
+                <input type="radio"
+                       name="deliveryAddressSelection"
+                       [value]="addr.id"
+                       [checked]="selectedAddressId === addr.id"
+                       (change)="selectSavedAddress(addr)">
+              </div>
+              <div class="addr-details">
+                <div class="addr-header">
+                  <strong>{{ addr.recipientName }}</strong>
+                  <span *ngIf="addr.isDefault" class="badge-default">Default</span>
+                  <span class="addr-phone">📞 {{ addr.phone }}</span>
+                </div>
+                <p class="addr-line">{{ addr.addressLine1 }}<span *ngIf="addr.addressLine2">, {{ addr.addressLine2 }}</span></p>
+                <p *ngIf="addr.landmark" class="addr-landmark">Landmark: {{ addr.landmark }}</p>
+                <p class="addr-city-pin">{{ addr.city }}, {{ addr.state }} - <strong>{{ addr.postalCode }}</strong></p>
+              </div>
+            </label>
+          </div>
+
+          <!-- Case B: New Address Form -->
+          <div *ngIf="!isLoadingAddresses && (useNewAddress || savedAddresses.length === 0)" class="new-address-form">
+            <div class="form-grid">
+              <div class="field-group">
+                <label>Full Name *</label>
+                <input type="text" [(ngModel)]="recipientName" placeholder="Enter your full name" required>
+              </div>
+
+              <div class="field-group">
+                <label>Phone Number (for delivery rider) *</label>
+                <input type="tel" [(ngModel)]="phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" placeholder="Enter your 10-digit mobile number" required>
+              </div>
+
+              <div class="field-group full-width">
+                <label>Email (for order invoice & tracking)</label>
+                <input type="email" [(ngModel)]="email" placeholder="name@example.com">
+              </div>
+
+              <div class="field-group full-width">
+                <label>Street Address / House Name / Flat No. *</label>
+                <input type="text" [(ngModel)]="addressLine1" placeholder="Enter your house number, street or locality" required>
+              </div>
+
+              <div class="field-group">
+                <label>Address Line 2 (optional)</label>
+                <input type="text" [(ngModel)]="addressLine2" placeholder="Apartment, suite, unit, etc.">
+              </div>
+
+              <div class="field-group">
+                <label>Landmark (optional)</label>
+                <input type="text" [(ngModel)]="landmark" placeholder="Enter a nearby landmark (optional)">
+              </div>
+
+              <div class="field-group">
+                <label>City *</label>
+                <input type="text" [(ngModel)]="city" placeholder="City" required>
+              </div>
+
+              <div class="field-group">
+                <label>PIN Code *</label>
+                <input type="text" [(ngModel)]="postalCode" (change)="runDeliveryCheck()" placeholder="Enter your 6-digit PIN code" required>
+              </div>
             </div>
 
-            <div class="field-group">
-              <label>Phone Number (for delivery rider) *</label>
-              <input type="tel" [(ngModel)]="phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" placeholder="Enter your 10-digit mobile number" required>
-            </div>
-
-            <div class="field-group full-width">
-              <label>Email (for order invoice & tracking)</label>
-              <input type="email" [(ngModel)]="email" placeholder="name@example.com">
-            </div>
-
-            <div class="field-group full-width">
-              <label>Street Address / House Name / Flat No. *</label>
-              <input type="text" [(ngModel)]="addressLine1" placeholder="Enter your house number, street or locality" required>
-            </div>
-
-            <div class="field-group">
-              <label>Landmark (optional)</label>
-              <input type="text" [(ngModel)]="landmark" placeholder="Enter a nearby landmark (optional)">
-            </div>
-
-            <div class="field-group">
-              <label>PIN Code *</label>
-              <input type="text" [(ngModel)]="postalCode" (change)="runDeliveryCheck()" placeholder="Enter your 6-digit PIN code" required>
-            </div>
+            <!-- Save address to profile checkbox -->
+            <label class="save-address-checkbox">
+              <input type="checkbox" [(ngModel)]="saveAddressToProfile">
+              <span>Save this address to my profile for future orders</span>
+            </label>
           </div>
 
           <!-- Live Delivery Eligibility Feedback -->
@@ -59,8 +121,8 @@
             <div class="status-icon">{{ eligibility.isEligible ? '✓' : '✕' }}</div>
             <div class="status-details">
               <strong>{{ eligibility.isEligible ? 'Delivery is available at this location.' : 'Sorry, delivery is not currently available at this location.' }}</strong>
-              <p *ngIf="eligibility.isEligible">Local express delivery will be dispatched directly from our Our Storefront.</p>
-              <p *ngIf="!eligibility.isEligible">This address falls outside our current local delivery area. Please enter a serviceable address or contact store support.</p>
+              <p *ngIf="eligibility.isEligible">Local express delivery will be dispatched directly from our store (within {{ eligibility.distanceKm | number:'1.1-1' }} km).</p>
+              <p *ngIf="!eligibility.isEligible">This address falls outside our current local delivery area (max 20 km). Please enter or select a serviceable address.</p>
             </div>
           </div>
         </div>
@@ -209,7 +271,16 @@
           <strong>₹{{ totalPayable | number:'1.2-2' }}</strong>
         </div>
 
-        <button (click)="placeOrder()" [disabled]="isSubmitting || (eligibility && !eligibility.isEligible)" class="btn-confirm-order">
+        <!-- Validation alert when address is not valid or eligible -->
+        <div *ngIf="!isAddressValid" class="address-validation-alert">
+          <span class="alert-icon">⚠️</span>
+          <span>Please select or complete a valid delivery address within our 20 km service radius to proceed.</span>
+        </div>
+
+        <button (click)="placeOrder()"
+                [disabled]="isSubmitting || !isAddressValid"
+                class="btn-confirm-order"
+                [class.btn-disabled]="isSubmitting || !isAddressValid">
           <span *ngIf="!isSubmitting">Place Order ➔</span>
           <span *ngIf="isSubmitting">Placing Order...</span>
         </button>

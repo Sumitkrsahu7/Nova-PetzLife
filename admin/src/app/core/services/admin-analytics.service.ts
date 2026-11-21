@@ -44,8 +44,7 @@ export class AdminAnalyticsService {
   constructor(private http: HttpClient) {}
 
   private getAuthHeaders(): HttpHeaders {
-    const token = localStorage.getItem('nova_admin_token');
-    return new HttpHeaders(token ? { 'Authorization': `Bearer ${token}` } : {});
+    return new HttpHeaders();
   }
 
   public getSummary(): Observable<{ success: boolean; data: AnalyticsSummary }> {

@@ -2,6 +2,9 @@
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .location-approval-card {
@@ -13,6 +16,10 @@
   align-items: center;
   gap: 1.5rem;
   transition: all 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 
   &.approved {
     background: #E7F5E9;
@@ -21,22 +28,27 @@
 
   .card-icon-col {
     font-size: 2.2rem;
+    flex-shrink: 0;
   }
 
   .card-details-col {
     flex: 1;
+    min-width: 0;
+    width: 100%;
 
     .title-strip {
       display: flex;
       align-items: center;
-      gap: 1rem;
-      margin-bottom: 0.35rem;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
 
       h3 {
         font-size: 1.15rem;
         font-weight: 800;
         color: #155C3B;
         margin: 0;
+        word-break: break-word;
       }
     }
 
@@ -45,8 +57,9 @@
       font-weight: 800;
       background: #FEF3C7;
       color: #92400E;
-      padding: 0.2rem 0.6rem;
+      padding: 0.25rem 0.6rem;
       border-radius: 4px;
+      line-height: 1.3;
 
       &.badge-approved {
         background: #DCFCE7;
@@ -58,15 +71,20 @@
       font-size: 0.85rem;
       color: #334155;
       margin-bottom: 0.5rem;
+      word-break: break-word;
     }
 
     .coords-strip {
       display: flex;
-      gap: 1.25rem;
+      gap: 0.75rem 1.25rem;
       flex-wrap: wrap;
       font-size: 0.8rem;
       color: #475569;
       margin-bottom: 0.5rem;
+
+      .coord-item {
+        word-break: break-word;
+      }
 
       strong {
         color: #1E293B;
@@ -77,10 +95,14 @@
       font-size: 0.75rem;
       color: #64748B;
       font-style: italic;
+      word-break: break-word;
+      margin: 0;
     }
   }
 
   .card-action-col {
+    flex-shrink: 0;
+
     .btn-approve {
       background: #248B58;
       color: #FFFFFF;
@@ -92,6 +114,7 @@
       cursor: pointer;
       white-space: nowrap;
       transition: background 0.2s;
+      box-sizing: border-box;
 
       &:hover {
         background: #155C3B;
@@ -109,8 +132,10 @@
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.25rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .kpi-card {
@@ -120,6 +145,9 @@
   padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  box-sizing: border-box;
+  word-break: break-word;
 
   .kpi-title {
     font-size: 0.75rem;
@@ -305,5 +333,110 @@
   .location-approval-card {
     flex-direction: column;
     align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-content {
+    gap: 1.25rem;
+  }
+
+  .location-approval-card {
+    padding: 1.15rem 1rem;
+    .card-icon-col {
+      font-size: 1.8rem;
+    }
+    .card-action-col {
+      width: 100%;
+      margin-top: 0.25rem;
+      .btn-approve {
+        width: 100%;
+        text-align: center;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .kpi-card {
+    padding: 1rem;
+    .kpi-value {
+      font-size: 1.65rem;
+    }
+  }
+
+  .quick-actions-bar {
+    padding: 0.75rem 1rem;
+    .bar-label {
+      width: 100%;
+    }
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+      width: 100%;
+    }
+    .btn-action {
+      width: 100%;
+      justify-content: center;
+      text-align: center;
+      min-height: 42px;
+      font-size: 0.78rem;
+      padding: 0.5rem 0.5rem;
+      line-height: 1.25;
+      white-space: normal;
+    }
+  }
+
+  .panel-card {
+    .panel-header {
+      padding: 1rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+  }
+
+  .orders-table {
+    min-width: 580px;
+
+    th, td {
+      padding: 0.65rem 0.75rem;
+      font-size: 0.8rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .location-approval-card {
+    .coords-strip {
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .location-approval-card {
+    padding: 0.85rem 0.75rem;
+    .title-strip h3 {
+      font-size: 1.05rem;
+    }
+  }
+
+  .quick-actions-bar .action-buttons {
+    grid-template-columns: 1fr;
   }
 }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { CartService } from '../../core/services/cart.service';
 import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
 @Component({
@@ -37,6 +38,7 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
+    private cartService: CartService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -142,8 +144,16 @@ export class LoginComponent implements OnInit {
 
     this.authService.login({ email: rawId, password: this.password }).subscribe({
       next: () => {
-        this.isLoading = false;
-        this.router.navigateByUrl(this.returnUrl);
+        this.cartService.mergeCartOnLogin().subscribe({
+          next: () => {
+            this.isLoading = false;
+            this.router.navigateByUrl(this.returnUrl);
+          },
+          error: () => {
+            this.isLoading = false;
+            this.router.navigateByUrl(this.returnUrl);
+          }
+        });
       },
       error: err => {
         this.isLoading = false;
@@ -195,8 +205,16 @@ export class LoginComponent implements OnInit {
 
     this.authService.register(payload).subscribe({
       next: () => {
-        this.isLoading = false;
-        this.router.navigateByUrl(this.returnUrl);
+        this.cartService.mergeCartOnLogin().subscribe({
+          next: () => {
+            this.isLoading = false;
+            this.router.navigateByUrl(this.returnUrl);
+          },
+          error: () => {
+            this.isLoading = false;
+            this.router.navigateByUrl(this.returnUrl);
+          }
+        });
       },
       error: err => {
         this.isLoading = false;

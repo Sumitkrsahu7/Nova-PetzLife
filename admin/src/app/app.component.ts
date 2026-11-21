@@ -38,13 +38,16 @@ import { filter } from 'rxjs/operators';
       width: 100%;
       min-height: 100vh;
       min-height: 100dvh;
+      overflow-x: hidden;
     }
     .admin-app-container {
       display: flex;
       min-height: 100vh;
       min-height: 100dvh;
       width: 100%;
+      max-width: 100vw;
       background-color: #F8FAFC;
+      overflow-x: hidden;
     }
     .admin-app-container.login-mode {
       display: flex;
@@ -69,15 +72,20 @@ import { filter } from 'rxjs/operators';
       display: flex;
       flex-direction: column;
       min-width: 0;
+      max-width: 100%;
+      overflow-x: hidden;
     }
     .admin-main-viewport {
-      padding: 1rem;
+      padding: 1.25rem;
       flex: 1;
+      min-width: 0;
+      max-width: 100%;
       overflow-y: auto;
+      overflow-x: hidden;
     }
     @media (max-width: 768px) {
       .admin-main-viewport {
-        padding: 0.5rem;
+        padding: 0.75rem 0.5rem;
       }
     }
   `]

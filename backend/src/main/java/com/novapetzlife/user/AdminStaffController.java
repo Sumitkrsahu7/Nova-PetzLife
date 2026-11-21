@@ -26,18 +26,21 @@ public class AdminStaffController {
     private final PermissionRepository permissionRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+    private final com.novapetzlife.auth.RefreshTokenService refreshTokenService;
 
     public AdminStaffController(
             UserRepository userRepository,
             RoleRepository roleRepository,
             PermissionRepository permissionRepository,
             PasswordEncoder passwordEncoder,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) AuditService auditService) {
+            @org.springframework.beans.factory.annotation.Autowired(required = false) AuditService auditService,
+            com.novapetzlife.auth.RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.permissionRepository = permissionRepository;
         this.passwordEncoder = passwordEncoder;
         this.auditService = auditService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @GetMapping
@@ -185,6 +188,9 @@ public class AdminStaffController {
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
 
+        // Invalidate all existing sessions and refresh tokens on credential reset
+        refreshTokenService.revokeAllUserTokens(user.getId(), "ADMIN_PASSWORD_RESET");
+
         if (auditService != null) {
             auditService.recordAudit("User", user.getEmail(), "STAFF_PASSWORD_RESET",
                     auth != null ? auth.getName() : "SUPER_ADMIN", null, "Credentials reset by administrator", null);
@@ -210,6 +216,11 @@ public class AdminStaffController {
         boolean next = !Boolean.TRUE.equals(user.getIsActive());
         user.setIsActive(next);
         User saved = userRepository.save(user);
+
+        // If staff member was deactivated, immediately invalidate all their sessions
+        if (!next) {
+            refreshTokenService.revokeAllUserTokens(saved.getId(), "ADMIN_STAFF_DEACTIVATED");
+        }
 
         if (auditService != null) {
             auditService.recordAudit("User", saved.getEmail(), "STAFF_STATUS_TOGGLED",

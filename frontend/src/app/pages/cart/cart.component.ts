@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { CartService, Cart, CartItem } from '../../core/services/cart.service';
+import { AuthService } from '../../core/services/auth.service';
 import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
 @Component({
@@ -16,7 +17,11 @@ export class CartComponent implements OnInit {
   freeDeliveryThreshold = 500;
   standardDeliveryFee = 50;
 
-  constructor(public cartService: CartService) {}
+  constructor(
+    public cartService: CartService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.cartService.cart$.subscribe(cart => {
@@ -52,6 +57,17 @@ export class CartComponent implements OnInit {
   clearCart(): void {
     if (confirm('Are you sure you want to clear your shopping cart?')) {
       this.cartService.clearCart().subscribe();
+    }
+  }
+
+  proceedToCheckout(): void {
+    if (!this.cart || this.cart.items.length === 0) {
+      return;
+    }
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: '/checkout' } });
+    } else {
+      this.router.navigate(['/checkout']);
     }
   }
 }

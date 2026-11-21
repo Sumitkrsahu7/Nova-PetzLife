@@ -43,12 +43,16 @@ public class OrderController {
     }
 
     @PostMapping("/api/v1/orders/checkout")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Checkout shopping cart into order", description = "Validates Kuravankonam 20 km distance, reserves stock atomically, snapshots return policy, and creates order")
     public ResponseEntity<ApiResponse<OrderDetailDto>> checkout(
             Authentication authentication,
             @Valid @RequestBody CheckoutRequest request) {
 
         Customer customer = resolveCustomer(authentication);
+        if (customer == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Authentication required to complete checkout"));
+        }
         OrderDetailDto order = orderService.checkout(customer, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("Order placed successfully", order));
     }

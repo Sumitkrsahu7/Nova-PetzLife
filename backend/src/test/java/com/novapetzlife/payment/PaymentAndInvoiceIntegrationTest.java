@@ -10,6 +10,7 @@ import com.novapetzlife.category.CategoryRepository;
 import com.novapetzlife.customer.Customer;
 import com.novapetzlife.customer.CustomerAddressRepository;
 import com.novapetzlife.customer.CustomerRepository;
+import com.novapetzlife.customer.CustomerService;
 import com.novapetzlife.delivery.ShopLocation;
 import com.novapetzlife.delivery.ShopLocationRepository;
 import com.novapetzlife.inventory.InventoryRepository;
@@ -21,6 +22,8 @@ import com.novapetzlife.product.Product;
 import com.novapetzlife.product.ProductRepository;
 import com.novapetzlife.product.ProductReturnPolicy;
 import com.novapetzlife.tax.InvoiceRepository;
+import com.novapetzlife.user.User;
+import com.novapetzlife.user.UserRepository;
 import com.novapetzlife.notification.NotificationRepository;
 import com.novapetzlife.support.SupportMessageRepository;
 import com.novapetzlife.support.SupportTicketRepository;
@@ -40,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -108,6 +112,12 @@ class PaymentAndInvoiceIntegrationTest {
 
     @Autowired
     private ShopLocationRepository shopLocationRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CustomerService customerService;
 
     @Autowired
     private RazorpaySignatureVerifier signatureVerifier;
@@ -204,8 +214,10 @@ class PaymentAndInvoiceIntegrationTest {
 
         // 2. Customer
         String suffix = UUID.randomUUID().toString().substring(0, 6);
-        Customer customer = new Customer(null, "aditya." + suffix + "@example.com", "+9198765" + suffix, "Aditya", "Menon", true);
-        customer = customerRepository.save(customer);
+        User user = userRepository.findByEmail("aditya.payment@example.com").orElseGet(() ->
+                userRepository.save(new User("aditya.payment@example.com", "Password@123", "Aditya", "Menon", "+919876543210"))
+        );
+        Customer customer = customerService.getOrCreateCustomerForUser(user);
 
         // 3. Catalog & Return Policy
         Brand brand = brandRepository.save(new Brand("Royal Canin", "royal-canin-" + suffix, "Specialized pet nutrition"));
@@ -270,6 +282,7 @@ class PaymentAndInvoiceIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Should create Razorpay payment order with paise amount and key ID")
     void testCreatePaymentOrder_Success() throws Exception {
         CreatePaymentOrderRequest request = new CreatePaymentOrderRequest(testOrder.getOrderNumber());
@@ -287,8 +300,25 @@ class PaymentAndInvoiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should verify valid HMAC-SHA256 signature, mark order CONFIRMED, and generate invoice")
-    void testVerifyPayment_ValidSignature_ConfirmsOrderAndGeneratesInvoice() throws Exception {
+    @DisplayName("Payment Test 1: Unauthenticated request to verify endpoint is rejected with 401")
+    void testUnauthenticatedPaymentVerifyRejected() throws Exception {
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                testOrder.getOrderNumber(),
+                "order_unauth_123",
+                "pay_unauth_456",
+                "signature_abc"
+        );
+
+        mockMvc.perform(post("/api/v1/payments/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Payment Test 2: Authenticated customer successfully verifies their own payment")
+    void testCustomerCanVerifyOwnPayment() throws Exception {
         String razorpayOrderId = "order_mock_test_123";
         String razorpayPaymentId = "pay_mock_test_456";
         String secret = razorpayConfig.getKeySecret();
@@ -329,8 +359,118 @@ class PaymentAndInvoiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should reject invalid signature with 400 Bad Request and leave order unconfirmed")
-    void testVerifyPayment_InvalidSignature_Fails() throws Exception {
+    @WithMockUser(username = "attacker@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Payment Test 3: Authenticated customer attempting to verify another customer's payment is rejected with 403 Forbidden")
+    void testCustomerCannotVerifyAnotherCustomerPayment() throws Exception {
+        // Register attacker user
+        userRepository.findByEmail("attacker@example.com").orElseGet(() ->
+                userRepository.save(new User("attacker@example.com", "Password@123", "Attacker", "User", "+919876543299"))
+        );
+
+        String razorpayOrderId = "order_attacker_test_123";
+        Payment payment = new Payment(testOrder, razorpayOrderId, testOrder.getFinalPayableAmount(), "CREATED", "RAZORPAY");
+        paymentRepository.save(payment);
+
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                testOrder.getOrderNumber(),
+                razorpayOrderId,
+                "pay_attacker_456",
+                "simulated_rzp_signature"
+        );
+
+        mockMvc.perform(post("/api/v1/payments/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Payment Test 4: Gateway order ID belonging to a different application order is rejected")
+    void testGatewayOrderIdBelongingToDifferentOrderRejected() throws Exception {
+        // Create a second order for the customer
+        Order secondOrder = new Order();
+        secondOrder.setOrderNumber("ORD-SECOND-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase());
+        secondOrder.setCustomer(testOrder.getCustomer());
+        secondOrder.setOrderStatus("PENDING_PAYMENT");
+        secondOrder.setPaymentStatus("PENDING");
+        secondOrder.setPaymentMethod("RAZORPAY");
+        secondOrder.setTotalAmount(new BigDecimal("500.00"));
+        secondOrder.setDiscountAmount(BigDecimal.ZERO);
+        secondOrder.setDeliveryCharge(BigDecimal.ZERO);
+        secondOrder.setTaxAmount(BigDecimal.ZERO);
+        secondOrder.setFinalPayableAmount(new BigDecimal("500.00"));
+        secondOrder.setShopDistanceKm(new BigDecimal("2.50"));
+        secondOrder.setIsWithinRadius(true);
+        secondOrder.setDeliverySlot("Evening");
+        secondOrder.setDeliveryAddressJson("{}");
+        secondOrder = orderRepository.save(secondOrder);
+
+        String orderTwoGatewayId = "order_gateway_for_second_order";
+        Payment paymentForOrderTwo = new Payment(secondOrder, orderTwoGatewayId, secondOrder.getFinalPayableAmount(), "CREATED", "RAZORPAY");
+        paymentRepository.save(paymentForOrderTwo);
+
+        // Try to verify testOrder using secondOrder's gateway ID
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                testOrder.getOrderNumber(),
+                orderTwoGatewayId,
+                "pay_mismatch_123",
+                "simulated_rzp_signature"
+        );
+
+        mockMvc.perform(post("/api/v1/payments/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Gateway order ID does not belong to the specified application order")));
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Payment Test 5: Verification with an unknown/non-existent gateway order ID is rejected")
+    void testUnknownGatewayOrderIdRejected() throws Exception {
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                testOrder.getOrderNumber(),
+                "order_unknown_nonexistent_999",
+                "pay_unknown_888",
+                "simulated_rzp_signature"
+        );
+
+        mockMvc.perform(post("/api/v1/payments/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("No payment record found matching gateway order ID")));
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Payment Test 6: Verification attempt does not create an untrusted payment record when gateway order ID is not found")
+    void testVerifyDoesNotCreateUntrustedPaymentRecord() throws Exception {
+        long countBefore = paymentRepository.count();
+        String unknownGatewayId = "order_untrusted_never_persisted_777";
+
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                testOrder.getOrderNumber(),
+                unknownGatewayId,
+                "pay_untrusted_888",
+                "simulated_rzp_signature"
+        );
+
+        mockMvc.perform(post("/api/v1/payments/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        long countAfter = paymentRepository.count();
+        assertEquals(countBefore, countAfter);
+        assertTrue(paymentRepository.findByGatewayOrderId(unknownGatewayId).isEmpty());
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Payment Test 7: Invalid signature fails verification and does not confirm or complete the order")
+    void testInvalidSignatureDoesNotConfirmOrder() throws Exception {
         String razorpayOrderId = "order_mock_fake_999";
         String razorpayPaymentId = "pay_mock_fake_888";
         String bogusSignature = "bad_signature_attempt_12345";
@@ -354,9 +494,40 @@ class PaymentAndInvoiceIntegrationTest {
         Order unchangedOrder = orderRepository.findByOrderNumber(testOrder.getOrderNumber()).orElseThrow();
         assertEquals("PENDING_PAYMENT", unchangedOrder.getOrderStatus());
         assertEquals("PENDING", unchangedOrder.getPaymentStatus());
+
+        // Payment marked as FAILED
+        Payment updatedPayment = paymentRepository.findByGatewayOrderId(razorpayOrderId).orElseThrow();
+        assertEquals("FAILED", updatedPayment.getStatus());
     }
 
     @Test
+    @WithMockUser(username = "intruder@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Payment Test 8: Customer cannot view payment status for another customer's order (403 Forbidden)")
+    void testPaymentStatusUnrelatedCustomerRejected() throws Exception {
+        userRepository.findByEmail("intruder@example.com").orElseGet(() ->
+                userRepository.save(new User("intruder@example.com", "Password@123", "Intruder", "User", "+919876543288"))
+        );
+
+        mockMvc.perform(get("/api/v1/payments/order/" + testOrder.getOrderNumber()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "admin@novapetzlife.com", authorities = {"ROLE_SUPER_ADMIN"})
+    @DisplayName("Payment Test 9: Admin roles can view payment status for any order")
+    void testPaymentStatusAdminAllowed() throws Exception {
+        userRepository.findByEmail("admin@novapetzlife.com").orElseGet(() ->
+                userRepository.save(new User("admin@novapetzlife.com", "Password@123", "Admin", "User", "+919876543200"))
+        );
+
+        mockMvc.perform(get("/api/v1/payments/order/" + testOrder.getOrderNumber()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.orderNumber", is(testOrder.getOrderNumber())));
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Should verify simulated dev signature successfully in test profile")
     void testVerifyPayment_SimulatedDevSignature_Succeeds() throws Exception {
         String razorpayOrderId = "order_sim_111";
@@ -398,7 +569,7 @@ class PaymentAndInvoiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should process Razorpay webhook payment.captured with valid signature")
+    @DisplayName("Payment Test 10: Should process Razorpay webhook payment.captured with valid signature")
     void testRazorpayWebhook_PaymentCaptured_Success() throws Exception {
         String razorpayOrderId = "order_webhook_777";
         String razorpayPaymentId = "pay_webhook_888";

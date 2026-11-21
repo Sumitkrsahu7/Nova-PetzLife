@@ -18,6 +18,7 @@ import com.novapetzlife.product.ProductVariant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,16 +78,11 @@ public class OrderService {
 
     @Transactional
     public OrderDetailDto checkout(Customer customer, CheckoutRequest request) {
-        // 1. Resolve Customer (Registered or Guest)
-        Customer orderCustomer = customer;
-        if (orderCustomer == null) {
-            orderCustomer = customerService.createGuestCustomer(
-                    request.guestEmail(),
-                    request.guestPhone(),
-                    request.guestFirstName(),
-                    request.guestLastName()
-            );
+        // 1. Resolve Customer (Authentication Enforced)
+        if (customer == null) {
+            throw new AccessDeniedException("Authentication required to complete checkout");
         }
+        Customer orderCustomer = customer;
 
         // 2. Resolve Active Cart
         Cart cart = null;
@@ -104,16 +100,28 @@ public class OrderService {
             throw new IllegalArgumentException("Cannot proceed to checkout with an empty shopping cart");
         }
 
+        // Verify Cart Ownership
+        if (cart.getCustomer() != null && !cart.getCustomer().getId().equals(orderCustomer.getId())) {
+            throw new AccessDeniedException("You do not own this shopping cart");
+        }
+        if (cart.getCustomer() == null) {
+            cart.setCustomer(orderCustomer);
+            cartRepository.save(cart);
+        }
+
         // 3. Compute Subtotal
         BigDecimal subtotal = BigDecimal.ZERO;
         for (CartItem item : cart.getItems()) {
             subtotal = subtotal.add(item.getTotalPrice());
         }
 
-        // 4. Check 20 km Kuravankonam Delivery Eligibility
+        // 4. Resolve & Validate Delivery Address and Coordinates Server-Side
+        ResolvedDeliveryAddress resolvedAddress = resolveAndValidateDeliveryAddress(orderCustomer, request);
+
+        // 5. Check 20 km Kuravankonam Delivery Eligibility using Resolved Coordinates
         DeliveryEligibilityResponse eligibility = deliveryService.checkDeliveryEligibility(
-                request.latitude(),
-                request.longitude(),
+                resolvedAddress.latitude(),
+                resolvedAddress.longitude(),
                 subtotal
         );
 
@@ -121,8 +129,8 @@ public class OrderService {
             throw new IllegalArgumentException(eligibility.message());
         }
 
-        // 5. Serialize Delivery Address Snapshot
-        String addressJson = serializeAddress(orderCustomer, request);
+        // 6. Delivery Address Snapshot
+        String addressJson = resolvedAddress.addressJson();
 
         // 6. Generate Unique Order Number (e.g. ORD-20261114-X8K92F)
         String orderNumber = "ORD-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + "-"
@@ -436,40 +444,117 @@ public class OrderService {
         return orderRepository.findAll(spec, pageable).map(OrderSummaryDto::fromEntity);
     }
 
-    private String serializeAddress(Customer customer, CheckoutRequest request) {
+    public record ResolvedDeliveryAddress(String addressJson, Double latitude, Double longitude) {}
+
+    private ResolvedDeliveryAddress resolveAndValidateDeliveryAddress(Customer customer, CheckoutRequest request) {
         try {
-            if (request.addressId() != null && customer.getId() != null) {
-                Optional<CustomerAddress> addrOpt = addressRepository.findByIdAndCustomerId(request.addressId(), customer.getId());
-                if (addrOpt.isPresent()) {
-                    CustomerAddress a = addrOpt.get();
-                    Map<String, Object> map = new LinkedHashMap<>();
-                    map.put("recipientName", a.getRecipientName());
-                    map.put("phone", a.getPhone());
-                    map.put("addressLine1", a.getAddressLine1());
-                    map.put("addressLine2", a.getAddressLine2());
-                    map.put("landmark", a.getLandmark());
-                    map.put("city", a.getCity());
-                    map.put("state", a.getState());
-                    map.put("postalCode", a.getPostalCode());
-                    map.put("latitude", a.getLatitude());
-                    map.put("longitude", a.getLongitude());
-                    return objectMapper.writeValueAsString(map);
+            if (request.addressId() != null) {
+                if (customer == null || customer.getId() == null) {
+                    throw new AccessDeniedException("Authenticated customer required to select saved address");
                 }
+                Optional<CustomerAddress> addrOpt = addressRepository.findByIdAndCustomerId(request.addressId(), customer.getId());
+                if (addrOpt.isEmpty()) {
+                    throw new IllegalArgumentException("Selected delivery address does not exist or does not belong to your account");
+                }
+                CustomerAddress a = addrOpt.get();
+
+                Double lat = a.getLatitude() != null ? a.getLatitude().doubleValue() : null;
+                Double lon = a.getLongitude() != null ? a.getLongitude().doubleValue() : null;
+
+                if (lat == null || lon == null || (lat == 0.0 && lon == 0.0)) {
+                    String addressQuery = java.util.stream.Stream.of(
+                            a.getAddressLine1(),
+                            a.getAddressLine2(),
+                            a.getLandmark(),
+                            a.getCity(),
+                            a.getState(),
+                            a.getPostalCode()
+                    ).filter(s -> s != null && !s.isBlank()).collect(java.util.stream.Collectors.joining(", "));
+
+                    double[] geocoded = deliveryService.geocodeAddress(addressQuery);
+                    if (geocoded != null) {
+                        lat = geocoded[0];
+                        lon = geocoded[1];
+                        a.setLatitude(BigDecimal.valueOf(lat));
+                        a.setLongitude(BigDecimal.valueOf(lon));
+                        addressRepository.save(a);
+                    } else {
+                        throw new IllegalArgumentException("Saved delivery address lacks valid geographic coordinates and could not be geocoded. Please update your saved address.");
+                    }
+                }
+
+                Map<String, Object> map = new LinkedHashMap<>();
+                map.put("addressId", a.getId());
+                map.put("recipientName", a.getRecipientName());
+                map.put("phone", a.getPhone());
+                map.put("addressLine1", a.getAddressLine1());
+                map.put("addressLine2", a.getAddressLine2());
+                map.put("landmark", a.getLandmark());
+                map.put("city", a.getCity());
+                map.put("state", a.getState());
+                map.put("postalCode", a.getPostalCode());
+                map.put("latitude", lat);
+                map.put("longitude", lon);
+                return new ResolvedDeliveryAddress(objectMapper.writeValueAsString(map), lat, lon);
             }
 
             if (request.address() != null) {
-                return objectMapper.writeValueAsString(request.address());
+                var addr = request.address();
+                if (addr.recipientName() == null || addr.recipientName().isBlank()
+                        || addr.phone() == null || addr.phone().isBlank()
+                        || addr.addressLine1() == null || addr.addressLine1().isBlank()
+                        || addr.city() == null || addr.city().isBlank()
+                        || addr.state() == null || addr.state().isBlank()
+                        || addr.postalCode() == null || addr.postalCode().isBlank()) {
+                    throw new IllegalArgumentException("Please provide all required delivery address fields (recipient name, phone, address line 1, city, state, postal code)");
+                }
+
+                String pin = addr.postalCode().trim();
+                if (!pin.matches("^[1-9][0-9]{5}$")) {
+                    throw new IllegalArgumentException("Postal code must be a valid 6-digit Indian PIN code");
+                }
+
+                if (!pin.startsWith("695")) {
+                    throw new IllegalArgumentException("Delivery is currently only available within 20 km of our Kuravankonam store in Thiruvananthapuram (PIN 695xxx). The submitted postal code " + pin + " is outside our delivery zone.");
+                }
+
+                Double candidateLat = addr.latitude() != null ? addr.latitude().doubleValue() : request.latitude();
+                Double candidateLon = addr.longitude() != null ? addr.longitude().doubleValue() : request.longitude();
+
+                if (candidateLat == null || candidateLon == null || candidateLat < -90.0 || candidateLat > 90.0 || candidateLon < -180.0 || candidateLon > 180.0) {
+                    throw new IllegalArgumentException("Valid destination latitude and longitude are required for delivery check");
+                }
+
+                String addressQuery = java.util.stream.Stream.of(
+                        addr.addressLine1(),
+                        addr.addressLine2(),
+                        addr.landmark(),
+                        addr.city(),
+                        addr.state(),
+                        addr.postalCode()
+                ).filter(s -> s != null && !s.isBlank()).collect(java.util.stream.Collectors.joining(", "));
+
+                double[] geocoded = deliveryService.geocodeAddress(addressQuery);
+                Double resolvedLat = (geocoded != null) ? geocoded[0] : candidateLat;
+                Double resolvedLon = (geocoded != null) ? geocoded[1] : candidateLon;
+
+                Map<String, Object> map = new LinkedHashMap<>();
+                map.put("recipientName", addr.recipientName());
+                map.put("phone", addr.phone());
+                map.put("addressLine1", addr.addressLine1());
+                map.put("addressLine2", addr.addressLine2());
+                map.put("landmark", addr.landmark());
+                map.put("city", addr.city());
+                map.put("state", addr.state());
+                map.put("postalCode", addr.postalCode());
+                map.put("latitude", resolvedLat);
+                map.put("longitude", resolvedLon);
+                return new ResolvedDeliveryAddress(objectMapper.writeValueAsString(map), resolvedLat, resolvedLon);
             }
 
-            Map<String, Object> fallback = new LinkedHashMap<>();
-            fallback.put("recipientName", customer.getFirstName() + " " + customer.getLastName());
-            fallback.put("phone", customer.getPhone());
-            fallback.put("city", "Thiruvananthapuram");
-            fallback.put("latitude", request.latitude());
-            fallback.put("longitude", request.longitude());
-            return objectMapper.writeValueAsString(fallback);
+            throw new IllegalArgumentException("A valid delivery address is mandatory to proceed with checkout");
         } catch (JsonProcessingException e) {
-            return "{\"address\":\"Thiruvananthapuram, Kerala\"}";
+            throw new IllegalArgumentException("Failed to serialize delivery address", e);
         }
     }
 

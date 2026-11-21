@@ -83,13 +83,6 @@
           <span class="back-arrow">←</span>
           <span>Back to All Departments</span>
         </button>
-
-        <nav class="breadcrumb" aria-label="Breadcrumb">
-          <a routerLink="/">Home</a> &gt;
-          <a href="javascript:void(0)" (click)="backToDepartments()">Departments</a> &gt;
-          <span *ngIf="!searchQuery?.trim()">{{ activeDepartmentTitle }}</span>
-          <span *ngIf="searchQuery?.trim()">Search: "{{ searchQuery.trim() }}"</span>
-        </nav>
       </div>
 
       <!-- Department Hero Card (hidden when user is searching) -->

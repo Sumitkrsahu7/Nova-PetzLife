@@ -186,6 +186,23 @@ table {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 4px;
+  }
+}
+
+/* Touch-friendly interactive target utility for mobile */
+@media (max-width: 768px) {
+  button, a.btn, input, select, textarea {
+    touch-action: manipulation;
+  }
 }
 
 /* Mobile Safe Padding for Sticky Bottom Navigation */

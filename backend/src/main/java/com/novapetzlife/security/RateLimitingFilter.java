@@ -30,11 +30,17 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private static final int LOGIN_LIMIT = 15;
     private static final long LOGIN_WINDOW_MS = 60_000L; // 1 minute
 
+    private static final int REFRESH_LIMIT = 30;
+    private static final long REFRESH_WINDOW_MS = 60_000L; // 1 minute
+
     private static final int REGISTER_LIMIT = 10;
     private static final long REGISTER_WINDOW_MS = 300_000L; // 5 minutes
 
     private static final int DELIVERY_CHECK_LIMIT = 40;
     private static final long DELIVERY_CHECK_WINDOW_MS = 60_000L; // 1 minute
+
+    @org.springframework.beans.factory.annotation.Value("${app.rate-limiting.enabled:true}")
+    private boolean rateLimitingEnabled;
 
     @Override
     protected void doFilterInternal(
@@ -43,22 +49,32 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        if (!rateLimitingEnabled) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String path = request.getRequestURI();
         String method = request.getMethod();
 
         // Only rate limit specific write/computation endpoints
         if ("POST".equalsIgnoreCase(method) && path.endsWith("/api/v1/auth/login")) {
-            if (!isAllowed(getClientIp(request) + ":login", LOGIN_LIMIT, LOGIN_WINDOW_MS)) {
+            if (!isAllowed(ClientIpUtil.getClientIp(request) + ":login", LOGIN_LIMIT, LOGIN_WINDOW_MS)) {
                 sendRateLimitResponse(response, "Too many login attempts. Please wait 1 minute before trying again.");
                 return;
             }
+        } else if ("POST".equalsIgnoreCase(method) && path.endsWith("/api/v1/auth/refresh")) {
+            if (!isAllowed(ClientIpUtil.getClientIp(request) + ":refresh", REFRESH_LIMIT, REFRESH_WINDOW_MS)) {
+                sendRateLimitResponse(response, "Too many token refresh requests. Please wait 1 minute before trying again.");
+                return;
+            }
         } else if ("POST".equalsIgnoreCase(method) && path.endsWith("/api/v1/auth/register")) {
-            if (!isAllowed(getClientIp(request) + ":register", REGISTER_LIMIT, REGISTER_WINDOW_MS)) {
+            if (!isAllowed(ClientIpUtil.getClientIp(request) + ":register", REGISTER_LIMIT, REGISTER_WINDOW_MS)) {
                 sendRateLimitResponse(response, "Too many registration attempts. Please wait before trying again.");
                 return;
             }
         } else if (path.contains("/api/v1/delivery/check-address")) {
-            if (!isAllowed(getClientIp(request) + ":delivery-check", DELIVERY_CHECK_LIMIT, DELIVERY_CHECK_WINDOW_MS)) {
+            if (!isAllowed(ClientIpUtil.getClientIp(request) + ":delivery-check", DELIVERY_CHECK_LIMIT, DELIVERY_CHECK_WINDOW_MS)) {
                 sendRateLimitResponse(response, "Too many address lookup requests. Please wait a moment.");
                 return;
             }
@@ -71,7 +87,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         long now = System.currentTimeMillis();
         Deque<Long> timestamps = requestLogs.computeIfAbsent(key, k -> new ArrayDeque<>());
 
-        // Evict expired entries
+        // Evict expired timestamps from the left
         while (!timestamps.isEmpty() && now - timestamps.peekFirst() > windowMs) {
             timestamps.pollFirst();
         }
@@ -82,14 +98,6 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
         timestamps.addLast(now);
         return true;
-    }
-
-    private String getClientIp(HttpServletRequest request) {
-        String xf = request.getHeader("X-Forwarded-For");
-        if (xf != null && !xf.isBlank()) {
-            return xf.split(",")[0].trim();
-        }
-        return request.getRemoteAddr() != null ? request.getRemoteAddr() : "unknown";
     }
 
     private void sendRateLimitResponse(HttpServletResponse response, String message) throws IOException {

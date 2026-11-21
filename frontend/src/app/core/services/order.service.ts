@@ -4,11 +4,13 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface CheckoutPayload {
+  cartId?: number;
   sessionToken?: string;
   guestEmail?: string;
   guestPhone?: string;
   guestFirstName?: string;
   guestLastName?: string;
+  addressId?: number;
   address?: {
     recipientName: string;
     phone: string;

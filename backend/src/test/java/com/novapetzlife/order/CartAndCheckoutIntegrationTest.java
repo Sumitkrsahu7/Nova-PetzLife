@@ -9,8 +9,13 @@ import com.novapetzlife.cart.CartRepository;
 import com.novapetzlife.category.Category;
 import com.novapetzlife.category.CategoryRepository;
 import com.novapetzlife.customer.AddressCreateRequest;
+import com.novapetzlife.customer.Customer;
+import com.novapetzlife.customer.CustomerAddress;
 import com.novapetzlife.customer.CustomerAddressRepository;
 import com.novapetzlife.customer.CustomerRepository;
+import com.novapetzlife.customer.CustomerService;
+import com.novapetzlife.user.User;
+import com.novapetzlife.user.UserRepository;
 import com.novapetzlife.delivery.ShopLocation;
 import com.novapetzlife.delivery.ShopLocationRepository;
 import com.novapetzlife.inventory.InventoryRepository;
@@ -99,6 +104,12 @@ class CartAndCheckoutIntegrationTest {
 
     @Autowired
     private CustomerRepository customerRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CustomerService customerService;
 
     @Autowired
     private CustomerAddressRepository customerAddressRepository;
@@ -226,6 +237,16 @@ class CartAndCheckoutIntegrationTest {
 
         testProduct = productRepository.save(testProduct);
         inventoryService.initializeStock(testProduct, null, 15, 3);
+
+        userRepository.findByEmail("customer@novapetzlife.com").orElseGet(() -> {
+            User u = new User("customer@novapetzlife.com", "Password@123", "Customer", "User", "+919447123456");
+            return userRepository.save(u);
+        });
+
+        userRepository.findByEmail("admin@novapetzlife.com").orElseGet(() -> {
+            User u = new User("admin@novapetzlife.com", "Password@123", "Admin", "User", "+919847012345");
+            return userRepository.save(u);
+        });
     }
 
     @Test
@@ -253,6 +274,7 @@ class CartAndCheckoutIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "customer@novapetzlife.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Order Checkout: Seamless checkout, 20 km Kuravankonam distance check, stock reservation, and return snapshot")
     void testCompleteCheckoutFlow() throws Exception {
         String sessionToken = "checkout_session_" + UUID.randomUUID();
@@ -322,6 +344,387 @@ class CartAndCheckoutIntegrationTest {
     }
 
     @Test
+    @DisplayName("Security: Unauthenticated checkout is rejected with 401 or 403")
+    void testUnauthenticatedCheckoutRejected() throws Exception {
+        String sessionToken = "unauth_session_" + UUID.randomUUID();
+        AddToCartRequest addRequest = new AddToCartRequest(testProduct.getId(), null, 1, sessionToken);
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addRequest)))
+                .andExpect(status().isOk());
+
+        CheckoutRequest checkoutRequest = new CheckoutRequest(
+                null, sessionToken, null, null, null, null, null, null,
+                8.5244, 76.9442, "Evening Slot", "COD", null
+        );
+
+        mockMvc.perform(post("/api/v1/orders/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(checkoutRequest)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "customer@novapetzlife.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Validation: Authenticated checkout without valid delivery address is rejected with 400 Bad Request")
+    void testCheckoutWithoutAddressRejected() throws Exception {
+        String sessionToken = "no_addr_session_" + UUID.randomUUID();
+        AddToCartRequest addRequest = new AddToCartRequest(testProduct.getId(), null, 1, sessionToken);
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addRequest)))
+                .andExpect(status().isOk());
+
+        CheckoutRequest checkoutRequest = new CheckoutRequest(
+                null, sessionToken, null, null, null, null, null, null,
+                8.5244, 76.9442, "Evening Slot", "COD", null
+        );
+
+        mockMvc.perform(post("/api/v1/orders/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(checkoutRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message", containsString("delivery address is mandatory")));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@novapetzlife.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Delivery Address Test 1: Valid saved address within delivery radius succeeds")
+    void testCheckoutWithValidSavedAddress() throws Exception {
+        String sessionToken = "saved_addr_session_" + UUID.randomUUID();
+        AddToCartRequest addRequest = new AddToCartRequest(testProduct.getId(), null, 1, sessionToken);
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addRequest)))
+                .andExpect(status().isOk());
+
+        User user = userRepository.findByEmail("customer@novapetzlife.com").orElseThrow();
+        Customer customer = customerService.getOrCreateCustomerForUser(user);
+
+        CustomerAddress savedAddress = new CustomerAddress(
+                customer,
+                "Customer Saved",
+                "+919447123456",
+                "TC 12/345 Saved Villa",
+                "Kowdiar",
+                "Near Kowdiar Palace",
+                "Thiruvananthapuram",
+                "Kerala",
+                "695003",
+                new BigDecimal("8.524100"),
+                new BigDecimal("76.960200"),
+                true
+        );
+        savedAddress = customerAddressRepository.save(savedAddress);
+
+        CheckoutRequest checkoutRequest = new CheckoutRequest(
+                null, sessionToken, null, null, null, null,
+                savedAddress.getId(), null, 8.5241, 76.9602, "Evening Slot", "COD", null
+        );
+
+        mockMvc.perform(post("/api/v1/orders/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(checkoutRequest)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.orderNumber", startsWith("ORD-")))
+                .andExpect(jsonPath("$.data.isWithinRadius").value(true));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@novapetzlife.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Delivery Address Test 2: Attempting to use another customer's saved address is rejected")
+    void testCheckoutWithAnotherCustomerSavedAddressRejected() throws Exception {
+        String sessionToken = "other_cust_session_" + UUID.randomUUID();
+        AddToCartRequest addRequest = new AddToCartRequest(testProduct.getId(), null, 1, sessionToken);
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addRequest)))
+                .andExpect(status().isOk());
+
+        User otherUser = userRepository.save(new User("victim@novapetzlife.com", "Password@123", "Victim", "User", "+919447123999"));
+        Customer otherCustomer = customerService.getOrCreateCustomerForUser(otherUser);
+
+        CustomerAddress otherAddress = new CustomerAddress(
+                otherCustomer,
+                "Victim Customer",
+                "+919447123999",
+                "House 99, Secret Colony",
+                "Vellayambalam",
+                "Museum",
+                "Thiruvananthapuram",
+                "Kerala",
+                "695033",
+                new BigDecimal("8.515000"),
+                new BigDecimal("76.955000"),
+                true
+        );
+        otherAddress = customerAddressRepository.save(otherAddress);
+
+        CheckoutRequest checkoutRequest = new CheckoutRequest(
+                null, sessionToken, null, null, null, null,
+                otherAddress.getId(), null, 8.5150, 76.9550, "Evening Slot", "COD", null
+        );
+
+        mockMvc.perform(post("/api/v1/orders/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(checkoutRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Selected delivery address does not exist or does not belong to your account")));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@novapetzlife.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Delivery Address Test 3: Browser-supplied coordinates cannot override saved address coordinates (out-of-radius saved address rejected despite in-radius browser coordinates)")
+    void testBrowserCoordinatesCannotOverrideSavedAddress() throws Exception {
+        String sessionToken = "override_session_" + UUID.randomUUID();
+        AddToCartRequest addRequest = new AddToCartRequest(testProduct.getId(), null, 1, sessionToken);
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addRequest)))
+                .andExpect(status().isOk());
+
+        User user = userRepository.findByEmail("customer@novapetzlife.com").orElseThrow();
+        Customer customer = customerService.getOrCreateCustomerForUser(user);
+
+        // Saved address in Kollam (~60 km away, out of 20 km radius)
+        CustomerAddress distantAddress = new CustomerAddress(
+                customer,
+                "Distant Residence",
+                "+919447123456",
+                "Beach Road",
+                "Chinnakada",
+                "Clock Tower",
+                "Kollam",
+                "Kerala",
+                "691001",
+                new BigDecimal("8.893200"),
+                new BigDecimal("76.614100"),
+                true
+        );
+        distantAddress = customerAddressRepository.save(distantAddress);
+
+        // Browser attempts to override with in-radius Kuravankonam coordinates (8.5284, 76.9532)
+        CheckoutRequest checkoutRequest = new CheckoutRequest(
+                null, sessionToken, null, null, null, null,
+                distantAddress.getId(), null, 8.5284, 76.9532, "Evening Slot", "COD", null
+        );
+
+        mockMvc.perform(post("/api/v1/orders/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(checkoutRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("unavailable at this location")));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@novapetzlife.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Delivery Address Test 4: Saved address coordinates are used for radius validation (in-radius saved address succeeds despite out-of-radius browser coordinates)")
+    void testSavedAddressCoordinatesUsedForRadius() throws Exception {
+        String sessionToken = "stored_coords_session_" + UUID.randomUUID();
+        AddToCartRequest addRequest = new AddToCartRequest(testProduct.getId(), null, 1, sessionToken);
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addRequest)))
+                .andExpect(status().isOk());
+
+        User user = userRepository.findByEmail("customer@novapetzlife.com").orElseThrow();
+        Customer customer = customerService.getOrCreateCustomerForUser(user);
+
+        // Saved address in Kowdiar (~1.2 km away, in-radius)
+        CustomerAddress kowdiarAddress = new CustomerAddress(
+                customer,
+                "Kowdiar Home",
+                "+919447123456",
+                "Kowdiar Gardens",
+                "Kowdiar",
+                "Palace Road",
+                "Thiruvananthapuram",
+                "Kerala",
+                "695003",
+                new BigDecimal("8.524100"),
+                new BigDecimal("76.960200"),
+                true
+        );
+        kowdiarAddress = customerAddressRepository.save(kowdiarAddress);
+
+        // Browser passes bogus out-of-radius coordinates (lat 8.8932, lon 76.6141)
+        CheckoutRequest checkoutRequest = new CheckoutRequest(
+                null, sessionToken, null, null, null, null,
+                kowdiarAddress.getId(), null, 8.8932, 76.6141, "Evening Slot", "COD", null
+        );
+
+        mockMvc.perform(post("/api/v1/orders/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(checkoutRequest)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.isWithinRadius").value(true));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@novapetzlife.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Delivery Address Test 5: Saved address with null or zero coordinates handled safely (geocoded or rejected without using browser coordinates)")
+    void testMissingSavedAddressCoordinatesHandledSafely() throws Exception {
+        String sessionToken = "missing_coords_session_" + UUID.randomUUID();
+        AddToCartRequest addRequest = new AddToCartRequest(testProduct.getId(), null, 1, sessionToken);
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addRequest)))
+                .andExpect(status().isOk());
+
+        User user = userRepository.findByEmail("customer@novapetzlife.com").orElseThrow();
+        Customer customer = customerService.getOrCreateCustomerForUser(user);
+
+        // Saved address with null coordinates
+        CustomerAddress nullCoordsAddress = new CustomerAddress(
+                customer,
+                "Ungeocoded Flat",
+                "+919447123456",
+                "Random Flat 404",
+                "Unknown Locality",
+                "Near Tree",
+                "Thiruvananthapuram",
+                "Kerala",
+                "695001",
+                null,
+                null,
+                false
+        );
+        nullCoordsAddress = customerAddressRepository.save(nullCoordsAddress);
+
+        // Browser attempts to supply arbitrary coordinates to bypass geocoding
+        CheckoutRequest checkoutRequest = new CheckoutRequest(
+                null, sessionToken, null, null, null, null,
+                nullCoordsAddress.getId(), null, 8.5284, 76.9532, "Evening Slot", "COD", null
+        );
+
+        // Server does NOT trust browser coordinates; since offline geocoding returns null, fails with validation error
+        mockMvc.perform(post("/api/v1/orders/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(checkoutRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("lacks valid geographic coordinates and could not be geocoded")));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@novapetzlife.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Delivery Address Test 6: Inline address with out-of-area postal code cannot bypass delivery validation using manipulated client coordinates")
+    void testInlineAddressCoordinatesCannotBypassValidation() throws Exception {
+        String sessionToken = "bypass_session_" + UUID.randomUUID();
+        AddToCartRequest addRequest = new AddToCartRequest(testProduct.getId(), null, 1, sessionToken);
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addRequest)))
+                .andExpect(status().isOk());
+
+        // Inline address with Kochi PIN 682001 (out of area), but browser provides Kuravankonam coordinates (8.5284, 76.9532)
+        AddressCreateRequest address = new AddressCreateRequest(
+                "Kochi Resident",
+                "+919847123456",
+                "MG Road",
+                "Ernakulam",
+                "Near Metro Station",
+                "Kochi",
+                "Kerala",
+                "682001",
+                new BigDecimal("8.528448"),
+                new BigDecimal("76.953268"),
+                false
+        );
+
+        CheckoutRequest checkoutRequest = new CheckoutRequest(
+                null, sessionToken, null, null, null, null,
+                null, address, 8.5284, 76.9532, "Evening Slot", "COD", null
+        );
+
+        mockMvc.perform(post("/api/v1/orders/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(checkoutRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Delivery is currently only available within 20 km of our Kuravankonam store")));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@novapetzlife.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Delivery Address Test 7: Address outside the 20 km radius is rejected")
+    void testAddressOutsideDeliveryRadiusRejected() throws Exception {
+        String sessionToken = "outside_radius_session_" + UUID.randomUUID();
+        AddToCartRequest addRequest = new AddToCartRequest(testProduct.getId(), null, 1, sessionToken);
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addRequest)))
+                .andExpect(status().isOk());
+
+        // Address in Neyyattinkara / South Trivandrum border > 25 km away
+        AddressCreateRequest address = new AddressCreateRequest(
+                "South TVM Resident",
+                "+919847123456",
+                "Main Road",
+                "Amaravila",
+                "Checkpost",
+                "Neyyattinkara",
+                "Kerala",
+                "695122",
+                new BigDecimal("8.390000"),
+                new BigDecimal("77.080000"),
+                false
+        );
+
+        CheckoutRequest checkoutRequest = new CheckoutRequest(
+                null, sessionToken, null, null, null, null,
+                null, address, 8.390000, 77.080000, "Evening Slot", "COD", null
+        );
+
+        mockMvc.perform(post("/api/v1/orders/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(checkoutRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("unavailable at this location")));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@novapetzlife.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Delivery Address Test 8: Address inside the 20 km radius is accepted")
+    void testAddressInsideDeliveryRadiusAccepted() throws Exception {
+        String sessionToken = "inside_radius_session_" + UUID.randomUUID();
+        AddToCartRequest addRequest = new AddToCartRequest(testProduct.getId(), null, 1, sessionToken);
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addRequest)))
+                .andExpect(status().isOk());
+
+        // Pattom address (~1.1 km away)
+        AddressCreateRequest address = new AddressCreateRequest(
+                "Pattom Resident",
+                "+919847123456",
+                "TC 4/1202",
+                "Pattom",
+                "Near Palace",
+                "Thiruvananthapuram",
+                "Kerala",
+                "695004",
+                new BigDecimal("8.524400"),
+                new BigDecimal("76.944200"),
+                false
+        );
+
+        CheckoutRequest checkoutRequest = new CheckoutRequest(
+                null, sessionToken, null, null, null, null,
+                null, address, 8.5244, 76.9442, "Evening Slot", "COD", null
+        );
+
+        mockMvc.perform(post("/api/v1/orders/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(checkoutRequest)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.orderNumber", startsWith("ORD-")))
+                .andExpect(jsonPath("$.data.isWithinRadius").value(true));
+    }
+
+    @Test
     @WithMockUser(username = "admin@novapetzlife.com", authorities = {"ROLE_SUPER_ADMIN"})
     @DisplayName("Admin Order Management: Advance lifecycle and release stock upon order cancellation")
     void testAdminOrderStatusAndStockRelease() throws Exception {
@@ -334,6 +737,20 @@ class CartAndCheckoutIntegrationTest {
                         .content(objectMapper.writeValueAsString(addRequest)))
                 .andExpect(status().isOk());
 
+        AddressCreateRequest adminOrderAddress = new AddressCreateRequest(
+                "Rahul Menon",
+                "+919847012345",
+                "TC 5/1230 Kowdiar",
+                "Kowdiar P.O.",
+                "Near Tennis Club",
+                "Thiruvananthapuram",
+                "Kerala",
+                "695003",
+                new BigDecimal("8.524400"),
+                new BigDecimal("76.944200"),
+                true
+        );
+
         CheckoutRequest checkoutRequest = new CheckoutRequest(
                 null,
                 sessionToken,
@@ -342,7 +759,7 @@ class CartAndCheckoutIntegrationTest {
                 "Rahul",
                 "Menon",
                 null,
-                null,
+                adminOrderAddress,
                 8.5244,
                 76.9442,
                 "Morning Slot (09:00 AM - 01:00 PM)",

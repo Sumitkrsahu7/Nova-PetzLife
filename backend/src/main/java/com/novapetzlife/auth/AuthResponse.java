@@ -2,6 +2,10 @@ package com.novapetzlife.auth;
 
 import java.util.List;
 
+/**
+ * Client-facing authentication response.
+ * Refresh tokens are strictly excluded to ensure they are never exposed in JSON responses.
+ */
 public record AuthResponse(
         String token,
         String tokenType,

@@ -18,11 +18,8 @@ public record CheckoutRequest(
         Long addressId,
         AddressCreateRequest address,
 
-        // Coordinates for Haversine verification
-        @NotNull(message = "Delivery destination latitude is required")
+        // Optional client coordinates for inline address / Haversine verification
         Double latitude,
-
-        @NotNull(message = "Delivery destination longitude is required")
         Double longitude,
 
         String deliverySlot,

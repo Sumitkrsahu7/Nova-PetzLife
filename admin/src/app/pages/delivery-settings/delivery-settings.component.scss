@@ -1260,3 +1260,62 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 0.75rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+
+    .btn-edit-location {
+      width: 100%;
+      text-align: center;
+    }
+  }
+
+  .map-preview-wrap .admin-leaflet-map-view {
+    height: 200px;
+  }
+
+  .location-modal {
+    padding: 1.25rem 0.85rem;
+    max-width: 95%;
+
+    .location-form .form-row {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+  }
+
+  .store-operations-card {
+    padding: 1rem 0.75rem;
+
+    .card-header-row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .operations-actions .btn-primary {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .slots-card {
+    padding: 1rem 0.75rem;
+
+    .card-header-row {
+      flex-direction: column;
+      align-items: stretch;
+
+      .btn-add-slot {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+}

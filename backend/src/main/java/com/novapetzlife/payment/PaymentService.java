@@ -12,6 +12,9 @@ import com.novapetzlife.payment.dto.VerifyPaymentRequest;
 import com.novapetzlife.tax.InvoiceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,8 +53,34 @@ public class PaymentService {
 
     @Transactional
     public PaymentOrderResponse createPaymentOrder(CreatePaymentOrderRequest request) {
+        return createPaymentOrder(SecurityContextHolder.getContext().getAuthentication(), request);
+    }
+
+    @Transactional
+    public PaymentOrderResponse createPaymentOrder(Authentication authentication, CreatePaymentOrderRequest request) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
+            throw new AccessDeniedException("Authentication required to create payment order");
+        }
+
         Order order = orderRepository.findByOrderNumber(request.getOrderNumber())
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with number: " + request.getOrderNumber()));
+
+        if (order.getCustomer() == null || order.getCustomer().getUser() == null) {
+            throw new AccessDeniedException("Order is not associated with a valid registered customer account");
+        }
+
+        String currentEmail = authentication.getName().toLowerCase().trim();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_SUPER_ADMIN".equals(a.getAuthority()) || "ROLE_STAFF_ADMIN".equals(a.getAuthority()));
+
+        if (!isAdmin) {
+            String ownerEmail = order.getCustomer().getUser().getEmail() != null
+                    ? order.getCustomer().getUser().getEmail().toLowerCase().trim()
+                    : "";
+            if (!ownerEmail.equalsIgnoreCase(currentEmail)) {
+                throw new AccessDeniedException("You do not own this order");
+            }
+        }
 
         if ("COMPLETED".equalsIgnoreCase(order.getPaymentStatus())) {
             throw new IllegalStateException("Order " + request.getOrderNumber() + " is already paid");
@@ -96,21 +125,52 @@ public class PaymentService {
         );
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     public PaymentStatusResponse verifyPayment(VerifyPaymentRequest request) {
+        return verifyPayment(SecurityContextHolder.getContext().getAuthentication(), request);
+    }
+
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
+    public PaymentStatusResponse verifyPayment(Authentication authentication, VerifyPaymentRequest request) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
+            throw new AccessDeniedException("Authentication required to verify payment");
+        }
+
         Order order = orderRepository.findByOrderNumber(request.getOrderNumber())
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with number: " + request.getOrderNumber()));
 
+        if (order.getCustomer() == null || order.getCustomer().getUser() == null) {
+            throw new AccessDeniedException("Order is not associated with a valid registered customer account");
+        }
+
+        String currentEmail = authentication.getName().toLowerCase().trim();
+        String ownerEmail = order.getCustomer().getUser().getEmail() != null
+                ? order.getCustomer().getUser().getEmail().toLowerCase().trim()
+                : "";
+        if (!ownerEmail.equalsIgnoreCase(currentEmail)) {
+            throw new AccessDeniedException("You do not own this order");
+        }
+
+        // Gateway Order Association: Must match existing persisted payment record created for this exact order
+        Payment payment = paymentRepository.findByGatewayOrderId(request.getRazorpayOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("No payment record found matching gateway order ID: " + request.getRazorpayOrderId()));
+
+        if (payment.getOrder() == null || !payment.getOrder().getId().equals(order.getId())) {
+            throw new IllegalArgumentException("Gateway order ID does not belong to the specified application order: " + request.getOrderNumber());
+        }
+
+        // Prevent duplicate/replayed verification
+        if ("SUCCESS".equalsIgnoreCase(payment.getStatus()) || "COMPLETED".equalsIgnoreCase(order.getPaymentStatus())) {
+            throw new IllegalStateException("Payment has already been verified and completed for order: " + request.getOrderNumber());
+        }
+
+        // Verify HMAC-SHA256 signature
         boolean isValid = signatureVerifier.verifyCheckoutSignature(
                 request.getRazorpayOrderId(),
                 request.getRazorpayPaymentId(),
                 request.getRazorpaySignature(),
                 razorpayConfig.getKeySecret()
         );
-
-        Payment payment = paymentRepository.findByGatewayOrderId(request.getRazorpayOrderId())
-                .orElseGet(() -> paymentRepository.findFirstByOrderIdOrderByCreatedAtDesc(order.getId())
-                        .orElseGet(() -> new Payment(order, request.getRazorpayOrderId(), order.getFinalPayableAmount(), "CREATED", "RAZORPAY")));
 
         if (!isValid) {
             payment.setStatus("FAILED");
@@ -216,8 +276,33 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public PaymentStatusResponse getPaymentStatus(String orderNumber) {
+        return getPaymentStatus(SecurityContextHolder.getContext().getAuthentication(), orderNumber);
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentStatusResponse getPaymentStatus(Authentication authentication, String orderNumber) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
+            throw new AccessDeniedException("Authentication required to view payment status");
+        }
+
         Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with number: " + orderNumber));
+
+        String currentEmail = authentication.getName().toLowerCase().trim();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_SUPER_ADMIN".equals(a.getAuthority()) || "ROLE_STAFF_ADMIN".equals(a.getAuthority()));
+
+        if (!isAdmin) {
+            if (order.getCustomer() == null || order.getCustomer().getUser() == null) {
+                throw new AccessDeniedException("Order is not associated with a valid registered customer account");
+            }
+            String ownerEmail = order.getCustomer().getUser().getEmail() != null
+                    ? order.getCustomer().getUser().getEmail().toLowerCase().trim()
+                    : "";
+            if (!ownerEmail.equalsIgnoreCase(currentEmail)) {
+                throw new AccessDeniedException("You do not own this order");
+            }
+        }
 
         Payment payment = paymentRepository.findFirstByOrderIdOrderByCreatedAtDesc(order.getId()).orElse(null);
 

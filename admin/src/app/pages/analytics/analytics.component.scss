@@ -180,3 +180,34 @@
   .sold-badge { background: #e7f5e9; color: #155c3b; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700; }
   .revenue-val { color: #248b58; font-weight: 800; }
 }
+
+@media (max-width: 768px) {
+  .analytics-page {
+    padding: 0.75rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .btn-refresh {
+      width: 100%;
+      text-align: center;
+    }
+  }
+
+  .table-card {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .report-table {
+    min-width: 520px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}

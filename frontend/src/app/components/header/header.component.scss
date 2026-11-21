@@ -139,6 +139,12 @@
     overflow-y: auto;
     z-index: 1000;
 
+    @media (max-width: 768px) {
+      max-height: 52vh;
+      -webkit-overflow-scrolling: touch;
+      top: calc(100% + 4px);
+    }
+
     .suggestion-item {
       display: flex;
       align-items: center;
@@ -509,6 +515,9 @@
       background: #FFFFFF;
       border-bottom: 2px solid #E2E8F0;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      max-height: calc(100dvh - 120px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
 
       .nav-container {
         flex-direction: column;
@@ -668,9 +677,20 @@
   .brand-link {
     order: 1;
     flex: 0 0 auto;
-    max-width: calc(100% - 150px);
+    max-width: calc(100% - 140px);
     min-width: 0;
     gap: 0.45rem;
+
+    @media (max-width: 480px) {
+      max-width: calc(100% - 105px);
+    }
+
+    @media (max-width: 360px) {
+      max-width: calc(100% - 100px);
+      .brand-sub {
+        display: none !important;
+      }
+    }
 
     .brand-badge {
       width: 34px;
@@ -714,6 +734,12 @@
 
     .header-pets-btn {
       display: none !important; // Kept in mobile navigation drawer to save header space
+    }
+
+    @media (max-width: 480px) {
+      .logout-header-btn {
+        display: none !important; // Accessible inside mobile drawer and account view
+      }
     }
 
     .account-btn {

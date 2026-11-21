@@ -229,6 +229,11 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 1.5rem 1rem;
       text-align: left;
+
+      @media (max-width: 480px) {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
     }
   }
 

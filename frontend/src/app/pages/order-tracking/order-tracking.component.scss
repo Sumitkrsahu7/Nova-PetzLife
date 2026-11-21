@@ -6,12 +6,6 @@
 
 .tracking-header {
   margin-bottom: 2rem;
-  .crumb {
-    font-size: 0.875rem;
-    color: #667085;
-    margin-bottom: 0.5rem;
-    a { color: #248B58; text-decoration: none; &:hover { text-decoration: underline; } }
-  }
   h1 { font-size: 2rem; font-weight: 800; color: #26352D; margin: 0 0 0.25rem; }
   .subtitle { color: #667085; margin: 0; font-size: 0.95rem; }
 }
@@ -617,5 +611,24 @@
   .return-item-card {
     flex-direction: column;
     gap: 0.5rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .tracking-card .stepper-section .stepper-track {
+    &::before {
+      top: 15px;
+    }
+
+    .step-node {
+      .node-circle {
+        width: 30px;
+        height: 30px;
+        font-size: 0.85rem;
+      }
+      .node-label {
+        font-size: 0.65rem;
+      }
+    }
   }
 }

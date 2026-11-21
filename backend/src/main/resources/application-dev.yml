@@ -25,7 +25,10 @@ spring:
 app:
   jwt:
     secret: ${JWT_SECRET:${APP_JWT_SECRET:dev_local_jwt_secret_key_minimum_256_bits_for_testing_2026}}
-    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    expiration-ms: ${JWT_EXPIRATION_MS:900000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+    cookie-secure: false
+    cookie-same-site: Lax
 
 razorpay:
   key-id: ${RAZORPAY_KEY_ID:rzp_test_nova_sample}

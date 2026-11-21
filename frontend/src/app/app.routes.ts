@@ -24,7 +24,7 @@ export const routes: Routes = [
   { path: 'delivery', redirectTo: 'check-delivery', pathMatch: 'full' },
   { path: 'product/:id', component: ProductDetailComponent },
   { path: 'cart', component: CartComponent },
-  { path: 'checkout', component: CheckoutComponent },
+  { path: 'checkout', component: CheckoutComponent, canActivate: [authGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'account', component: AccountComponent, canActivate: [authGuard] },

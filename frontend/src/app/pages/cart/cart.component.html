@@ -1,9 +1,6 @@
 <div class="cart-container">
   <div class="cart-header">
     <app-back-button></app-back-button>
-    <!-- <div class="crumb">
-      <a routerLink="/">Home</a> <span>/</span> Shopping Cart
-    </div> -->
     <h1>Your Pet Shopping Cart</h1>
     <p class="subtitle">Fresh pet food, treats, and supplies delivered from our, Trivandrum</p>
   </div>
@@ -112,9 +109,12 @@
 
         <p class="tax-note">Inclusive of all Indian taxes and GST</p>
 
-        <a routerLink="/checkout" class="btn-checkout">
+        <button type="button"
+                (click)="proceedToCheckout()"
+                [disabled]="!cart || cart.items.length === 0"
+                class="btn-checkout">
           Proceed to Checkout ➔
-        </a>
+        </button>
 
         <div class="trust-features">
           <div class="feature-item">

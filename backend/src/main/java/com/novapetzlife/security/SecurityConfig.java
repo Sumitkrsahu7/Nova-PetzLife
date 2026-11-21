@@ -24,14 +24,23 @@ public class SecurityConfig {
     private final CorsConfigurationSource corsConfigurationSource;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitingFilter rateLimitingFilter;
+    private final AuthCookieCsrfFilter authCookieCsrfFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     public SecurityConfig(
             CorsConfigurationSource corsConfigurationSource,
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            RateLimitingFilter rateLimitingFilter) {
+            RateLimitingFilter rateLimitingFilter,
+            AuthCookieCsrfFilter authCookieCsrfFilter,
+            JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+            JwtAccessDeniedHandler jwtAccessDeniedHandler) {
         this.corsConfigurationSource = corsConfigurationSource;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.rateLimitingFilter = rateLimitingFilter;
+        this.authCookieCsrfFilter = authCookieCsrfFilter;
+        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
+        this.jwtAccessDeniedHandler = jwtAccessDeniedHandler;
     }
 
     @Bean
@@ -39,6 +48,10 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(jwtAccessDeniedHandler)
+                )
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.deny())
                         .contentTypeOptions(contentType -> {})
@@ -67,8 +80,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/cart/**").permitAll()
                         .requestMatchers("/api/v1/delivery/**").permitAll()
                         .requestMatchers("/api/v1/settings/**").permitAll()
-                        // Public Checkout, Order Tracking, Invoices & Returns
-                        .requestMatchers("/api/v1/orders/checkout").permitAll()
+                        // Public Order Tracking, Invoices & Returns (Checkout requires authentication)
                         .requestMatchers("/api/v1/orders/*/track").permitAll()
                         .requestMatchers("/api/v1/orders/*/invoice").permitAll()
                         .requestMatchers("/api/v1/orders/*/return-eligibility").permitAll()
@@ -84,26 +96,34 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/reviews/**").permitAll()
                         // Public Google Business Profile & Synced Reviews
                         .requestMatchers("/api/v1/google-business/**").permitAll()
-                        // Public Payment Processing & Razorpay Webhooks
-                        .requestMatchers("/api/v1/payments/**").permitAll()
+                        // Payment Processing: Webhooks are public with HMAC signature check; all client payment endpoints require authentication
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook").permitAll()
+                        .requestMatchers("/api/v1/payments/**").authenticated()
                         // Admin Protected Endpoints
                         .requestMatchers("/api/v1/admin/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_STAFF_ADMIN")
+                        // Customer Protected Endpoints
+                        .requestMatchers("/api/v1/customer/**").authenticated()
+                        .requestMatchers("/api/v1/orders/**").authenticated()
                         // Any other request requires authentication
                         .anyRequest().authenticated()
                 )
+                // Add rate limiting filter
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
+                // Add CSRF origin filter for cookie-authenticated auth endpoints
+                .addFilterBefore(authCookieCsrfFilter, UsernamePasswordAuthenticationFilter.class)
+                // Add JWT filter before UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }
