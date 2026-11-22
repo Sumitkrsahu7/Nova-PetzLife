@@ -146,21 +146,20 @@
     .filter-buttons {
       width: 100%;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.35rem;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
 
       .filter-btn {
         width: 100%;
         text-align: center;
-        padding: 0.45rem 0.25rem;
-        font-size: 0.75rem;
+        padding: 0.5rem 0.65rem;
+        font-size: 0.8rem;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
       }
-    }
-  }
-
-  @media (max-width: 380px) {
-    .filter-buttons {
-      grid-template-columns: repeat(2, 1fr);
     }
   }
 }

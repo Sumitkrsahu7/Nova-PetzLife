@@ -293,7 +293,7 @@
   }
 
   .footer-bottom {
-    padding: 1.25rem 0 calc(1.25rem + 68px);
+    padding: 1.25rem 0 calc(1.25rem + 56px + env(safe-area-inset-bottom, 0px));
 
     .bottom-inner {
       text-align: center;

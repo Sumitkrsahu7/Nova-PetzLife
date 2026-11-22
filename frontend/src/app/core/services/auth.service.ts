@@ -124,6 +124,21 @@ export class AuthService implements OnDestroy {
     );
   }
 
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/auth/forgot-password`, { email: email.trim().toLowerCase() });
+  }
+
+  validateResetToken(token: string): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/auth/reset-password/validate`, { token: token.trim() });
+  }
+
+  resetPassword(payload: { token: string; newPassword: string }): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/auth/reset-password`, {
+      token: payload.token.trim(),
+      newPassword: payload.newPassword
+    });
+  }
+
   logout(callApi: boolean = true, broadcast: boolean = true): void {
     if (callApi) {
       this.http.post(`${environment.apiUrl}/auth/logout`, {}, {

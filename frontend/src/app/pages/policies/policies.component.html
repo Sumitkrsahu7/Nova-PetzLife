@@ -1,0 +1,200 @@
+<div class="policies-page">
+  <div class="container">
+    <app-back-button></app-back-button>
+
+    <div class="policy-header">
+      <span class="policy-badge">📜 Store Guidelines & Legal</span>
+      <h1>Customer Policies & Store Information</h1>
+      <p class="subtitle">Complete transparency regarding local dispatch, returns, terms, and customer data privacy at NOVA PETZLIFE.</p>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="policy-tabs">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'shipping'"
+        (click)="setTab('shipping')"
+      >
+        🚚 Shipping & Delivery
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'returns'"
+        (click)="setTab('returns')"
+      >
+        🔄 Return & Refund Policy
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'terms'"
+        (click)="setTab('terms')"
+      >
+        📑 Terms & Conditions
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'privacy'"
+        (click)="setTab('privacy')"
+      >
+        🔒 Privacy Policy
+      </button>
+    </div>
+
+    <!-- TAB 1: SHIPPING & DELIVERY -->
+    <div *ngIf="activeTab === 'shipping'" class="policy-content-card">
+      <div class="card-hero">
+        <h2>🚚 Fast Local Delivery & Shipping Policy</h2>
+        <p class="last-updated">Last Updated: November 2026</p>
+      </div>
+
+      <section class="policy-section">
+        <h3>1. 20 km Straight-Line Delivery Radius</h3>
+        <p>
+          NOVA PETZLIFE operates directly from our physical retail location at Kuravankonam, Thiruvananthapuram, Kerala 695003. We provide express local delivery to customer addresses located within a strict <strong>20-kilometer straight-line boundary</strong> (calculated using high-precision Haversine great-circle algorithms).
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h3>2. Dispatch Windows & Timings</h3>
+        <p>Orders are dispatched daily during active store operational hours:</p>
+        <ul class="bullet-list">
+          <li><strong>Monday – Saturday:</strong> 09:30 AM to 08:00 PM</li>
+          <li><strong>Sunday & Holidays:</strong> 10:00 AM to 05:00 PM</li>
+          <li>Orders placed within scheduled slot cut-off buffers are dispatched on the same day.</li>
+        </ul>
+      </section>
+
+      <section class="policy-section">
+        <h3>3. Delivery Charges & Free Delivery Threshold</h3>
+        <p>
+          Orders eligible for local delivery qualify for <strong>FREE Delivery</strong> when the order subtotal meets or exceeds our promotional free-delivery threshold (currently ₹499.00). Standard nominal courier fees apply to orders below this threshold.
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h3>4. Order Verification & Delivery Confirmation</h3>
+        <p>
+          For Cash on Delivery (COD) orders, customer phone verification via a one-time passcode (OTP) or phone confirmation may be required to protect against fake or mistaken bookings before our dispatch team departs.
+        </p>
+      </section>
+    </div>
+
+    <!-- TAB 2: RETURN & REFUND -->
+    <div *ngIf="activeTab === 'returns'" class="policy-content-card">
+      <div class="card-hero">
+        <h2>🔄 Return & Refund Policy</h2>
+        <p class="last-updated">Last Updated: November 2026</p>
+      </div>
+
+      <section class="policy-section">
+        <h3>1. Product-Specific Return Eligibility</h3>
+        <p>
+          At NOVA PETZLIFE, pet wellness and hygiene are paramount. Return eligibility is governed on a per-product basis:
+        </p>
+        <ul class="bullet-list">
+          <li><strong>Eligible Products:</strong> Sealed, unopened pet food bags, pet bowls, carriers, leashes, harnesses, and non-hygiene accessories are eligible for return within <strong>7 days</strong> of delivery.</li>
+          <li><strong>Non-Returnable Products:</strong> Opened wet food cans/pouches, opened kibble, pet cosmetics, hygiene/litter products, chew toys that have come into contact with saliva, and perishable veterinary supplements are strictly non-returnable to prevent cross-contamination.</li>
+        </ul>
+      </section>
+
+      <section class="policy-section">
+        <h3>2. How to Request a Return</h3>
+        <p>
+          Customers can initiate a return through their account dashboard or by visiting our <a routerLink="/support">Support page</a>. Please provide the order number, item details, and clear photographs of the intact seal and packaging.
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h3>3. Inspection & Refund Timeline</h3>
+        <p>
+          Upon return pickup or in-store drop-off, our staff inspects the returned merchandise. Once approved, refunds are processed:
+        </p>
+        <ul class="bullet-list">
+          <li><strong>Prepaid Orders (Razorpay):</strong> Reimbursed directly to the original bank account, UPI, or card within 5–7 business days.</li>
+          <li><strong>Cash on Delivery (COD):</strong> Processed via verified direct UPI transfer or store credit upon customer confirmation.</li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- TAB 3: TERMS & CONDITIONS -->
+    <div *ngIf="activeTab === 'terms'" class="policy-content-card">
+      <div class="card-hero">
+        <h2>📑 Terms and Conditions of Service</h2>
+        <p class="last-updated">Last Updated: November 2026</p>
+      </div>
+
+      <section class="policy-section">
+        <h3>1. Agreement to Terms</h3>
+        <p>
+          By accessing or shopping on NOVA PETZLIFE (accessible at novapetzlife.com), you agree to comply with and be bound by these Terms and Conditions and our associated operational guidelines.
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h3>2. Authenticity & Stock Accuracy</h3>
+        <p>
+          All pet nutrition formulas, treats, shampoos, and supplies offered in our catalog are 100% authentic, sourced directly through authorized manufacturers and verified distributors. While inventory is synced in real-time, rare out-of-stock discrepancies will be promptly communicated to the customer with substitution or refund options.
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h3>3. Customer Accounts & Security</h3>
+        <p>
+          Customers are responsible for maintaining the confidentiality of their account credentials. Checkout requires an authenticated customer profile with a verified contact number and delivery coordinates within Trivandrum.
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h3>4. Payment Terms</h3>
+        <p>
+          Payments may be executed securely online through Razorpay (UPI, debit/credit cards, net banking) or via Cash on Delivery (COD) within permissible delivery zones.
+        </p>
+      </section>
+    </div>
+
+    <!-- TAB 4: PRIVACY POLICY -->
+    <div *ngIf="activeTab === 'privacy'" class="policy-content-card">
+      <div class="card-hero">
+        <h2>🔒 Privacy Policy</h2>
+        <p class="last-updated">Last Updated: November 2026</p>
+      </div>
+
+      <section class="policy-section">
+        <h3>1. Information We Collect</h3>
+        <p>
+          We only collect personal information essential to fulfilling your orders and servicing your pets:
+        </p>
+        <ul class="bullet-list">
+          <li><strong>Contact Details:</strong> Name, email address, and mobile phone number for order updates, invoices, and OTP verification.</li>
+          <li><strong>Delivery Address:</strong> Physical street location, PIN code, and geographic coordinates within Thiruvananthapuram.</li>
+          <li><strong>Pet Profiles:</strong> Optional pet information (species, breed, age) to provide tailored nutrition recommendations.</li>
+        </ul>
+      </section>
+
+      <section class="policy-section">
+        <h3>2. Use of Information</h3>
+        <p>
+          Your information is used strictly to fulfill pet supply deliveries, verify orders, process authorized returns, and provide customer support. We do not sell, rent, or lease your personal data to any external advertising broker.
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h3>3. Data Security</h3>
+        <p>
+          Customer passwords and sensitive tokens are protected using salted BCrypt cryptography and cryptographically secure hashing. Payments are routed through PCI-DSS compliant Razorpay gateways; we never store customer credit card numbers or banking passwords on our servers.
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h3>4. Contact Us Regarding Your Data</h3>
+        <p>
+          To view, update, or request deletion of your stored customer records, contact our privacy officer via our <a routerLink="/support">Support Center</a> or visit us at our retail store in Kuravankonam, Trivandrum.
+        </p>
+      </section>
+    </div>
+  </div>
+</div>
