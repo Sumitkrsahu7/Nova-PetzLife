@@ -77,10 +77,10 @@ public class TaxController {
     public ResponseEntity<ApiResponse<TaxConfiguration>> createTaxConfiguration(
             @RequestBody TaxConfiguration request) {
         if (request.getTaxName() == null || request.getTaxName().isBlank()) {
-            return ResponseEntity.badRequest().body(ApiResponse.badRequest("Tax description name is required"));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Tax description name is required"));
         }
         if (request.getHsnCode() == null || request.getHsnCode().isBlank()) {
-            return ResponseEntity.badRequest().body(ApiResponse.badRequest("HSN code is required"));
+            return ResponseEntity.badRequest().body(ApiResponse.error("HSN code is required"));
         }
         if (request.getCgstRate() == null) request.setCgstRate(java.math.BigDecimal.ZERO);
         if (request.getSgstRate() == null) request.setSgstRate(java.math.BigDecimal.ZERO);
