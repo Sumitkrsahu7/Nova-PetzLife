@@ -131,6 +131,7 @@
   <!-- TAB 2: PRICING ENGINE & INDIAN GST CONTROLS -->
   <div *ngIf="activeTab === 'pricing'" class="pricing-gst-container">
     <div *ngIf="taxSuccessMessage" class="alert alert-success">{{ taxSuccessMessage }}</div>
+    <div *ngIf="taxErrorMessage" class="alert alert-danger">{{ taxErrorMessage }}</div>
 
     <!-- GST Configuration Section -->
     <div class="table-card section-card">
@@ -139,10 +140,13 @@
           <h3>🇮🇳 Indian Goods and Services Tax (GST) Configurations</h3>
           <p class="section-sub">Active tax brackets applied to customer checkout invoices and HSN classifications</p>
         </div>
-        <button class="btn btn-outline" (click)="fetchTaxConfigs()">🔄 Refresh Tax</button>
+        <div class="tax-header-actions">
+          <button class="btn btn-primary btn-sm" (click)="openAddTaxModal()">➕ Add GST Bracket</button>
+          <button class="btn btn-outline btn-sm" (click)="fetchTaxConfigs()">🔄 Refresh Tax</button>
+        </div>
       </div>
 
-      <table class="data-table">
+      <table class="data-table gst-data-table">
         <thead>
           <tr>
             <th>Tax Description</th>
@@ -151,31 +155,109 @@
             <th>SGST (%)</th>
             <th>Total GST (%)</th>
             <th>Status</th>
-            <th>GST Activation Control</th>
+            <th>Actions & Controls</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let tax of taxConfigs">
-            <td><strong>{{ tax.taxName }}</strong></td>
-            <td><code>{{ tax.hsnCode }}</code></td>
-            <td>{{ tax.cgstRate }}%</td>
-            <td>{{ tax.sgstRate }}%</td>
-            <td><strong>{{ (+tax.cgstRate + +tax.sgstRate).toFixed(1) }}%</strong></td>
-            <td>
-              <span class="status-pill" [class.active]="tax.isActive" [class.inactive]="!tax.isActive">
-                {{ tax.isActive ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-            <td>
-              <button
-                class="btn-sm"
-                [class.btn-danger]="tax.isActive"
-                [class.btn-success]="!tax.isActive"
-                (click)="toggleTaxStatus(tax)"
-              >
-                {{ tax.isActive ? 'Deactivate Rate' : 'Activate Rate' }}
-              </button>
-            </td>
+          <tr *ngFor="let tax of taxConfigs" [class.editing-row]="editingTaxId === tax.id">
+            <!-- Normal Mode -->
+            <ng-container *ngIf="editingTaxId !== tax.id">
+              <td><strong>{{ tax.taxName }}</strong></td>
+              <td><code>{{ tax.hsnCode }}</code></td>
+              <td>{{ tax.cgstRate }}%</td>
+              <td>{{ tax.sgstRate }}%</td>
+              <td><strong>{{ calculateTotalGst(tax.cgstRate, tax.sgstRate) }}%</strong></td>
+              <td>
+                <span class="status-pill" [class.active]="tax.isActive" [class.inactive]="!tax.isActive">
+                  {{ tax.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="tax-actions-cell">
+                <button
+                  type="button"
+                  class="btn-sm btn-outline"
+                  (click)="startEditTax(tax)"
+                  title="Edit GST rate and HSN code"
+                >
+                  ✏️ Edit Rates
+                </button>
+                <button
+                  type="button"
+                  class="btn-sm"
+                  [class.btn-danger]="tax.isActive"
+                  [class.btn-success]="!tax.isActive"
+                  (click)="toggleTaxStatus(tax)"
+                >
+                  {{ tax.isActive ? 'Deactivate' : 'Activate' }}
+                </button>
+              </td>
+            </ng-container>
+
+            <!-- Inline Edit Mode -->
+            <ng-container *ngIf="editingTaxId === tax.id">
+              <td>
+                <input
+                  type="text"
+                  [(ngModel)]="editTaxModel.taxName"
+                  class="inline-tax-input desc-input"
+                  placeholder="Tax Name"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  [(ngModel)]="editTaxModel.hsnCode"
+                  class="inline-tax-input hsn-input"
+                  placeholder="HSN"
+                />
+              </td>
+              <td>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  [(ngModel)]="editTaxModel.cgstRate"
+                  class="inline-tax-input num-input"
+                />%
+              </td>
+              <td>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  [(ngModel)]="editTaxModel.sgstRate"
+                  class="inline-tax-input num-input"
+                />%
+              </td>
+              <td>
+                <strong class="gst-total-calc">
+                  {{ calculateTotalGst(editTaxModel.cgstRate, editTaxModel.sgstRate) }}%
+                </strong>
+              </td>
+              <td>
+                <select [(ngModel)]="editTaxModel.isActive" class="inline-tax-select">
+                  <option [ngValue]="true">Active</option>
+                  <option [ngValue]="false">Inactive</option>
+                </select>
+              </td>
+              <td class="tax-actions-cell">
+                <button
+                  type="button"
+                  class="btn-sm btn-success"
+                  (click)="saveTaxConfig(tax.id)"
+                  [disabled]="isSavingTax"
+                >
+                  💾 Save
+                </button>
+                <button
+                  type="button"
+                  class="btn-sm btn-outline"
+                  (click)="cancelEditTax()"
+                >
+                  ✕ Cancel
+                </button>
+              </td>
+            </ng-container>
           </tr>
         </tbody>
       </table>
@@ -358,6 +440,72 @@
           <div class="modal-actions">
             <button type="submit" class="btn btn-primary">Save to Catalog</button>
             <button type="button" (click)="showModal = false" class="btn btn-outline">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD GST CONFIGURATION MODAL -->
+  <div class="modal-backdrop" *ngIf="showAddTaxModal" (click)="showAddTaxModal = false">
+    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>➕ Add GST Tax Bracket</h3>
+        <button type="button" class="close-btn" (click)="showAddTaxModal = false">✕</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="taxErrorMessage" class="alert alert-danger">{{ taxErrorMessage }}</div>
+        <form (ngSubmit)="saveNewTaxConfig()">
+          <div class="form-group">
+            <label>Tax Description Name *</label>
+            <input
+              type="text"
+              [(ngModel)]="newTaxModel.taxName"
+              name="newTaxName"
+              placeholder="e.g. GST 18% (Pet Food & Nutrition)"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>HSN / SAC Code *</label>
+            <input
+              type="text"
+              [(ngModel)]="newTaxModel.hsnCode"
+              name="newHsnCode"
+              placeholder="e.g. 2309"
+              required
+            />
+          </div>
+          <div class="form-row">
+            <div class="form-group col">
+              <label>CGST (%) *</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                [(ngModel)]="newTaxModel.cgstRate"
+                name="newCgst"
+                required
+              />
+            </div>
+            <div class="form-group col">
+              <label>SGST (%) *</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                [(ngModel)]="newTaxModel.sgstRate"
+                name="newSgst"
+                required
+              />
+            </div>
+          </div>
+          <p class="section-sub" style="margin-bottom: 1rem;">
+            Total GST Rate: <strong>{{ calculateTotalGst(newTaxModel.cgstRate, newTaxModel.sgstRate) }}%</strong>
+          </p>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="isSavingTax">Save GST Bracket</button>
+            <button type="button" class="btn btn-outline" (click)="showAddTaxModal = false">Cancel</button>
           </div>
         </form>
       </div>

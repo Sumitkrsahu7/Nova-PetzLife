@@ -92,6 +92,59 @@
     color: #94a3b8;
     font-size: 0.8rem;
   }
+
+  .tax-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .gst-data-table {
+    .editing-row {
+      background-color: #F0FDF4;
+    }
+
+    .inline-tax-input {
+      padding: 0.35rem 0.5rem;
+      border: 1.5px solid #248B58;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      background: #FFFFFF;
+
+      &.desc-input {
+        width: 100%;
+        min-width: 140px;
+      }
+
+      &.hsn-input {
+        width: 80px;
+        font-family: monospace;
+      }
+
+      &.num-input {
+        width: 65px;
+      }
+    }
+
+    .inline-tax-select {
+      padding: 0.35rem 0.5rem;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    .gst-total-calc {
+      color: #155C3B;
+      font-size: 0.95rem;
+    }
+
+    .tax-actions-cell {
+      display: flex;
+      gap: 0.35rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+  }
 }
 
 .custom-input-wrapper {

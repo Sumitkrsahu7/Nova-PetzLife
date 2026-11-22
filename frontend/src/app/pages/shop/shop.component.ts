@@ -38,7 +38,7 @@ export class ShopComponent implements OnInit {
   activeDepartmentSubtitle: string = '';
   activeDepartmentIcon: string = '🐾';
 
-  // 4 Medium-Sized Core Department Cards (Dynamically expandable by admin)
+  // 6 Curated Core Department Cards
   departmentCards: DepartmentItem[] = [
     {
       id: 'dog-food',
@@ -84,6 +84,15 @@ export class ShopComponent implements OnInit {
       tags: ['Herbal Shampoos', 'Shedding Brushes', 'Paw & Dental Care'],
       petType: 'All Pets',
       categorySlug: 'grooming'
+    },
+    {
+      id: 'all',
+      name: 'Browse All Products',
+      icon: '📦',
+      subtitle: 'Complete verified catalog across all categories & brands',
+      tags: ['Full Catalog', 'All Categories', 'Every Pet Item'],
+      petType: 'All Pets',
+      categorySlug: 'all'
     }
   ];
 
@@ -184,39 +193,15 @@ export class ShopComponent implements OnInit {
   }
 
   /**
-   * Load categories & brands from backend API.
-   * If admin adds new categories in the future, dynamically create extra cards!
+   * Load categories & brands from backend API for search and filters.
    */
   loadCatalogFilters(): void {
-    // Dynamic Categories from Admin/Backend
+    // Dynamic Categories from Admin/Backend for filter controls
     this.http.get<any>(`${environment.apiUrl}/categories/flat`).subscribe({
       next: res => {
         if (res?.success && Array.isArray(res.data)) {
           const names = res.data.map((c: any) => c.name);
           this.allCategories = Array.from(new Set(['All', 'Dog Food', 'Cat Food', 'Grooming', 'Hygiene', ...names]));
-
-          // Dynamically append any custom categories created by admin beyond the default 4
-          const coreSlugs = ['dog-food', 'dog-care', 'cat-food', 'cat-care', 'grooming', 'grooming-hygiene'];
-          const coreNames = ['dog food', 'dog care', 'cat food', 'cat care', 'grooming & hygiene', 'grooming', 'hygiene'];
-
-          for (const c of res.data) {
-            const slug = (c.slug || c.name.toLowerCase().replace(/[\s&]+/g, '-')).toLowerCase();
-            const lowerName = c.name.toLowerCase();
-
-            if (!coreSlugs.includes(slug) && !coreNames.includes(lowerName)) {
-              if (!this.departmentCards.find(d => d.id === slug || d.name.toLowerCase() === lowerName)) {
-                this.departmentCards.push({
-                  id: slug,
-                  name: c.name,
-                  icon: c.icon || '✨',
-                  subtitle: c.description || `Specialized ${c.name} supplies & essentials`,
-                  tags: [c.name, 'Store Verified'],
-                  categorySlug: slug,
-                  isCustom: true
-                });
-              }
-            }
-          }
         }
       },
       error: () => {
@@ -236,15 +221,19 @@ export class ShopComponent implements OnInit {
   }
 
   /**
-   * User selects one of the 4 medium-sized department cards.
-   * Navigates to dedicated department view.
+   * User selects one of the 6 curated department cards.
+   * Navigates to dedicated department view or full catalog.
    */
   selectDepartment(deptId: string): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { department: deptId },
-      queryParamsHandling: ''
-    });
+    if (deptId === 'all') {
+      this.viewAllCatalog();
+    } else {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { department: deptId },
+        queryParamsHandling: ''
+      });
+    }
   }
 
   /**
