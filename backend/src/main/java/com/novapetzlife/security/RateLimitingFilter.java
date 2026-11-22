@@ -36,6 +36,12 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private static final int REGISTER_LIMIT = 10;
     private static final long REGISTER_WINDOW_MS = 300_000L; // 5 minutes
 
+    private static final int FORGOT_PASSWORD_LIMIT = 5;
+    private static final long FORGOT_PASSWORD_WINDOW_MS = 900_000L; // 15 minutes
+
+    private static final int RESET_PASSWORD_LIMIT = 5;
+    private static final long RESET_PASSWORD_WINDOW_MS = 900_000L; // 15 minutes
+
     private static final int DELIVERY_CHECK_LIMIT = 40;
     private static final long DELIVERY_CHECK_WINDOW_MS = 60_000L; // 1 minute
 
@@ -71,6 +77,16 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         } else if ("POST".equalsIgnoreCase(method) && path.endsWith("/api/v1/auth/register")) {
             if (!isAllowed(ClientIpUtil.getClientIp(request) + ":register", REGISTER_LIMIT, REGISTER_WINDOW_MS)) {
                 sendRateLimitResponse(response, "Too many registration attempts. Please wait before trying again.");
+                return;
+            }
+        } else if ("POST".equalsIgnoreCase(method) && path.endsWith("/api/v1/auth/forgot-password")) {
+            if (!isAllowed(ClientIpUtil.getClientIp(request) + ":forgot-pwd", FORGOT_PASSWORD_LIMIT, FORGOT_PASSWORD_WINDOW_MS)) {
+                sendRateLimitResponse(response, "Too many password reset requests. Please wait 15 minutes before trying again.");
+                return;
+            }
+        } else if ("POST".equalsIgnoreCase(method) && path.endsWith("/api/v1/auth/reset-password")) {
+            if (!isAllowed(ClientIpUtil.getClientIp(request) + ":reset-pwd", RESET_PASSWORD_LIMIT, RESET_PASSWORD_WINDOW_MS)) {
+                sendRateLimitResponse(response, "Too many password reset attempts. Please wait 15 minutes before trying again.");
                 return;
             }
         } else if (path.contains("/api/v1/delivery/check-address")) {

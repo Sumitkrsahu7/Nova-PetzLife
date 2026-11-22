@@ -279,7 +279,12 @@
     }
 
     .wishlist-btn {
-      font-size: 0.9rem;
+      font-size: 0.95rem;
+      min-width: 44px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 
@@ -357,9 +362,10 @@
     padding: 0.45rem 0.65rem 0.65rem;
 
     .add-to-cart-btn {
-      padding: 0.45rem 0.5rem;
-      font-size: 0.78rem;
-      border-radius: 6px;
+      min-height: 44px;
+      padding: 0.55rem 0.65rem;
+      font-size: 0.82rem;
+      border-radius: 8px;
     }
   }
 }

@@ -20,16 +20,19 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
     private final long refreshExpirationMs;
     private final boolean cookieSecure;
     private final String cookieSameSite;
 
     public AuthController(
             AuthService authService,
+            PasswordResetService passwordResetService,
             @Value("${app.jwt.refresh-expiration-ms:604800000}") long refreshExpirationMs,
             @Value("${app.jwt.cookie-secure:false}") boolean cookieSecure,
             @Value("${app.jwt.cookie-same-site:Lax}") String cookieSameSite) {
         this.authService = authService;
+        this.passwordResetService = passwordResetService;
         this.refreshExpirationMs = refreshExpirationMs;
         this.cookieSecure = cookieSecure;
         this.cookieSameSite = cookieSameSite;
@@ -111,6 +114,44 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cleanCookie.toString())
                 .body(ApiResponse.ok("Logout successful", null));
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Initiate password reset flow by sending reset link email")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request,
+            HttpServletRequest httpRequest) {
+        String ipAddress = ClientIpUtil.getClientIp(httpRequest);
+        String message = passwordResetService.requestPasswordReset(request, ipAddress);
+        return ResponseEntity.ok(ApiResponse.ok(message, message));
+    }
+
+    @GetMapping("/reset-password/validate")
+    @Operation(summary = "Verify validity of a password reset token")
+    public ResponseEntity<ApiResponse<Boolean>> validateResetToken(
+            @RequestParam("token") String token) {
+        boolean valid = passwordResetService.validateToken(token);
+        return ResponseEntity.ok(ApiResponse.ok("Token is valid", valid));
+    }
+
+    @PostMapping("/reset-password/validate")
+    @Operation(summary = "Verify validity of a password reset token via POST")
+    public ResponseEntity<ApiResponse<Boolean>> validateResetTokenPost(
+            @RequestBody(required = false) java.util.Map<String, String> body,
+            @RequestParam(value = "token", required = false) String paramToken) {
+        String token = (body != null && body.containsKey("token")) ? body.get("token") : paramToken;
+        boolean valid = passwordResetService.validateToken(token);
+        return ResponseEntity.ok(ApiResponse.ok("Token is valid", valid));
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset account password using secure token")
+    public ResponseEntity<ApiResponse<String>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request,
+            HttpServletRequest httpRequest) {
+        String ipAddress = ClientIpUtil.getClientIp(httpRequest);
+        String message = passwordResetService.resetPassword(request, ipAddress);
+        return ResponseEntity.ok(ApiResponse.ok(message, message));
     }
 
     private ResponseCookie createRefreshTokenCookie(String rawRefreshToken, long maxAgeSeconds) {

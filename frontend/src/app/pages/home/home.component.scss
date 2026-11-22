@@ -597,8 +597,10 @@
       gap: 0.45rem;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(8px);
+      max-width: calc(100% - 1.3rem);
+      box-sizing: border-box;
 
-      .badge-icon { font-size: 1.15rem; }
+      .badge-icon { font-size: 1.15rem; flex-shrink: 0; }
       h4 { font-size: 0.8rem; font-weight: 700; }
       p { font-size: 0.68rem; color: #64748B; }
     }
@@ -610,6 +612,11 @@
       font-weight: 700;
       padding: 0.3rem 0.7rem;
       border-radius: 9999px;
+      max-width: calc(100% - 1.3rem);
+      box-sizing: border-box;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 

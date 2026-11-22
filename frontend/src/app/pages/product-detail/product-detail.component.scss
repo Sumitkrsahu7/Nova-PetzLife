@@ -4,7 +4,7 @@
   min-height: 80vh;
 
   @media (max-width: 768px) {
-    padding: 1rem 0 135px;
+    padding: 1rem 0 calc(128px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -646,45 +646,53 @@
   @media (max-width: 768px) {
     display: flex;
     position: fixed;
-    bottom: 60px;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
-    height: 64px;
+    height: 52px;
     background: #FFFFFF;
     border-top: 1px solid #C8EBD1;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
     z-index: 999;
-    padding: 0.5rem 1rem;
+    padding: 0.35rem 0.85rem;
     justify-content: space-between;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    box-sizing: border-box;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
 
     .sticky-buy-price-info {
       display: flex;
       flex-direction: column;
-      gap: 0.1rem;
+      gap: 0.05rem;
 
       .sticky-price {
-        font-size: 1.15rem;
+        font-size: 1.05rem;
         font-weight: 800;
         color: #155C3B;
         line-height: 1.1;
       }
 
       .sticky-delivery-note {
-        font-size: 0.68rem;
+        font-size: 0.65rem;
         color: #248B58;
         font-weight: 600;
+        white-space: nowrap;
       }
     }
 
     .sticky-buy-actions {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.45rem;
 
       @media (max-width: 375px) {
-        gap: 0.35rem;
+        gap: 0.3rem;
       }
 
       .sticky-quantity-stepper {
@@ -696,11 +704,11 @@
         overflow: hidden;
 
         button {
-          width: 30px;
-          height: 32px;
+          width: 28px;
+          height: 30px;
           border: none;
           background: transparent;
-          font-size: 1rem;
+          font-size: 0.95rem;
           font-weight: 700;
           color: #334155;
           cursor: pointer;
@@ -714,9 +722,9 @@
         }
 
         .sticky-qty-num {
-          font-size: 0.85rem;
+          font-size: 0.8rem;
           font-weight: 700;
-          min-width: 24px;
+          min-width: 20px;
           text-align: center;
           color: #0F172A;
         }
@@ -726,13 +734,13 @@
         background: #248B58;
         color: #FFFFFF;
         border: none;
-        border-radius: 8px;
-        padding: 0.55rem 0.95rem;
-        font-size: 0.85rem;
+        border-radius: 6px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.825rem;
         font-weight: 700;
         cursor: pointer;
         white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(36, 139, 88, 0.3);
+        box-shadow: 0 2px 6px rgba(36, 139, 88, 0.25);
         transition: all 0.15s ease;
 
         &:hover:not(:disabled) {

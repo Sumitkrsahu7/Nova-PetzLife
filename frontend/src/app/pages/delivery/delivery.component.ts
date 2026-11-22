@@ -135,12 +135,22 @@ export class DeliveryComponent implements OnInit, AfterViewInit, OnDestroy {
     const container = document.getElementById('delivery-interactive-map');
     if (!container || this.map) return;
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     this.map = L.map('delivery-interactive-map', {
       center: [this.shopCoordinates.lat, this.shopCoordinates.lng],
       zoom: 12,
-      scrollWheelZoom: true,
+      scrollWheelZoom: !isMobile,
+      dragging: !isMobile,
       zoomControl: true
     });
+
+    if (isMobile) {
+      this.map.once('click', () => {
+        if (this.map && this.map.dragging) {
+          this.map.dragging.enable();
+        }
+      });
+    }
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
