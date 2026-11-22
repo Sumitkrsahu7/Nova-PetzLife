@@ -83,8 +83,9 @@ export class SidebarComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const saved = localStorage.getItem('nova_admin_sidebar_collapsed');
-    this.isCollapsed = saved === 'true';
+    this.adminUi.isSidebarCollapsed$.subscribe(collapsed => {
+      this.isCollapsed = collapsed;
+    });
 
     this.adminAuthService.currentUser$.subscribe(user => {
       if (user) {
@@ -99,8 +100,7 @@ export class SidebarComponent implements OnInit {
   }
 
   toggleSidebar(): void {
-    this.isCollapsed = !this.isCollapsed;
-    localStorage.setItem('nova_admin_sidebar_collapsed', String(this.isCollapsed));
+    this.adminUi.toggleCollapse();
   }
 
   requestLogout(): void {

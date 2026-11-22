@@ -128,6 +128,14 @@
     </div>
   </div>
 
+  <!-- Mobile Menu Backdrop (click anywhere on screen to collapse) -->
+  <div
+    class="mobile-menu-backdrop"
+    *ngIf="isMobileMenuOpen"
+    (click)="closeMobileMenu()"
+    aria-hidden="true"
+  ></div>
+
   <!-- Main Navigation Bar -->
   <nav class="main-nav" [class.mobile-open]="isMobileMenuOpen">
     <div class="container nav-container">

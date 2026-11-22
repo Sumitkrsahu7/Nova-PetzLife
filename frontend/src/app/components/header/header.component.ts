@@ -178,10 +178,23 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    const clickedInside = this.elementRef.nativeElement.contains(event.target);
-    if (!clickedInside) {
-      this.isHelpDropdownOpen = false;
-      this.showSuggestions = false;
+    const target = event.target as HTMLElement | null;
+
+    // If mobile menu is open, clicking anywhere outside the menu or hamburger button collapses it
+    if (this.isMobileMenuOpen && target) {
+      const clickedHamburger = target.closest('.hamburger-btn');
+      const clickedNav = target.closest('.main-nav');
+      if (!clickedHamburger && !clickedNav) {
+        this.closeMobileMenu();
+      }
+    }
+
+    if (target) {
+      const clickedInside = this.elementRef.nativeElement.contains(target);
+      if (!clickedInside) {
+        this.isHelpDropdownOpen = false;
+        this.showSuggestions = false;
+      }
     }
   }
 
