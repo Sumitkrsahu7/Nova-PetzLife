@@ -712,16 +712,16 @@
   .brand-link {
     order: 1;
     flex: 0 0 auto;
-    max-width: calc(100% - 140px);
+    max-width: calc(100% - 50px);
     min-width: 0;
     gap: 0.45rem;
 
     @media (max-width: 480px) {
-      max-width: calc(100% - 105px);
+      max-width: calc(100% - 48px);
     }
 
     @media (max-width: 360px) {
-      max-width: calc(100% - 100px);
+      max-width: calc(100% - 46px);
       .brand-sub {
         display: none !important;
       }
@@ -767,57 +767,12 @@
     align-items: center;
     gap: 0.35rem;
 
-    .header-pets-btn {
-      display: none !important; // Kept in mobile navigation drawer to save header space
-    }
-
-    @media (max-width: 480px) {
-      .logout-header-btn {
-        display: none !important; // Accessible inside mobile drawer and account view
-      }
-    }
-
-    .account-btn {
-      padding: 0.35rem 0.55rem;
-      min-height: 34px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-
-      .account-icon {
-        font-size: 1.05rem;
-      }
-
-      .account-text {
-        display: none !important;
-      }
-    }
-
-    .cart-button {
-      padding: 0.35rem 0.6rem;
-      min-height: 34px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.25rem;
-      border-radius: 8px;
-
-      .cart-icon {
-        font-size: 1rem;
-      }
-
-      .cart-label {
-        display: none !important;
-      }
-
-      .cart-badge {
-        font-size: 0.7rem;
-        min-width: 18px;
-        height: 18px;
-        line-height: 18px;
-        padding: 0 4px;
-      }
+    // Cart, Profile, Logout, and Pets are moved to the sticky bottom navigation bar & drawer on mobile
+    .account-btn,
+    .cart-button,
+    .header-pets-btn,
+    .logout-header-btn {
+      display: none !important;
     }
 
     .hamburger-btn {
