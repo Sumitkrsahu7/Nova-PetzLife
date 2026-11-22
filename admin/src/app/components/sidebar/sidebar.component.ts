@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AdminUiService } from '../../core/services/admin-ui.service';
@@ -27,6 +27,11 @@ export class SidebarComponent implements OnInit {
 
   isCollapsed = false;
   showLogoutConfirm = false;
+
+  @HostBinding('class.collapsed')
+  get hostCollapsed(): boolean {
+    return this.isCollapsed;
+  }
 
   constructor(
     public adminUi: AdminUiService,

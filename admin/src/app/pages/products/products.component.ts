@@ -115,6 +115,12 @@ export class ProductsComponent implements OnInit {
   taxConfigs: TaxConfigItem[] = [];
   isLoadingTax = false;
   taxSuccessMessage = '';
+  taxErrorMessage = '';
+  editingTaxId: number | null = null;
+  editTaxModel: Partial<TaxConfigItem> = {};
+  showAddTaxModal = false;
+  newTaxModel: Partial<TaxConfigItem> = { taxName: '', hsnCode: '', cgstRate: 9, sgstRate: 9, isActive: true };
+  isSavingTax = false;
 
   // Price Editing Modal
   showPriceModal = false;
@@ -220,6 +226,12 @@ export class ProductsComponent implements OnInit {
     });
   }
 
+  calculateTotalGst(cgst?: number | null, sgst?: number | null): string {
+    const c = Number(cgst) || 0;
+    const s = Number(sgst) || 0;
+    return (c + s).toFixed(1);
+  }
+
   toggleTaxStatus(tax: TaxConfigItem): void {
     this.http.patch<any>(`${environment.apiUrl}/admin/tax/configurations/${tax.id}/status`, {}).subscribe({
       next: res => {
@@ -228,6 +240,127 @@ export class ProductsComponent implements OnInit {
           this.taxSuccessMessage = `GST rate "${tax.taxName}" status updated to ${tax.isActive ? 'Active' : 'Inactive'}.`;
           setTimeout(() => { this.taxSuccessMessage = ''; }, 3500);
         }
+      }
+    });
+  }
+
+  startEditTax(tax: TaxConfigItem): void {
+    this.editingTaxId = tax.id;
+    this.editTaxModel = {
+      id: tax.id,
+      taxName: tax.taxName,
+      hsnCode: tax.hsnCode,
+      cgstRate: tax.cgstRate,
+      sgstRate: tax.sgstRate,
+      isActive: tax.isActive
+    };
+    this.taxErrorMessage = '';
+  }
+
+  cancelEditTax(): void {
+    this.editingTaxId = null;
+    this.editTaxModel = {};
+    this.taxErrorMessage = '';
+  }
+
+  saveTaxConfig(id: number): void {
+    if (!this.editTaxModel.taxName?.trim()) {
+      this.taxErrorMessage = 'Tax description name cannot be blank.';
+      return;
+    }
+    if (!this.editTaxModel.hsnCode?.trim()) {
+      this.taxErrorMessage = 'HSN code cannot be blank.';
+      return;
+    }
+    const cgst = Number(this.editTaxModel.cgstRate) || 0;
+    const sgst = Number(this.editTaxModel.sgstRate) || 0;
+    if (cgst < 0 || sgst < 0) {
+      this.taxErrorMessage = 'Tax rates cannot be negative.';
+      return;
+    }
+
+    this.isSavingTax = true;
+    this.taxErrorMessage = '';
+
+    const payload = {
+      taxName: this.editTaxModel.taxName.trim(),
+      hsnCode: this.editTaxModel.hsnCode.trim(),
+      cgstRate: cgst,
+      sgstRate: sgst,
+      igstRate: cgst + sgst,
+      isActive: this.editTaxModel.isActive
+    };
+
+    this.http.put<any>(`${environment.apiUrl}/admin/tax/configurations/${id}`, payload).subscribe({
+      next: res => {
+        this.isSavingTax = false;
+        if (res?.success && res.data) {
+          const index = this.taxConfigs.findIndex(t => t.id === id);
+          if (index !== -1) {
+            this.taxConfigs[index] = res.data;
+          }
+          this.editingTaxId = null;
+          this.editTaxModel = {};
+          this.taxSuccessMessage = `GST configuration "${res.data.taxName}" updated successfully.`;
+          setTimeout(() => { this.taxSuccessMessage = ''; }, 3500);
+        }
+      },
+      error: err => {
+        this.isSavingTax = false;
+        this.taxErrorMessage = err.error?.message || 'Failed to update GST configuration.';
+      }
+    });
+  }
+
+  openAddTaxModal(): void {
+    this.newTaxModel = {
+      taxName: '',
+      hsnCode: '',
+      cgstRate: 9,
+      sgstRate: 9,
+      isActive: true
+    };
+    this.taxErrorMessage = '';
+    this.showAddTaxModal = true;
+  }
+
+  saveNewTaxConfig(): void {
+    if (!this.newTaxModel.taxName?.trim()) {
+      this.taxErrorMessage = 'Tax description name cannot be blank.';
+      return;
+    }
+    if (!this.newTaxModel.hsnCode?.trim()) {
+      this.taxErrorMessage = 'HSN code cannot be blank.';
+      return;
+    }
+    const cgst = Number(this.newTaxModel.cgstRate) || 0;
+    const sgst = Number(this.newTaxModel.sgstRate) || 0;
+
+    this.isSavingTax = true;
+    this.taxErrorMessage = '';
+
+    const payload = {
+      taxName: this.newTaxModel.taxName.trim(),
+      hsnCode: this.newTaxModel.hsnCode.trim(),
+      cgstRate: cgst,
+      sgstRate: sgst,
+      igstRate: cgst + sgst,
+      isActive: this.newTaxModel.isActive ?? true
+    };
+
+    this.http.post<any>(`${environment.apiUrl}/admin/tax/configurations`, payload).subscribe({
+      next: res => {
+        this.isSavingTax = false;
+        if (res?.success && res.data) {
+          this.taxConfigs.push(res.data);
+          this.showAddTaxModal = false;
+          this.taxSuccessMessage = `New GST configuration "${res.data.taxName}" created successfully.`;
+          setTimeout(() => { this.taxSuccessMessage = ''; }, 3500);
+        }
+      },
+      error: err => {
+        this.isSavingTax = false;
+        this.taxErrorMessage = err.error?.message || 'Failed to create GST configuration.';
       }
     });
   }

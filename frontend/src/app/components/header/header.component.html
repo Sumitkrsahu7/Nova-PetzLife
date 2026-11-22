@@ -113,10 +113,17 @@
       </a>
 
       <!-- Mobile Hamburger Toggle -->
-      <button class="hamburger-btn" type="button" (click)="toggleMobileMenu()" aria-label="Toggle Navigation">
-        <span></span>
-        <span></span>
-        <span></span>
+      <button
+        class="hamburger-btn"
+        type="button"
+        (click)="toggleMobileMenu()"
+        aria-label="Toggle Navigation"
+        title="Toggle Navigation"
+        [class.menu-open]="isMobileMenuOpen"
+      >
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
       </button>
     </div>
   </div>
