@@ -16,6 +16,8 @@ export interface PetProfile {
   lifeStage?: string;
   dietaryPreferences?: string;
   foodSensitivities?: string;
+  adminFeedback?: string;
+  adminFeedbackUpdatedAt?: string;
   createdAt: string;
 }
 

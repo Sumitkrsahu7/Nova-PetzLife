@@ -150,6 +150,15 @@
             <span>⚠️ Sensitivity:</span> {{ pet.foodSensitivities }}
           </div>
 
+          <!-- Admin Suggestion / Feedback Display on Pet Card -->
+          <div *ngIf="pet.adminFeedback" class="pet-admin-feedback">
+            <div class="feedback-badge">💡 Suggestion from NOVA PETZLIFE</div>
+            <p class="feedback-text">{{ pet.adminFeedback }}</p>
+            <span *ngIf="pet.adminFeedbackUpdatedAt" class="feedback-date">
+              Updated {{ pet.adminFeedbackUpdatedAt | date:'mediumDate' }}
+            </span>
+          </div>
+
           <button class="btn-view-recs" [class.selected]="selectedPet?.id === pet.id">
             {{ selectedPet?.id === pet.id ? 'Viewing Recommendations ✓' : 'View Nutrition Match ➔' }}
           </button>
@@ -168,6 +177,17 @@
               💡 {{ recommendations?.rationale }}
             </p>
           </div>
+        </div>
+
+        <!-- Admin Suggestion in Selected Pet Panel (Shown only if present) -->
+        <div *ngIf="selectedPet.adminFeedback" class="panel-admin-feedback">
+          <div class="feedback-badge-row">
+            <span class="feedback-tag">💡 Suggestion from NOVA PETZLIFE</span>
+            <span *ngIf="selectedPet.adminFeedbackUpdatedAt" class="feedback-timestamp">
+              Updated {{ selectedPet.adminFeedbackUpdatedAt | date:'mediumDate' }}
+            </span>
+          </div>
+          <p class="feedback-body">{{ selectedPet.adminFeedback }}</p>
         </div>
 
         <div *ngIf="isLoadingRecommendations" class="rec-loading">

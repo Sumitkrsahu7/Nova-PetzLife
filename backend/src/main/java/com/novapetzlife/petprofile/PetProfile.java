@@ -45,6 +45,12 @@ public class PetProfile {
     @Column(name = "food_sensitivities", columnDefinition = "TEXT")
     private String foodSensitivities;
 
+    @Column(name = "admin_feedback", columnDefinition = "TEXT")
+    private String adminFeedback;
+
+    @Column(name = "admin_feedback_updated_at")
+    private Instant adminFeedbackUpdatedAt;
+
     @Column(name = "created_at", updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -105,6 +111,10 @@ public class PetProfile {
     public void setDietaryPreferences(String dietaryPreferences) { this.dietaryPreferences = dietaryPreferences; }
     public String getFoodSensitivities() { return foodSensitivities; }
     public void setFoodSensitivities(String foodSensitivities) { this.foodSensitivities = foodSensitivities; }
+    public String getAdminFeedback() { return adminFeedback; }
+    public void setAdminFeedback(String adminFeedback) { this.adminFeedback = adminFeedback; }
+    public Instant getAdminFeedbackUpdatedAt() { return adminFeedbackUpdatedAt; }
+    public void setAdminFeedbackUpdatedAt(Instant adminFeedbackUpdatedAt) { this.adminFeedbackUpdatedAt = adminFeedbackUpdatedAt; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
