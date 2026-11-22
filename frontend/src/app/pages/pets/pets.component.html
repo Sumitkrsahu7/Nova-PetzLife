@@ -216,7 +216,7 @@
               <div class="rec-pricing">
                 <strong class="rec-price">₹{{ (product.salePrice || product.regularPrice) | number:'1.2-2' }}</strong>
                 <span *ngIf="product.salePrice && product.salePrice < product.regularPrice" class="rec-regular">₹{{ product.regularPrice | number:'1.2-2' }}</span>
-                <span class="stock-badge" [class.in-stock]="product.isInStock">{{ product.isInStock ? 'In Stock (our)' : 'Out of Stock' }}</span>
+                <span class="stock-badge" [class.in-stock]="product.isInStock">{{ product.isInStock ? 'In Stock' : 'Out of Stock' }}</span>
               </div>
             </div>
             <div class="rec-actions">
