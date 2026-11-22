@@ -28,12 +28,12 @@ export interface DeliveryEligibilityResult {
   styleUrls: ['./delivery.component.scss']
 })
 export class DeliveryComponent implements OnInit, AfterViewInit, OnDestroy {
-  // Store Location Details (Retrieved dynamically from backend database)
+  // Store Location Details (Dynamically bound to environment.shopAddress)
   shopCoordinates = {
     name: 'NOVA PETZLIFE',
     lat: 8.528448,
     lng: 76.953268,
-    address: 'Thiruvananthapuram, Kerala 695003',
+    address: environment.shopAddress,
     maxRadiusKm: 20.0
   };
 

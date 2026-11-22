@@ -22,12 +22,12 @@ export class HomeComponent implements OnInit {
     private http: HttpClient
   ) {}
 
-  // Shop Location Details
+  // Shop Location Details (Dynamically bound to environment.shopAddress)
   readonly shopCoordinates = {
     name: 'Petzlife (NOVA PETZLIFE)',
     lat: 8.528448,
     lng: 76.953268,
-    address: 'our store, our Ambalamukku Road, Thiruvananthapuram, Kerala 695003',
+    address: environment.shopAddress,
     maxRadiusKm: 20
   };
 

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { InvoiceService, InvoiceDto } from '../../core/services/invoice.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-invoice',
@@ -11,6 +12,7 @@ import { InvoiceService, InvoiceDto } from '../../core/services/invoice.service'
   styleUrls: ['./invoice.component.scss']
 })
 export class InvoiceComponent implements OnInit {
+  readonly shopAddress = environment.shopAddress;
   orderNumber = '';
   invoice: InvoiceDto | null = null;
   isLoading = true;

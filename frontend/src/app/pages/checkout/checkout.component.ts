@@ -35,6 +35,7 @@ export interface SavedAddress {
   styleUrls: ['./checkout.component.scss']
 })
 export class CheckoutComponent implements OnInit {
+  readonly shopAddress = environment.shopAddress;
   cart: Cart | null = null;
   slots: DeliverySlot[] = [];
   eligibility: DeliveryEligibility | null = null;
