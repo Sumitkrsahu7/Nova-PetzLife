@@ -10,6 +10,7 @@ public record ProductImageDto(
         String altText,
         Integer displayOrder,
         Boolean isPrimary,
+        String viewType,
         Instant createdAt
 ) {
     public static ProductImageDto fromEntity(ProductImage img) {
@@ -20,6 +21,7 @@ public record ProductImageDto(
                 img.getAltText(),
                 img.getDisplayOrder(),
                 img.getIsPrimary(),
+                img.getViewType() != null ? img.getViewType() : (Boolean.TRUE.equals(img.getIsPrimary()) ? "FRONT" : "ADDITIONAL"),
                 img.getCreatedAt()
         );
     }

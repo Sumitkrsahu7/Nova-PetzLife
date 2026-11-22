@@ -79,6 +79,66 @@
       font-weight: 700;
       padding: 0.3rem 0.65rem;
       border-radius: 6px;
+      z-index: 2;
+    }
+
+    .view-type-badge {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(4px);
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      z-index: 2;
+
+      &.front-view {
+        background: #155C3B;
+      }
+
+      &.back-view {
+        background: #2563EB;
+      }
+    }
+
+    .gallery-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #E2E8F0;
+      border-radius: 50%;
+      color: #1E293B;
+      font-size: 1.5rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
+      z-index: 2;
+
+      &:hover {
+        background: #ffffff;
+        transform: translateY(-50%) scale(1.1);
+        color: #155C3B;
+      }
+
+      &.prev-arrow {
+        left: 12px;
+      }
+
+      &.next-arrow {
+        right: 12px;
+      }
     }
   }
 
@@ -87,19 +147,23 @@
     gap: 0.75rem;
     margin-top: 1rem;
     overflow-x: auto;
+    padding-bottom: 4px;
 
     .thumbnail-btn {
-      width: 68px;
-      height: 68px;
+      position: relative;
+      width: 72px;
+      height: 72px;
       padding: 3px;
       border: 2px solid transparent;
       border-radius: 8px;
       background: #f1f5f9;
       cursor: pointer;
-      transition: border-color 0.2s;
+      flex-shrink: 0;
+      transition: all 0.2s;
 
       &.active {
         border-color: #248b58;
+        box-shadow: 0 0 0 1px #248b58;
       }
 
       img {
@@ -107,6 +171,19 @@
         height: 100%;
         object-fit: cover;
         border-radius: 5px;
+      }
+
+      .thumb-view-tag {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #ffffff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 1px 4px;
+        border-radius: 3px;
+        line-height: 1;
       }
     }
   }

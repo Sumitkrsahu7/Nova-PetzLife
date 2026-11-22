@@ -16,6 +16,7 @@ export class InvoiceComponent implements OnInit {
   orderNumber = '';
   invoice: InvoiceDto | null = null;
   isLoading = true;
+  isDownloadingPdf = false;
   errorMessage = '';
 
   constructor(
@@ -49,6 +50,32 @@ export class InvoiceComponent implements OnInit {
       error: err => {
         this.isLoading = false;
         this.errorMessage = err.error?.message || 'Failed to retrieve invoice. Please check the order number.';
+      }
+    });
+  }
+
+  downloadPdf(): void {
+    if (!this.orderNumber || this.isDownloadingPdf) return;
+    this.isDownloadingPdf = true;
+
+    this.invoiceService.downloadInvoicePdf(this.orderNumber).subscribe({
+      next: (blob: Blob) => {
+        this.isDownloadingPdf = false;
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filename = this.invoice?.invoiceNumber
+          ? `Invoice-${this.invoice.invoiceNumber}.pdf`
+          : `Invoice-${this.orderNumber}.pdf`;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: err => {
+        this.isDownloadingPdf = false;
+        this.errorMessage = err.error?.message || 'Failed to download official invoice PDF. Please ensure you are logged in.';
       }
     });
   }

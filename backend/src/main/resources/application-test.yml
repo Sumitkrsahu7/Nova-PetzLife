@@ -17,6 +17,9 @@ spring:
 app:
   rate-limiting:
     enabled: false
+  oauth:
+    google:
+      client-id: test-mock-google-client-id.apps.googleusercontent.com
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:4201,https://nova-petzlife-admin.onrender.com,https://nova-petzlife.onrender.com,https://novapetzlife.com,https://admin.novapetzlife.com}
   jwt:

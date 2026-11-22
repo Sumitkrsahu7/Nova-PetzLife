@@ -45,6 +45,12 @@ public class Invoice {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "document_type", nullable = false, length = 50)
+    private String documentType = "PROVISIONAL_RECEIPT";
+
+    @Column(name = "discount_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
     @Column(name = "pdf_url", length = 500)
     private String pdfUrl;
 
@@ -74,6 +80,8 @@ public class Invoice {
         this.totalSgst = totalSgst != null ? totalSgst : BigDecimal.ZERO;
         this.totalIgst = totalIgst != null ? totalIgst : BigDecimal.ZERO;
         this.totalAmount = totalAmount;
+        this.documentType = "PROVISIONAL_RECEIPT";
+        this.discountAmount = BigDecimal.ZERO;
         this.createdAt = Instant.now();
     }
 
@@ -171,6 +179,22 @@ public class Invoice {
 
     public void setPdfUrl(String pdfUrl) {
         this.pdfUrl = pdfUrl;
+    }
+
+    public String getDocumentType() {
+        return documentType;
+    }
+
+    public void setDocumentType(String documentType) {
+        this.documentType = documentType != null ? documentType : "PROVISIONAL_RECEIPT";
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount != null ? discountAmount : BigDecimal.ZERO;
     }
 
     public Instant getCreatedAt() {

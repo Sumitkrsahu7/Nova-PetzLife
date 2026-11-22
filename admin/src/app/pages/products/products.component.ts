@@ -152,6 +152,25 @@ export class ProductsComponent implements OnInit {
   };
   modalErrorMessage = '';
 
+  // Product Creation Images (Min 2, Max 6)
+  newProductImages: { url: string; altText: string }[] = [];
+  newImageUrlInput = '';
+  newImageAltInput = '';
+  isUploadingNewImage = false;
+
+  // Gallery Modal for Existing Products
+  showGalleryModal = false;
+  selectedGalleryProduct: ProductItem | null = null;
+  galleryImages: { id: number; productId: number; imageUrl: string; altText: string; displayOrder: number; isPrimary: boolean; viewType?: string }[] = [];
+  isLoadingGallery = false;
+  galleryErrorMessage = '';
+  gallerySuccessMessage = '';
+  galleryAddUrl = '';
+  galleryAddAlt = '';
+  isUploadingGalleryImage = false;
+  editingGalleryImageId: number | null = null;
+  replaceImageUrl = '';
+
   constructor(
     private http: HttpClient,
     private route: ActivatedRoute
@@ -422,6 +441,12 @@ export class ProductsComponent implements OnInit {
     this.editingId = null;
     this.customBrandName = '';
     this.customCategoryName = '';
+    this.newProductImages = [
+      { url: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=600&q=80', altText: 'Front View' },
+      { url: 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&w=600&q=80', altText: 'Back View' }
+    ];
+    this.newImageUrlInput = '';
+    this.newImageAltInput = '';
     this.productForm = {
       name: '',
       description: '',
@@ -441,9 +466,66 @@ export class ProductsComponent implements OnInit {
     this.showModal = true;
   }
 
+  // Image helpers for product creation
+  addImageToNewProduct(): void {
+    if (!this.newImageUrlInput.trim()) return;
+    if (this.newProductImages.length >= 6) {
+      this.modalErrorMessage = 'Maximum of 6 images allowed per product.';
+      return;
+    }
+    const alt = this.newImageAltInput.trim() ||
+      (this.newProductImages.length === 0 ? 'Front View' : (this.newProductImages.length === 1 ? 'Back View' : 'Additional View'));
+    this.newProductImages.push({ url: this.newImageUrlInput.trim(), altText: alt });
+    this.newImageUrlInput = '';
+    this.newImageAltInput = '';
+    this.modalErrorMessage = '';
+  }
+
+  removeImageFromNewProduct(index: number): void {
+    this.newProductImages.splice(index, 1);
+  }
+
+  onNewImageFileUpload(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (this.newProductImages.length >= 6) {
+      this.modalErrorMessage = 'Maximum of 6 images allowed per product.';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    this.isUploadingNewImage = true;
+    this.modalErrorMessage = '';
+
+    this.http.post<any>(`${environment.apiUrl}/admin/media/upload`, formData).subscribe({
+      next: res => {
+        this.isUploadingNewImage = false;
+        if (res?.success && res.data?.url) {
+          const alt = this.newProductImages.length === 0 ? 'Front View' : (this.newProductImages.length === 1 ? 'Back View' : 'Additional View');
+          this.newProductImages.push({ url: res.data.url, altText: alt });
+        }
+      },
+      error: err => {
+        this.isUploadingNewImage = false;
+        this.modalErrorMessage = err.error?.message || 'Failed to upload image file.';
+      }
+    });
+  }
+
   async saveProduct(): Promise<void> {
     if (!this.productForm.name || !this.productForm.basePrice) {
       this.modalErrorMessage = 'Please fill all required fields';
+      return;
+    }
+
+    if (this.newProductImages.length < 2) {
+      this.modalErrorMessage = 'Every product requires at least 2 images: Front View (Image 1) and Back View (Image 2).';
+      return;
+    }
+
+    if (this.newProductImages.length > 6) {
+      this.modalErrorMessage = 'A maximum of 6 images is allowed per product.';
       return;
     }
 
@@ -492,13 +574,14 @@ export class ProductsComponent implements OnInit {
         }
       }
 
-      // 3. Save Product
+      // 3. Save Product with validated gallery images
       const payload = {
         ...this.productForm,
         brandId: Number(this.productForm.brandId),
         categoryId: Number(this.productForm.categoryId),
         basePrice: Number(this.productForm.basePrice),
-        discountedPrice: this.productForm.discountedPrice ? Number(this.productForm.discountedPrice) : Number(this.productForm.basePrice)
+        discountedPrice: this.productForm.discountedPrice ? Number(this.productForm.discountedPrice) : Number(this.productForm.basePrice),
+        imageUrls: this.newProductImages.map(img => img.url)
       };
 
       this.http.post<any>(`${environment.apiUrl}/admin/products`, payload).subscribe({
@@ -515,5 +598,176 @@ export class ProductsComponent implements OnInit {
     } catch (e: any) {
       this.modalErrorMessage = e?.error?.message || 'Error auto-creating brand or category';
     }
+  }
+
+  // ========================================================
+  // Gallery Management Modal for Existing Products
+  // ========================================================
+  openGalleryModal(p: ProductItem): void {
+    this.selectedGalleryProduct = p;
+    this.galleryImages = [];
+    this.galleryErrorMessage = '';
+    this.gallerySuccessMessage = '';
+    this.galleryAddUrl = '';
+    this.galleryAddAlt = '';
+    this.editingGalleryImageId = null;
+    this.replaceImageUrl = '';
+    this.showGalleryModal = true;
+    this.fetchGalleryImages(p.id);
+  }
+
+  fetchGalleryImages(productId: number): void {
+    this.isLoadingGallery = true;
+    this.http.get<any>(`${environment.apiUrl}/admin/products/${productId}/images`).subscribe({
+      next: res => {
+        this.isLoadingGallery = false;
+        if (res?.success && res.data) {
+          this.galleryImages = res.data;
+        }
+      },
+      error: err => {
+        this.isLoadingGallery = false;
+        this.galleryErrorMessage = err.error?.message || 'Failed to load product images.';
+      }
+    });
+  }
+
+  addGalleryImage(): void {
+    if (!this.selectedGalleryProduct || !this.galleryAddUrl.trim()) return;
+    if (this.galleryImages.length >= 6) {
+      this.galleryErrorMessage = 'Maximum 6 images allowed per product.';
+      return;
+    }
+
+    const payload = {
+      imageUrl: this.galleryAddUrl.trim(),
+      altText: this.galleryAddAlt.trim() || 'Product Image',
+      displayOrder: this.galleryImages.length,
+      isPrimary: this.galleryImages.length === 0
+    };
+
+    this.http.post<any>(`${environment.apiUrl}/admin/products/${this.selectedGalleryProduct.id}/images`, payload).subscribe({
+      next: res => {
+        if (res?.success && res.data) {
+          this.galleryAddUrl = '';
+          this.galleryAddAlt = '';
+          this.gallerySuccessMessage = 'Image added successfully!';
+          setTimeout(() => { this.gallerySuccessMessage = ''; }, 3000);
+          this.fetchGalleryImages(this.selectedGalleryProduct!.id);
+        }
+      },
+      error: err => {
+        this.galleryErrorMessage = err.error?.message || 'Failed to add image.';
+      }
+    });
+  }
+
+  onGalleryFileUpload(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file || !this.selectedGalleryProduct) return;
+    if (this.galleryImages.length >= 6) {
+      this.galleryErrorMessage = 'Maximum 6 images allowed per product.';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    this.isUploadingGalleryImage = true;
+    this.galleryErrorMessage = '';
+
+    this.http.post<any>(`${environment.apiUrl}/admin/media/upload`, formData).subscribe({
+      next: res => {
+        this.isUploadingGalleryImage = false;
+        if (res?.success && res.data?.url) {
+          this.galleryAddUrl = res.data.url;
+          this.addGalleryImage();
+        }
+      },
+      error: err => {
+        this.isUploadingGalleryImage = false;
+        this.galleryErrorMessage = err.error?.message || 'Failed to upload image file.';
+      }
+    });
+  }
+
+  startReplaceGalleryImage(img: any): void {
+    this.editingGalleryImageId = img.id;
+    this.replaceImageUrl = img.imageUrl;
+  }
+
+  saveReplaceGalleryImage(imgId: number): void {
+    if (!this.selectedGalleryProduct || !this.replaceImageUrl.trim()) return;
+
+    this.http.put<any>(`${environment.apiUrl}/admin/products/${this.selectedGalleryProduct.id}/images/${imgId}/replace`, {
+      imageUrl: this.replaceImageUrl.trim()
+    }).subscribe({
+      next: () => {
+        this.editingGalleryImageId = null;
+        this.replaceImageUrl = '';
+        this.gallerySuccessMessage = 'Image replaced successfully!';
+        setTimeout(() => { this.gallerySuccessMessage = ''; }, 3000);
+        this.fetchGalleryImages(this.selectedGalleryProduct!.id);
+      },
+      error: err => {
+        this.galleryErrorMessage = err.error?.message || 'Failed to replace image.';
+      }
+    });
+  }
+
+  moveGalleryImageUp(index: number): void {
+    if (index <= 0 || !this.selectedGalleryProduct) return;
+    const temp = this.galleryImages[index];
+    this.galleryImages[index] = this.galleryImages[index - 1];
+    this.galleryImages[index - 1] = temp;
+    this.saveGalleryReorder();
+  }
+
+  moveGalleryImageDown(index: number): void {
+    if (index >= this.galleryImages.length - 1 || !this.selectedGalleryProduct) return;
+    const temp = this.galleryImages[index];
+    this.galleryImages[index] = this.galleryImages[index + 1];
+    this.galleryImages[index + 1] = temp;
+    this.saveGalleryReorder();
+  }
+
+  saveGalleryReorder(): void {
+    if (!this.selectedGalleryProduct) return;
+    const ids = this.galleryImages.map(img => img.id);
+
+    this.http.put<any>(`${environment.apiUrl}/admin/products/${this.selectedGalleryProduct.id}/images/reorder`, ids).subscribe({
+      next: res => {
+        if (res?.success && res.data) {
+          this.galleryImages = res.data;
+          this.gallerySuccessMessage = 'Image order updated!';
+          setTimeout(() => { this.gallerySuccessMessage = ''; }, 2500);
+        }
+      },
+      error: err => {
+        this.galleryErrorMessage = err.error?.message || 'Failed to reorder images.';
+      }
+    });
+  }
+
+  deleteGalleryImage(imgId: number): void {
+    if (!this.selectedGalleryProduct) return;
+    if (this.galleryImages.length <= 2) {
+      this.galleryErrorMessage = 'Cannot delete. Products must retain at least 2 images: Front View and Back View.';
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this product image?')) {
+      return;
+    }
+
+    this.http.delete<any>(`${environment.apiUrl}/admin/products/${this.selectedGalleryProduct.id}/images/${imgId}`).subscribe({
+      next: () => {
+        this.gallerySuccessMessage = 'Image deleted successfully!';
+        setTimeout(() => { this.gallerySuccessMessage = ''; }, 3000);
+        this.fetchGalleryImages(this.selectedGalleryProduct!.id);
+      },
+      error: err => {
+        this.galleryErrorMessage = err.error?.message || 'Failed to delete image.';
+      }
+    });
   }
 }

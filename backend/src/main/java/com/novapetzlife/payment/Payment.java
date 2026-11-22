@@ -49,6 +49,9 @@ public class Payment {
     @Column(name = "updated_at")
     private Instant updatedAt = Instant.now();
 
+    @Column(name = "completed_at")
+    private Instant completedAt;
+
     public Payment() {}
 
     public Payment(Order order, String gatewayOrderId, BigDecimal amount, String status, String method) {
@@ -153,5 +156,13 @@ public class Payment {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Instant completedAt) {
+        this.completedAt = completedAt;
     }
 }

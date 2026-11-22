@@ -52,6 +52,27 @@ public class AdminMediaController {
         return ResponseEntity.ok(ApiResponse.ok("Primary image updated", image));
     }
 
+    @PutMapping("/products/{productId}/images/{imageId}/replace")
+    @Operation(summary = "Replace product image", description = "Replaces the URL and alt text of an existing product image")
+    public ResponseEntity<ApiResponse<ProductImageDto>> replaceProductImage(
+            @PathVariable Long productId,
+            @PathVariable Long imageId,
+            @RequestBody Map<String, String> body) {
+        String newUrl = body.get("imageUrl");
+        String newAlt = body.get("altText");
+        ProductImageDto image = mediaService.replaceProductImage(productId, imageId, newUrl, newAlt);
+        return ResponseEntity.ok(ApiResponse.ok("Product image replaced successfully", image));
+    }
+
+    @PutMapping("/products/{productId}/images/reorder")
+    @Operation(summary = "Reorder product images", description = "Updates the display order and view types (Front/Back/Additional) for all images of a product")
+    public ResponseEntity<ApiResponse<List<ProductImageDto>>> reorderProductImages(
+            @PathVariable Long productId,
+            @RequestBody List<Long> imageIdsInOrder) {
+        List<ProductImageDto> images = mediaService.reorderProductImages(productId, imageIdsInOrder);
+        return ResponseEntity.ok(ApiResponse.ok("Product images reordered successfully", images));
+    }
+
     @DeleteMapping("/products/{productId}/images/{imageId}")
     @Operation(summary = "Delete product image", description = "Removes an image from the product gallery")
     public ResponseEntity<ApiResponse<Void>> deleteProductImage(

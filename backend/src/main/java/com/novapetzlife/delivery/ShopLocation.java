@@ -19,16 +19,16 @@ public class ShopLocation {
     private String addressLine;
 
     @Column(nullable = false, length = 100)
-    private String city = "Thiruvananthapuram";
+    private String city;
 
     @Column(nullable = false, length = 100)
-    private String state = "Kerala";
+    private String state;
 
     @Column(nullable = false, length = 100)
     private String country = "India";
 
     @Column(name = "pin_code", nullable = false, length = 20)
-    private String pinCode = "695003";
+    private String pinCode;
 
     @Column(name = "google_place_id", length = 150)
     private String googlePlaceId;

@@ -56,19 +56,24 @@ public class DeliveryService {
     public ShopLocation getShopLocation() {
         return shopLocationRepository.findFirstByOrderByIdAsc()
                 .orElseGet(() -> {
+                    log.warn("Shop location is not configured in the database; returning unconfigured placeholder");
                     ShopLocation unconfigured = new ShopLocation();
                     unconfigured.setShopName("NOVA PETZLIFE");
                     unconfigured.setAddressLine("Store Location Pending Configuration");
-                    unconfigured.setCity("Thiruvananthapuram");
-                    unconfigured.setState("Kerala");
+                    unconfigured.setCity(null);
+                    unconfigured.setState(null);
                     unconfigured.setCountry("India");
-                    unconfigured.setPinCode("695003");
-                    unconfigured.setLatitude(new BigDecimal("8.5241000"));
-                    unconfigured.setLongitude(new BigDecimal("76.9530000"));
+                    unconfigured.setPinCode(null);
+                    unconfigured.setLatitude(null);
+                    unconfigured.setLongitude(null);
                     unconfigured.setDeliveryRadiusKm(new BigDecimal("20.00"));
                     unconfigured.setIsVerified(false);
                     return unconfigured;
                 });
+    }
+
+    public static boolean isValidIndianPinCode(String pinCode) {
+        return pinCode != null && pinCode.trim().matches("^[1-9][0-9]{5}$");
     }
 
     @Transactional(readOnly = true)
@@ -95,8 +100,15 @@ public class DeliveryService {
         ShopLocation shop = getShopLocation();
         DeliverySettings settings = getDeliverySettings();
 
-        // 1. Verify if store location is configured and verified by store admin
-        if (!Boolean.TRUE.equals(shop.getIsVerified()) || shop.getLatitude() == null || shop.getLongitude() == null) {
+        // 1. Verify if store location is configured, verified, and has valid city and PIN code
+        if (!Boolean.TRUE.equals(shop.getIsVerified())
+                || shop.getLatitude() == null
+                || shop.getLongitude() == null
+                || shop.getCity() == null
+                || shop.getCity().isBlank()
+                || !isValidIndianPinCode(shop.getPinCode())) {
+            log.warn("Delivery eligibility rejected: Shop dispatch hub is unverified or missing valid city/PIN configuration (city={}, pinCode={})",
+                    shop.getCity(), shop.getPinCode());
             return new DeliveryEligibilityResponse(
                     false,
                     BigDecimal.ZERO,
@@ -107,7 +119,7 @@ public class DeliveryService {
                     false,
                     shop.getShopName(),
                     shop.getAddressLine(),
-                    "Store delivery coordinates are currently pending owner verification in the admin console. Please contact store support.",
+                    "Store delivery coordinates or location details are currently pending configuration in the admin console. Please contact store support.",
                     BigDecimal.ZERO,
                     0
             );
@@ -402,6 +414,10 @@ public class DeliveryService {
 
     @Transactional
     public ShopLocationDto updateShopLocation(ShopLocationUpdateRequest request) {
+        if (!isValidIndianPinCode(request.pinCode())) {
+            throw new IllegalArgumentException("PIN code must be a valid 6-digit Indian postal code");
+        }
+
         ShopLocation shop = shopLocationRepository.findFirstByOrderByIdAsc()
                 .orElseGet(ShopLocation::new);
 

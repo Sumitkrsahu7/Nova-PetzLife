@@ -232,3 +232,27 @@ table {
     visibility: hidden !important;
   }
 }
+
+/* ==========================================================================
+   Clean Invoice & Document Print Isolation
+   Hides header, footer, bottom navigation, and notification banners during print
+   ========================================================================== */
+@media print {
+  app-header,
+  app-footer,
+  .site-header,
+  .site-footer,
+  .footer-bottom,
+  .mobile-bottom-nav,
+  .top-notification-bar,
+  .actions-bar,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}

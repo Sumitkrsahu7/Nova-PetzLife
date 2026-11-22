@@ -21,7 +21,7 @@ export interface ProductDetail {
   petType: string;
   lifeStage: string;
   productType: string;
-  images: { id: number; imageUrl: string; altText: string; isPrimary: boolean }[];
+  images: { id: number; imageUrl: string; altText: string; isPrimary: boolean; viewType?: string }[];
   variants: { id: number; variantName: string; price: number; discountedPrice?: number }[];
   returnPolicy: { returnAllowed: boolean; returnWindowDays: number; refundAllowed: boolean; customConditions?: string };
   availableStock: number;
@@ -38,6 +38,7 @@ export class ProductDetailComponent implements OnInit {
   productId!: number;
   product: ProductDetail | null = null;
   selectedImageUrl: string = '';
+  activeImageIndex: number = 0;
   selectedVariantId: number | null = null;
   quantity: number = 1;
   isLoading: boolean = true;
@@ -82,9 +83,11 @@ export class ProductDetailComponent implements OnInit {
           this.product = res.data;
           this.isLoading = false;
           if (this.product.images && this.product.images.length > 0) {
-            const primary = this.product.images.find(img => img.isPrimary);
-            this.selectedImageUrl = primary ? primary.imageUrl : this.product.images[0].imageUrl;
+            const primaryIdx = this.product.images.findIndex(img => img.isPrimary);
+            this.activeImageIndex = primaryIdx >= 0 ? primaryIdx : 0;
+            this.selectedImageUrl = this.product.images[this.activeImageIndex].imageUrl;
           } else {
+            this.activeImageIndex = 0;
             this.selectedImageUrl = 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=600&q=80';
           }
           if (this.product.variants && this.product.variants.length > 0) {
@@ -119,6 +122,46 @@ export class ProductDetailComponent implements OnInit {
 
   selectImage(url: string): void {
     this.selectedImageUrl = url;
+    if (this.product?.images) {
+      const idx = this.product.images.findIndex(i => i.imageUrl === url);
+      if (idx >= 0) this.activeImageIndex = idx;
+    }
+  }
+
+  selectImageByIndex(idx: number): void {
+    if (this.product?.images && idx >= 0 && idx < this.product.images.length) {
+      this.activeImageIndex = idx;
+      this.selectedImageUrl = this.product.images[idx].imageUrl;
+    }
+  }
+
+  prevImage(): void {
+    if (!this.product?.images || this.product.images.length <= 1) return;
+    this.activeImageIndex = (this.activeImageIndex - 1 + this.product.images.length) % this.product.images.length;
+    this.selectedImageUrl = this.product.images[this.activeImageIndex].imageUrl;
+  }
+
+  nextImage(): void {
+    if (!this.product?.images || this.product.images.length <= 1) return;
+    this.activeImageIndex = (this.activeImageIndex + 1) % this.product.images.length;
+    this.selectedImageUrl = this.product.images[this.activeImageIndex].imageUrl;
+  }
+
+  get currentViewLabel(): string {
+    return this.getViewLabelForIndex(this.activeImageIndex);
+  }
+
+  getViewLabelForIndex(idx: number): string {
+    if (!this.product?.images || this.product.images.length === 0) return 'Product View';
+    const img = this.product.images[idx];
+    if (img?.viewType) {
+      if (img.viewType.toUpperCase() === 'FRONT') return 'Front View';
+      if (img.viewType.toUpperCase() === 'BACK') return 'Back View';
+      return 'Additional View';
+    }
+    if (idx === 0) return 'Front View';
+    if (idx === 1) return 'Back View';
+    return 'Angle ' + (idx + 1);
   }
 
   get currentDisplayPrice(): number {

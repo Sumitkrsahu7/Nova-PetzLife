@@ -1,12 +1,19 @@
 package com.novapetzlife.auth;
 
+import com.novapetzlife.customer.Customer;
+import com.novapetzlife.customer.CustomerRepository;
 import com.novapetzlife.security.JwtTokenProvider;
 import com.novapetzlife.user.Permission;
 import com.novapetzlife.user.Role;
 import com.novapetzlife.user.RoleRepository;
 import com.novapetzlife.user.User;
+import com.novapetzlife.user.UserOAuthIdentity;
+import com.novapetzlife.user.UserOAuthIdentityRepository;
 import com.novapetzlife.user.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -14,12 +21,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
@@ -27,6 +38,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final RefreshTokenService refreshTokenService;
+    private final GoogleOAuthService googleOAuthService;
+    private final UserOAuthIdentityRepository userOAuthIdentityRepository;
+    private final CustomerRepository customerRepository;
 
     public AuthService(
             AuthenticationManager authenticationManager,
@@ -34,13 +48,19 @@ public class AuthService {
             RoleRepository roleRepository,
             PasswordEncoder passwordEncoder,
             JwtTokenProvider tokenProvider,
-            RefreshTokenService refreshTokenService) {
+            RefreshTokenService refreshTokenService,
+            GoogleOAuthService googleOAuthService,
+            UserOAuthIdentityRepository userOAuthIdentityRepository,
+            CustomerRepository customerRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.refreshTokenService = refreshTokenService;
+        this.googleOAuthService = googleOAuthService;
+        this.userOAuthIdentityRepository = userOAuthIdentityRepository;
+        this.customerRepository = customerRepository;
     }
 
     @Transactional
@@ -51,6 +71,22 @@ public class AuthService {
     @Transactional
     public AuthResult login(LoginRequest request, String ipAddress) {
         String identifier = request.getIdentifier();
+
+        // Explicitly reject local password authentication for OAuth-only accounts without local password
+        String normalizedPhone = identifier.startsWith("+91") ? identifier.substring(3) : identifier;
+        Optional<User> targetUser = userRepository.findByEmail(identifier.toLowerCase())
+                .or(() -> userRepository.findByPhone(identifier))
+                .or(() -> userRepository.findByPhone(normalizedPhone))
+                .or(() -> userRepository.findByPhone("+91" + normalizedPhone));
+
+        if (targetUser.isPresent()) {
+            User existing = targetUser.get();
+            if (!StringUtils.hasText(existing.getPasswordHash())) {
+                log.warn("Password login attempted for OAuth-only account: {}", existing.getEmail());
+                throw new BadCredentialsException("This account is registered with Google. Please use Google Sign-In to log in.");
+            }
+        }
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(identifier, request.password())
         );
@@ -58,12 +94,7 @@ public class AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(authentication);
 
-        String normalizedPhone = identifier.startsWith("+91") ? identifier.substring(3) : identifier;
-        User user = userRepository.findByEmail(identifier.toLowerCase())
-                .or(() -> userRepository.findByPhone(identifier))
-                .or(() -> userRepository.findByPhone(normalizedPhone))
-                .or(() -> userRepository.findByPhone("+91" + normalizedPhone))
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        User user = targetUser.orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -126,6 +157,104 @@ public class AuthService {
                 List.of()
         );
 
+        return new AuthResult(response, tokenPair.rawToken());
+    }
+
+    @Transactional
+    public AuthResult loginWithGoogle(String credential, String ipAddress) {
+        GoogleTokenPayload payload = googleOAuthService.verifyToken(credential);
+        String googleSub = payload.sub();
+        String googleEmail = payload.email().toLowerCase().trim();
+
+        // 1. Check if OAuth identity exists for this Google subject
+        Optional<UserOAuthIdentity> identityOpt = userOAuthIdentityRepository.findByProviderAndProviderSubject("GOOGLE", googleSub);
+        if (identityOpt.isPresent()) {
+            User user = identityOpt.get().getUser();
+            if (!Boolean.TRUE.equals(user.getIsActive())) {
+                throw new BadCredentialsException("This customer account is currently inactive. Please contact support.");
+            }
+            return issueTokensForUser(user, ipAddress);
+        }
+
+        // 2. Check if a local account already exists with this email
+        Optional<User> existingUserOpt = userRepository.findByEmail(googleEmail);
+        if (existingUserOpt.isPresent()) {
+            // Requirement 5.4: Do not automatically link based only on matching email.
+            // Require account linking with password verification or explain to user.
+            throw new BadCredentialsException(
+                    "An account with this email (" + googleEmail + ") already exists. " +
+                    "Please log in with your email and password, then link your Google account in account settings."
+            );
+        }
+
+        // 3. Register brand-new Google customer (Strictly CUSTOMER role, no admin escalation)
+        Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseGet(() -> roleRepository.save(new Role("ROLE_CUSTOMER", "Standard customer account")));
+
+        String firstName = StringUtils.hasText(payload.givenName()) ? payload.givenName() : (StringUtils.hasText(payload.name()) ? payload.name() : "Google");
+        String lastName = StringUtils.hasText(payload.familyName()) ? payload.familyName() : "Customer";
+
+        User newUser = new User();
+        newUser.setEmail(googleEmail);
+        newUser.setPasswordHash(null); // No local password for Google-only authentication
+        newUser.setFirstName(firstName);
+        newUser.setLastName(lastName);
+        newUser.setPhone(null);
+        newUser.setIsActive(true);
+        newUser.setRoles(Set.of(customerRole));
+        User savedUser = userRepository.save(newUser);
+
+        // Associate Customer profile
+        Customer customer = new Customer(savedUser, googleEmail, null, firstName, lastName, false);
+        customerRepository.save(customer);
+
+        // Save OAuth Identity mapping
+        UserOAuthIdentity identity = new UserOAuthIdentity(savedUser, "GOOGLE", googleSub, googleEmail);
+        userOAuthIdentityRepository.save(identity);
+
+        log.info("Registered and authenticated new customer via Google: {} (sub: {})", googleEmail, googleSub);
+        return issueTokensForUser(savedUser, ipAddress);
+    }
+
+    @Transactional
+    public void linkGoogleAccount(String credential, String currentUserEmail) {
+        GoogleTokenPayload payload = googleOAuthService.verifyToken(credential);
+        User user = userRepository.findByEmail(currentUserEmail.toLowerCase())
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + currentUserEmail));
+
+        Optional<UserOAuthIdentity> existing = userOAuthIdentityRepository.findByProviderAndProviderSubject("GOOGLE", payload.sub());
+        if (existing.isPresent()) {
+            if (existing.get().getUser().getId().equals(user.getId())) {
+                return; // Already linked to this user
+            }
+            throw new IllegalArgumentException("This Google account is already linked to another user account.");
+        }
+
+        UserOAuthIdentity identity = new UserOAuthIdentity(user, "GOOGLE", payload.sub(), payload.email());
+        userOAuthIdentityRepository.save(identity);
+        log.info("Linked Google account (sub: {}) to user {}", payload.sub(), user.getEmail());
+    }
+
+    private AuthResult issueTokensForUser(User user, String ipAddress) {
+        var authorities = user.getRoles().stream()
+                .map(role -> (GrantedAuthority) role::getName)
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (user.getPermissions() != null) {
+            user.getPermissions().forEach(p -> authorities.add(p::getName));
+        }
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(user.getEmail(), null, authorities);
+        String jwt = tokenProvider.generateToken(auth);
+
+        RefreshTokenService.TokenPair tokenPair = refreshTokenService.createRefreshToken(user, ipAddress);
+
+        List<String> roles = user.getRoles().stream().map(Role::getName).toList();
+        List<String> permissions = user.getPermissions() != null
+                ? user.getPermissions().stream().map(Permission::getName).toList()
+                : List.of();
+
+        AuthResponse response = AuthResponse.of(jwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles, permissions);
         return new AuthResult(response, tokenPair.rawToken());
     }
 

@@ -16,6 +16,7 @@ export interface ProductCardData {
   price: number;
   discountedPrice?: number;
   imageUrl: string;
+  backImageUrl?: string;
   inStock: boolean;
   stockQuantity: number;
   rating: number;

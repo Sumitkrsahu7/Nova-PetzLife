@@ -47,9 +47,12 @@ export interface InvoiceDto {
   totalCgst: number;
   totalSgst: number;
   totalIgst: number;
+  discountAmount?: number;
   deliveryCharge: number;
+  grandTotal?: number;
   finalPayableAmount: number;
   amountInWords: string;
+  documentType?: string;
 }
 
 @Injectable({
@@ -62,5 +65,11 @@ export class InvoiceService {
 
   public getInvoice(orderNumber: string): Observable<{ success: boolean; data: InvoiceDto }> {
     return this.http.get<{ success: boolean; data: InvoiceDto }>(`${this.apiUrl}/${orderNumber}/invoice`);
+  }
+
+  public downloadInvoicePdf(orderNumber: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${orderNumber}/invoice/download`, {
+      responseType: 'blob'
+    });
   }
 }

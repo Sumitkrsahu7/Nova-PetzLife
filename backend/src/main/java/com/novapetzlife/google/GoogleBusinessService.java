@@ -34,18 +34,15 @@ public class GoogleBusinessService {
     @Transactional(readOnly = true)
     public GoogleBusinessProfileDto getBusinessProfile() {
         ShopLocation shop = shopLocationRepository.findFirstByOrderByIdAsc().orElseGet(() -> {
-            return new ShopLocation(
-                    "NOVA PETZLIFE",
-                    "NOVA PETZLIFE Store, Thiruvananthapuram, Kerala 695003",
-                    "Thiruvananthapuram",
-                    "Kerala",
-                    "India",
-                    "695003",
-                    new BigDecimal("8.5284480"),
-                    new BigDecimal("76.9532680"),
-                    new BigDecimal("20.00"),
-                    true
-            );
+            ShopLocation unconfigured = new ShopLocation();
+            unconfigured.setShopName("NOVA PETZLIFE");
+            unconfigured.setAddressLine("Store Location Pending Configuration");
+            unconfigured.setCity("");
+            unconfigured.setState("");
+            unconfigured.setCountry("India");
+            unconfigured.setPinCode("");
+            unconfigured.setIsVerified(false);
+            return unconfigured;
         });
 
         List<GoogleReviewDto> featuredReviews = googleReviewRepository.findByIsFeaturedTrueOrderByReviewTimestampDesc()

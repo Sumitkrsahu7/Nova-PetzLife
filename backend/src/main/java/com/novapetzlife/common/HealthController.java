@@ -38,7 +38,7 @@ public class HealthController {
         status.put("version", appVersion);
         status.put("profile", activeProfile);
 
-        String shopAddr = "Thiruvananthapuram, Kerala, India";
+        String shopAddr = "Store Location Pending Configuration";
         if (shopLocationRepository != null) {
             shopAddr = shopLocationRepository.findByIsActiveTrue()
                     .map(com.novapetzlife.delivery.ShopLocation::getAddressLine)

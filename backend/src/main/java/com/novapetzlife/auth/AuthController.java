@@ -66,6 +66,32 @@ public class AuthController {
                 .body(ApiResponse.ok("Registration successful", result.response()));
     }
 
+    @PostMapping("/google")
+    @Operation(summary = "Authenticate or register customer with Google ID token credential")
+    public ResponseEntity<ApiResponse<AuthResponse>> loginWithGoogle(
+            @Valid @RequestBody GoogleAuthRequest request,
+            HttpServletRequest httpRequest) {
+        String ipAddress = ClientIpUtil.getClientIp(httpRequest);
+        AuthResult result = authService.loginWithGoogle(request.credential(), ipAddress);
+
+        ResponseCookie cookie = createRefreshTokenCookie(result.rawRefreshToken(), refreshExpirationMs / 1000);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(ApiResponse.ok("Google authentication successful", result.response()));
+    }
+
+    @PostMapping("/google/link")
+    @Operation(summary = "Link verified Google account to currently authenticated customer")
+    public ResponseEntity<ApiResponse<Void>> linkGoogle(
+            @Valid @RequestBody GoogleAuthRequest request,
+            java.security.Principal principal) {
+        if (principal == null || !StringUtils.hasText(principal.getName())) {
+            throw new BadCredentialsException("Authentication required to link Google account");
+        }
+        authService.linkGoogleAccount(request.credential(), principal.getName());
+        return ResponseEntity.ok(ApiResponse.ok("Google account linked successfully", null));
+    }
+
     @PostMapping("/refresh")
     @Operation(summary = "Refresh expired access token using HttpOnly cookie")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(

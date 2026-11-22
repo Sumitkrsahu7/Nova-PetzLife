@@ -196,15 +196,20 @@ public class ProductService {
         }
         product.setReturnPolicy(policy);
 
-        // Images
-        if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
-            for (int i = 0; i < request.imageUrls().size(); i++) {
-                String imgUrl = request.imageUrls().get(i);
-                if (imgUrl != null && !imgUrl.isBlank()) {
-                    ProductImage img = new ProductImage(product, imgUrl.trim(), product.getName(), i, i == 0);
-                    product.addImage(img);
-                }
-            }
+        // Images - Mandatory Front (image 0) and Back (image 1) views, min 2, max 6
+        List<String> validImageUrls = request.imageUrls() != null
+                ? request.imageUrls().stream().filter(u -> u != null && !u.isBlank()).map(String::trim).toList()
+                : List.of();
+
+        if (validImageUrls.size() < 2 || validImageUrls.size() > 6) {
+            throw new IllegalArgumentException("Products must have at least 2 images (Front and Back views) and at most 6 images.");
+        }
+
+        for (int i = 0; i < validImageUrls.size(); i++) {
+            String imgUrl = validImageUrls.get(i);
+            String viewType = (i == 0) ? "FRONT" : (i == 1) ? "BACK" : "ADDITIONAL";
+            ProductImage img = new ProductImage(product, imgUrl, product.getName(), i, i == 0, viewType);
+            product.addImage(img);
         }
 
         // Variants

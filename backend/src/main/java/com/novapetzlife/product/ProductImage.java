@@ -29,18 +29,34 @@ public class ProductImage {
     @Column(name = "is_primary", nullable = false)
     private Boolean isPrimary = false;
 
+    @Column(name = "view_type", length = 50)
+    private String viewType = "ADDITIONAL";
+
     @Column(name = "created_at", updatable = false)
     private Instant createdAt = Instant.now();
 
     public ProductImage() {}
 
     public ProductImage(Product product, String imageUrl, String altText, Integer displayOrder, Boolean isPrimary) {
+        this(product, imageUrl, altText, displayOrder, isPrimary, isPrimary ? "FRONT" : "ADDITIONAL");
+    }
+
+    public ProductImage(Product product, String imageUrl, String altText, Integer displayOrder, Boolean isPrimary, String viewType) {
         this.product = product;
         this.imageUrl = imageUrl;
         this.altText = altText;
         this.displayOrder = displayOrder != null ? displayOrder : 0;
         this.isPrimary = isPrimary != null ? isPrimary : false;
+        this.viewType = viewType != null ? viewType : "ADDITIONAL";
         this.createdAt = Instant.now();
+    }
+
+    public String getViewType() {
+        return viewType;
+    }
+
+    public void setViewType(String viewType) {
+        this.viewType = viewType;
     }
 
     public Long getId() {

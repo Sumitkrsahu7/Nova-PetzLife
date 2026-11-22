@@ -70,6 +70,20 @@
     transform: scale(1.05);
   }
 
+  .view-tag-pill {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.75rem;
+    background: rgba(37, 99, 235, 0.9);
+    color: #FFFFFF;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    letter-spacing: 0.2px;
+    z-index: 2;
+  }
+
   .discount-pill {
     position: absolute;
     bottom: 0.5rem;

@@ -66,6 +66,7 @@ export class SidebarComponent implements OnInit {
       title: 'SETTINGS & COMPLIANCE',
       items: [
         { label: 'Business Analytics & Sales', icon: '📈', route: '/analytics', badge: 'Live', badgeType: 'success' },
+        { label: 'Sales Reports & Export', icon: '📑', route: '/sales-reports', badge: 'Audited', badgeType: 'success' },
         { label: 'Store & Delivery Settings', icon: '📍', route: '/delivery-settings', permission: 'STORE_SETTINGS_EDIT' },
         { label: 'Staff & Permissions', icon: '👑', route: '/staff', permission: 'STAFF_MANAGE', superAdminOnly: true },
         { label: 'Website Product Reviews', icon: '⭐', route: '/reviews' },

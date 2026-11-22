@@ -56,15 +56,15 @@ public class SupportService {
         var shopOpt = shopLocationRepository.findByIsActiveTrue();
         var contactInfo = websiteSettingService.getContactInfo();
 
-        String storeName = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getShopName).orElse("NOVA PETZLIFE");
-        String address = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getAddressLine).orElse(contactInfo.address());
-        String locality = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getCity).orElse("Thiruvananthapuram");
-        String city = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getCity).orElse("Thiruvananthapuram");
-        String state = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getState).orElse("Kerala");
-        String country = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getCountry).orElse("India");
-        String postalCode = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getPinCode).orElse("695003");
-        Double lat = shopOpt.map(s -> s.getLatitude() != null ? s.getLatitude().doubleValue() : 8.528448).orElse(8.528448);
-        Double lng = shopOpt.map(s -> s.getLongitude() != null ? s.getLongitude().doubleValue() : 76.953268).orElse(76.953268);
+        String storeName = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getShopName).filter(org.springframework.util.StringUtils::hasText).orElse("NOVA PETZLIFE");
+        String address = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getAddressLine).filter(org.springframework.util.StringUtils::hasText).orElse(contactInfo.address());
+        String locality = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getCity).filter(org.springframework.util.StringUtils::hasText).orElse("");
+        String city = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getCity).filter(org.springframework.util.StringUtils::hasText).orElse("");
+        String state = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getState).filter(org.springframework.util.StringUtils::hasText).orElse("");
+        String country = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getCountry).filter(org.springframework.util.StringUtils::hasText).orElse("India");
+        String postalCode = shopOpt.map(com.novapetzlife.delivery.ShopLocation::getPinCode).filter(org.springframework.util.StringUtils::hasText).orElse("");
+        Double lat = shopOpt.map(s -> s.getLatitude() != null ? s.getLatitude().doubleValue() : null).orElse(null);
+        Double lng = shopOpt.map(s -> s.getLongitude() != null ? s.getLongitude().doubleValue() : null).orElse(null);
         Double radius = shopOpt.map(s -> s.getDeliveryRadiusKm() != null ? s.getDeliveryRadiusKm().doubleValue() : 20.0).orElse(20.0);
 
         return new StoreInfoDto(
