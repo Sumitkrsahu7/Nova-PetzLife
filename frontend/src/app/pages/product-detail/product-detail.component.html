@@ -58,7 +58,7 @@
         <!-- Stock Status -->
         <div class="stock-badge" [class.in-stock]="product.availableStock > 0" [class.out-of-stock]="product.availableStock <= 0">
           <span class="dot"></span>
-          <span>{{ product.availableStock > 0 ? 'In Stock (' + product.availableStock + ' available at our store)' : 'Out of Stock' }}</span>
+          <span>{{ product.availableStock > 0 ? 'In Stock' : 'Out of Stock' }}</span>
         </div>
 
         <!-- Variant Options -->
