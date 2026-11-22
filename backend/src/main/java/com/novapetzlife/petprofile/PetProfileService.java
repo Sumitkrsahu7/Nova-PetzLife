@@ -2,6 +2,8 @@ package com.novapetzlife.petprofile;
 
 import com.novapetzlife.customer.Customer;
 import com.novapetzlife.customer.CustomerRepository;
+import com.novapetzlife.petprofile.dto.AdminPetDetailDto;
+import com.novapetzlife.petprofile.dto.AdminPetSummaryDto;
 import com.novapetzlife.petprofile.dto.CreatePetProfileRequest;
 import com.novapetzlife.petprofile.dto.PetProfileDto;
 import com.novapetzlife.petprofile.dto.PetRecommendationDto;
@@ -10,9 +12,12 @@ import com.novapetzlife.product.ProductRepository;
 import com.novapetzlife.product.ProductSummaryDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -140,5 +145,53 @@ public class PetProfileService {
                 rationale,
                 dtos
         );
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AdminPetSummaryDto> getAllPetsForAdmin(Pageable pageable, String query, String petType) {
+        String cleanQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
+        String cleanType = (petType != null && !petType.trim().isEmpty() && !"ALL".equalsIgnoreCase(petType.trim())) ? petType.trim() : null;
+        return petProfileRepository.searchForAdmin(cleanQuery, cleanType, pageable)
+                .map(AdminPetSummaryDto::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminPetDetailDto getPetForAdmin(Long petId) {
+        PetProfile profile = petProfileRepository.findById(petId)
+                .orElseThrow(() -> new IllegalArgumentException("Pet profile not found with id: " + petId));
+        return AdminPetDetailDto.fromEntity(profile);
+    }
+
+    @Transactional
+    public AdminPetDetailDto updatePetFeedback(Long petId, String feedback) {
+        PetProfile profile = petProfileRepository.findById(petId)
+                .orElseThrow(() -> new IllegalArgumentException("Pet profile not found with id: " + petId));
+
+        if (feedback == null || feedback.trim().isEmpty()) {
+            profile.setAdminFeedback(null);
+            profile.setAdminFeedbackUpdatedAt(null);
+        } else {
+            String trimmed = feedback.trim();
+            if (trimmed.length() > 2000) {
+                throw new IllegalArgumentException("Feedback cannot exceed 2000 characters");
+            }
+            profile.setAdminFeedback(trimmed);
+            profile.setAdminFeedbackUpdatedAt(Instant.now());
+        }
+
+        PetProfile saved = petProfileRepository.save(profile);
+        log.info("Updated admin feedback for pet {} ({})", saved.getId(), saved.getPetName());
+        return AdminPetDetailDto.fromEntity(saved);
+    }
+
+    @Transactional
+    public void deletePetFeedback(Long petId) {
+        PetProfile profile = petProfileRepository.findById(petId)
+                .orElseThrow(() -> new IllegalArgumentException("Pet profile not found with id: " + petId));
+
+        profile.setAdminFeedback(null);
+        profile.setAdminFeedbackUpdatedAt(null);
+        petProfileRepository.save(profile);
+        log.info("Cleared admin feedback for pet {} ({})", profile.getId(), profile.getPetName());
     }
 }

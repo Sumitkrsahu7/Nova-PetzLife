@@ -18,6 +18,8 @@ public class PetProfileDto {
     private String lifeStage;
     private String dietaryPreferences;
     private String foodSensitivities;
+    private String adminFeedback;
+    private Instant adminFeedbackUpdatedAt;
     private Instant createdAt;
 
     public PetProfileDto() {}
@@ -35,6 +37,8 @@ public class PetProfileDto {
         dto.setLifeStage(p.getLifeStage());
         dto.setDietaryPreferences(p.getDietaryPreferences());
         dto.setFoodSensitivities(p.getFoodSensitivities());
+        dto.setAdminFeedback(p.getAdminFeedback());
+        dto.setAdminFeedbackUpdatedAt(p.getAdminFeedbackUpdatedAt());
         dto.setCreatedAt(p.getCreatedAt());
         return dto;
     }
@@ -61,6 +65,10 @@ public class PetProfileDto {
     public void setDietaryPreferences(String dietaryPreferences) { this.dietaryPreferences = dietaryPreferences; }
     public String getFoodSensitivities() { return foodSensitivities; }
     public void setFoodSensitivities(String foodSensitivities) { this.foodSensitivities = foodSensitivities; }
+    public String getAdminFeedback() { return adminFeedback; }
+    public void setAdminFeedback(String adminFeedback) { this.adminFeedback = adminFeedback; }
+    public Instant getAdminFeedbackUpdatedAt() { return adminFeedbackUpdatedAt; }
+    public void setAdminFeedbackUpdatedAt(Instant adminFeedbackUpdatedAt) { this.adminFeedbackUpdatedAt = adminFeedbackUpdatedAt; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

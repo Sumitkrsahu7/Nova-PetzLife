@@ -284,6 +284,37 @@
     span { font-weight: 700; }
   }
 
+  .pet-admin-feedback {
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.75rem;
+    text-align: left;
+
+    .feedback-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #166534;
+      margin-bottom: 0.25rem;
+    }
+
+    .feedback-text {
+      font-size: 0.8rem;
+      color: #14532D;
+      line-height: 1.35;
+      margin: 0 0 0.3rem;
+      word-break: break-word;
+    }
+
+    .feedback-date {
+      display: block;
+      font-size: 0.7rem;
+      color: #15803D;
+      font-weight: 500;
+    }
+  }
+
   .btn-view-recs {
     width: 100%;
     background: #e7f5e9;
@@ -335,6 +366,43 @@
         font-size: 0.9rem;
         color: #344054;
         margin: 0;
+      }
+    }
+
+    .panel-admin-feedback {
+      background: #F0FDF4;
+      border: 1.5px solid #86EFAC;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+
+      .feedback-badge-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+
+        .feedback-tag {
+          font-size: 0.82rem;
+          font-weight: 800;
+          color: #166534;
+        }
+
+        .feedback-timestamp {
+          font-size: 0.75rem;
+          color: #15803D;
+          font-weight: 600;
+        }
+      }
+
+      .feedback-body {
+        font-size: 0.92rem;
+        color: #14532D;
+        line-height: 1.5;
+        margin: 0;
+        word-break: break-word;
       }
     }
 

@@ -46,6 +46,7 @@ export class SidebarComponent implements OnInit {
         { label: 'Dashboard', icon: '📊', route: '/dashboard' },
         { label: 'Orders & Dispatch', icon: '📦', route: '/orders', badge: 'Active', badgeType: 'success', permission: 'ORDER_VIEW' },
         { label: 'Customers & Accounts', icon: '👥', route: '/customers' },
+        { label: 'Registered Pets', icon: '🐾', route: '/pets' },
         { label: 'Inventory & Stock', icon: '📋', route: '/inventory', permission: 'INVENTORY_VIEW' },
         { label: 'Returns & Refunds', icon: '🔄', route: '/returns', badge: 'Review', badgeType: 'warning', permission: 'ORDER_VIEW' },
         { label: 'Customer Inquiries', icon: '💬', route: '/support-tickets', badge: 'Help', badgeType: 'warning', permission: 'CUSTOMER_SUPPORT_VIEW' }
