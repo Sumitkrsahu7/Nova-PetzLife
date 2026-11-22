@@ -2,6 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GoogleBusinessProfileSummary, GoogleReviewItem } from '../../models/review.model';
 import { GoogleBusinessService } from '../../core/services/google-business.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-google-reviews',
@@ -13,7 +14,7 @@ import { GoogleBusinessService } from '../../core/services/google-business.servi
 export class GoogleReviewsComponent implements OnInit {
   @Input() businessInfo: GoogleBusinessProfileSummary = {
     businessName: 'Petzlife (NOVA PETZLIFE)',
-    formattedAddress: 'our store, our Ambalamukku Road, Thiruvananthapuram, Kerala 695003',
+    formattedAddress: environment.shopAddress,
     googlePlaceId: 'ChIJ_petzlife_our_verified',
     overallRating: 4.8,
     totalReviewCount: 148,

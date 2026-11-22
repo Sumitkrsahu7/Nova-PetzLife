@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { OrderService, OrderTracking } from '../../core/services/order.service';
 import { ReturnService, ReturnEligibility, ReturnRequestDetail } from '../../core/services/return.service';
 import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-order-tracking',
@@ -14,6 +15,7 @@ import { BackButtonComponent } from '../../components/back-button/back-button.co
   styleUrls: ['./order-tracking.component.scss']
 })
 export class OrderTrackingComponent implements OnInit {
+  readonly shopAddress = environment.shopAddress;
   orderNumber = '';
   tracking: OrderTracking | null = null;
   isLoading = true;

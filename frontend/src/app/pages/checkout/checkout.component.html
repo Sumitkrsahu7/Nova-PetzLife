@@ -2,7 +2,7 @@
   <div class="checkout-header">
     <app-back-button></app-back-button>
     <h1>Express Checkout</h1>
-    <p class="subtitle">Direct local fulfillment from NOVA PETZLIFE our store</p>
+    <p class="subtitle">Direct local fulfillment from {{ shopAddress }}</p>
   </div>
 
   <div *ngIf="errorMessage" class="error-banner">
@@ -121,7 +121,7 @@
             <div class="status-icon">{{ eligibility.isEligible ? '✓' : '✕' }}</div>
             <div class="status-details">
               <strong>{{ eligibility.isEligible ? 'Delivery is available at this location.' : 'Sorry, delivery is not currently available at this location.' }}</strong>
-              <p *ngIf="eligibility.isEligible">Local express delivery will be dispatched directly from our store (within {{ eligibility.distanceKm | number:'1.1-1' }} km).</p>
+              <p *ngIf="eligibility.isEligible">Local express delivery will be dispatched directly from {{ shopAddress }} (within {{ eligibility.distanceKm | number:'1.1-1' }} km).</p>
               <p *ngIf="!eligibility.isEligible">This address falls outside our current local delivery area (max 20 km). Please enter or select a serviceable address.</p>
             </div>
           </div>

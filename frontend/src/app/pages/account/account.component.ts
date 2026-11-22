@@ -44,6 +44,7 @@ export interface CustomerOrderSummary {
   styleUrls: ['./account.component.scss']
 })
 export class AccountComponent implements OnInit {
+  readonly shopAddress = environment.shopAddress;
   user: UserProfile | null = null;
   activeTab: 'profile' | 'addresses' | 'orders' = 'profile';
   showLogoutConfirm = false;

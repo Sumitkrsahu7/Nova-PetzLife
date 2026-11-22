@@ -54,7 +54,7 @@
       <!-- Fulfillment & Distance Info -->
       <div class="detail-tile">
         <h3>📍 Store Fulfillment Route</h3>
-        <p><strong>From:</strong> our store, Trivandrum</p>
+        <p><strong>From:</strong> {{ shopAddress }}</p>
         <p><strong>Store Distance:</strong> {{ tracking.shopDistanceKm }} km away</p>
         <p><strong>Delivery Window:</strong> {{ tracking.deliverySlot || 'Standard Same-Day' }}</p>
       </div>

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { environment } from '../../../environments/environment';
 
 export type PolicyTab = 'shipping' | 'returns' | 'terms' | 'privacy';
 
@@ -13,6 +14,7 @@ export type PolicyTab = 'shipping' | 'returns' | 'terms' | 'privacy';
   styleUrls: ['./policies.component.scss']
 })
 export class PoliciesComponent implements OnInit {
+  readonly shopAddress = environment.shopAddress;
   activeTab: PolicyTab = 'shipping';
 
   constructor(private route: ActivatedRoute) {}

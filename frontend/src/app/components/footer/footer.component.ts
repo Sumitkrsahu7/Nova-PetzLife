@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-footer',
@@ -11,7 +12,7 @@ import { RouterModule } from '@angular/router';
 })
 export class FooterComponent {
   currentYear = new Date().getFullYear();
-  shopAddress = 'our store, our Ambalamukku Road, Thiruvananthapuram, Kerala 695003, India';
+  readonly shopAddress = environment.shopAddress;
   googleReviewUrl = 'https://www.google.com/search?q=petzlife+reviews';
 }
 
