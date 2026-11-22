@@ -41,26 +41,65 @@ export class AppComponent implements OnInit, OnDestroy {
   title = 'NOVA PETZLIFE';
   cartItemCount = 0;
   private viewportResizeHandler?: () => void;
+  private focusInHandler?: (e: FocusEvent) => void;
+  private focusOutHandler?: (e: FocusEvent) => void;
 
   constructor() { }
 
   ngOnInit(): void {
-    if (typeof window !== 'undefined' && window.visualViewport) {
-      const vv = window.visualViewport;
-      this.viewportResizeHandler = () => {
-        // Detect software keyboard open state on iOS / mobile viewports
-        const isKeyboardOpen = (window.innerHeight - vv.height) > 150;
-        document.body.classList.toggle('keyboard-open', isKeyboardOpen);
+    if (typeof window !== 'undefined') {
+      // 1. Instant keyboard detection on input focus/blur (synchronous, iOS Safari + Android compatible)
+      this.focusInHandler = (e: FocusEvent) => {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+          const inputType = (target as HTMLInputElement).type;
+          if (inputType !== 'checkbox' && inputType !== 'radio') {
+            document.body.classList.add('keyboard-open');
+          }
+        }
       };
-      vv.addEventListener('resize', this.viewportResizeHandler);
-      vv.addEventListener('scroll', this.viewportResizeHandler);
+
+      this.focusOutHandler = () => {
+        setTimeout(() => {
+          const active = document.activeElement as HTMLElement | null;
+          if (!active || !['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) {
+            document.body.classList.remove('keyboard-open');
+          }
+        }, 80);
+      };
+
+      window.addEventListener('focusin', this.focusInHandler);
+      window.addEventListener('focusout', this.focusOutHandler);
+
+      // 2. Visual Viewport height change detection (handles accessory bar / virtual keyboard slide)
+      if (window.visualViewport) {
+        const vv = window.visualViewport;
+        this.viewportResizeHandler = () => {
+          const isKeyboardOpen = (window.innerHeight - vv.height > 120) ||
+                                 (window.screen.height - vv.height > 200);
+          if (isKeyboardOpen) {
+            document.body.classList.add('keyboard-open');
+          } else {
+            const active = document.activeElement as HTMLElement | null;
+            if (!active || !['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) {
+              document.body.classList.remove('keyboard-open');
+            }
+          }
+        };
+        vv.addEventListener('resize', this.viewportResizeHandler);
+        vv.addEventListener('scroll', this.viewportResizeHandler);
+      }
     }
   }
 
   ngOnDestroy(): void {
-    if (typeof window !== 'undefined' && window.visualViewport && this.viewportResizeHandler) {
-      window.visualViewport.removeEventListener('resize', this.viewportResizeHandler);
-      window.visualViewport.removeEventListener('scroll', this.viewportResizeHandler);
+    if (typeof window !== 'undefined') {
+      if (this.focusInHandler) window.removeEventListener('focusin', this.focusInHandler);
+      if (this.focusOutHandler) window.removeEventListener('focusout', this.focusOutHandler);
+      if (window.visualViewport && this.viewportResizeHandler) {
+        window.visualViewport.removeEventListener('resize', this.viewportResizeHandler);
+        window.visualViewport.removeEventListener('scroll', this.viewportResizeHandler);
+      }
     }
   }
 

@@ -804,7 +804,7 @@
       padding: 0.2rem 0.35rem 0.2rem 0.75rem;
 
       input {
-        font-size: 0.85rem;
+        font-size: 16px; // Enforce minimum 16px to prevent iOS Safari auto-zoom
       }
 
       .search-submit-btn {
@@ -954,7 +954,15 @@
     will-change: transform;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, visibility 0.2s ease;
+
+    :host-context(body.keyboard-open) &,
+    :host-context(body:has(input:focus, textarea:focus, select:focus)) & {
+      transform: translateY(150%) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      visibility: hidden !important;
+    }
 
     .bottom-nav-item {
       flex: 1;
