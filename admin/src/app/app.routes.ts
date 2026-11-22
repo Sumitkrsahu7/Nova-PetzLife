@@ -16,6 +16,7 @@ import { DeliverySettingsComponent } from './pages/delivery-settings/delivery-se
 import { CustomersComponent } from './pages/customers/customers.component';
 import { PetsComponent } from './pages/pets/pets.component';
 import { StaffComponent } from './pages/staff/staff.component';
+import { SalesReportsComponent } from './pages/sales-reports/sales-reports.component';
 import { adminAuthGuard } from './core/guards/admin-auth.guard';
 
 export const routes: Routes = [
@@ -24,6 +25,7 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [adminAuthGuard] },
   { path: 'orders', component: OrdersComponent, canActivate: [adminAuthGuard] },
   { path: 'returns', component: ReturnsComponent, canActivate: [adminAuthGuard] },
+  { path: 'sales-reports', component: SalesReportsComponent, canActivate: [adminAuthGuard] },
   { path: 'coupons', component: CouponsComponent, canActivate: [adminAuthGuard] },
   { path: 'analytics', component: AnalyticsComponent, canActivate: [adminAuthGuard] },
   { path: 'support-tickets', component: SupportTicketsComponent, canActivate: [adminAuthGuard] },

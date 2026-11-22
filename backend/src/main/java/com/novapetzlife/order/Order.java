@@ -89,6 +89,9 @@ public class Order {
     @Column(name = "updated_at")
     private Instant updatedAt = Instant.now();
 
+    @Column(name = "paid_at")
+    private Instant paidAt;
+
     public Order() {}
 
     public Order(
@@ -217,6 +220,14 @@ public class Order {
 
     public void setPaymentStatus(String paymentStatus) {
         this.paymentStatus = paymentStatus;
+    }
+
+    public Instant getPaidAt() {
+        return paidAt;
+    }
+
+    public void setPaidAt(Instant paidAt) {
+        this.paidAt = paidAt;
     }
 
     public String getPaymentMethod() {

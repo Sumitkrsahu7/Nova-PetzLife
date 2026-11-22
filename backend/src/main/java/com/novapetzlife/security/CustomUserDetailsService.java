@@ -8,11 +8,14 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.stream.Collectors;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
+
+    public static final String OAUTH_NO_LOCAL_PASSWORD = "NO_LOCAL_PASSWORD_OAUTH_ACCOUNT";
 
     private final UserRepository userRepository;
 
@@ -46,9 +49,14 @@ public class CustomUserDetailsService implements UserDetailsService {
             );
         }
 
+        // Explicit safe representation of account without local password hash (e.g. Google-only account)
+        String password = StringUtils.hasText(user.getPasswordHash())
+                ? user.getPasswordHash()
+                : OAUTH_NO_LOCAL_PASSWORD;
+
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
-                user.getPasswordHash(),
+                password,
                 authorities
         );
     }

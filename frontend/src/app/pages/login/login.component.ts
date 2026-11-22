@@ -5,6 +5,7 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { CartService } from '../../core/services/cart.service';
 import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -32,6 +33,8 @@ export class LoginComponent implements OnInit {
   showRegConfirm = false;
 
   isLoading = false;
+  isGoogleLoading = false;
+  googleButtonRendered = false;
   errorMessage = '';
   successMessage = '';
   returnUrl = '/';
@@ -55,7 +58,100 @@ export class LoginComponent implements OnInit {
 
     if (this.authService.isAuthenticated()) {
       this.router.navigateByUrl(this.returnUrl);
+      return;
     }
+
+    setTimeout(() => this.initGoogleIdentity(), 100);
+  }
+
+  private initGoogleIdentity(): void {
+    const clientId = environment.googleClientId;
+    if (!clientId) {
+      this.googleButtonRendered = false;
+      return;
+    }
+
+    if (typeof (window as any).google === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        this.renderGoogleButton(clientId);
+      };
+      document.head.appendChild(script);
+    } else {
+      this.renderGoogleButton(clientId);
+    }
+  }
+
+  private renderGoogleButton(clientId: string): void {
+    try {
+      const google = (window as any).google;
+      if (!google?.accounts?.id) return;
+
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response: any) => {
+          if (response?.credential) {
+            this.handleGoogleCredential(response.credential);
+          }
+        }
+      });
+
+      const loginContainer = document.getElementById('google-btn-login');
+      if (loginContainer) {
+        google.accounts.id.renderButton(loginContainer, {
+          theme: 'outline',
+          size: 'large',
+          width: 320,
+          text: 'continue_with'
+        });
+        this.googleButtonRendered = true;
+      }
+
+      const regContainer = document.getElementById('google-btn-register');
+      if (regContainer) {
+        google.accounts.id.renderButton(regContainer, {
+          theme: 'outline',
+          size: 'large',
+          width: 320,
+          text: 'continue_with'
+        });
+        this.googleButtonRendered = true;
+      }
+    } catch (e) {
+      console.warn('Google Identity button rendering skipped:', e);
+    }
+  }
+
+  handleGoogleClick(): void {
+    if (!environment.googleClientId) {
+      this.errorMessage = 'Google Sign-In is ready! Please configure GOOGLE_CLIENT_ID in your environment to complete the connection.';
+      return;
+    }
+    const google = (window as any).google;
+    if (google?.accounts?.id) {
+      google.accounts.id.prompt();
+    }
+  }
+
+  handleGoogleCredential(credential: string): void {
+    if (this.isGoogleLoading) return;
+    this.isGoogleLoading = true;
+    this.errorMessage = '';
+
+    this.authService.loginWithGoogle(credential).subscribe({
+      next: () => {
+        this.isGoogleLoading = false;
+        this.cartService.mergeCartOnLogin().subscribe({ next: () => {}, error: () => {} });
+        this.router.navigateByUrl(this.returnUrl);
+      },
+      error: err => {
+        this.isGoogleLoading = false;
+        this.errorMessage = err.error?.message || 'Google authentication failed. Please try again.';
+      }
+    });
   }
 
   setMode(newMode: 'login' | 'register'): void {

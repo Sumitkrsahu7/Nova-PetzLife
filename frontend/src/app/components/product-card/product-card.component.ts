@@ -18,6 +18,14 @@ export class ProductCardComponent {
   selectedVariant?: ProductVariant;
   isWishlisted: boolean = false;
   addedFeedback: boolean = false;
+  isHovered: boolean = false;
+
+  get displayImageUrl(): string {
+    if (this.isHovered && this.product.backImageUrl) {
+      return this.product.backImageUrl;
+    }
+    return this.product.imageUrl;
+  }
 
   get currentPrice(): number {
     if (this.selectedVariant) {

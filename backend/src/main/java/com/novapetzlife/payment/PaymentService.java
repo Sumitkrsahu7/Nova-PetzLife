@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -180,15 +181,18 @@ public class PaymentService {
             throw new IllegalArgumentException("Payment verification failed: Invalid transaction signature");
         }
 
+        Instant paymentTime = Instant.now();
         payment.setGatewayPaymentId(request.getRazorpayPaymentId());
         payment.setGatewaySignature(request.getRazorpaySignature());
         payment.setStatus("SUCCESS");
+        payment.setCompletedAt(paymentTime);
         paymentRepository.save(payment);
 
         String prevStatus = order.getOrderStatus();
         order.setPaymentStatus("COMPLETED");
         order.setOrderStatus("CONFIRMED");
         order.setPaymentMethod("RAZORPAY");
+        order.setPaidAt(paymentTime);
         order.addStatusHistory(new OrderStatusHistory(
                 order,
                 prevStatus,
@@ -235,14 +239,17 @@ public class PaymentService {
 
                 if (razorpayOrderId != null) {
                     paymentRepository.findByGatewayOrderId(razorpayOrderId).ifPresent(payment -> {
+                        Instant webhookTime = Instant.now();
                         payment.setGatewayPaymentId(razorpayPaymentId);
                         payment.setStatus("SUCCESS");
+                        payment.setCompletedAt(webhookTime);
                         paymentRepository.save(payment);
 
                         Order order = payment.getOrder();
                         if (!"COMPLETED".equalsIgnoreCase(order.getPaymentStatus())) {
                             order.setPaymentStatus("COMPLETED");
                             order.setOrderStatus("CONFIRMED");
+                            order.setPaidAt(webhookTime);
                             order.addStatusHistory(new OrderStatusHistory(
                                     order,
                                     order.getOrderStatus(),

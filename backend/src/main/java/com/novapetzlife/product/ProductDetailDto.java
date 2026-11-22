@@ -33,7 +33,8 @@ public record ProductDetailDto(
             String imageUrl,
             String altText,
             Integer displayOrder,
-            Boolean isPrimary
+            Boolean isPrimary,
+            String viewType
     ) {}
 
     public record ProductVariantDto(
@@ -59,7 +60,7 @@ public record ProductDetailDto(
 
     public static ProductDetailDto fromEntity(Product p, Integer availableStock) {
         List<ProductImageDto> imageDtos = p.getImages() != null
-                ? p.getImages().stream().map(i -> new ProductImageDto(i.getId(), i.getImageUrl(), i.getAltText(), i.getDisplayOrder(), i.getIsPrimary())).toList()
+                ? p.getImages().stream().map(i -> new ProductImageDto(i.getId(), i.getImageUrl(), i.getAltText(), i.getDisplayOrder(), i.getIsPrimary(), i.getViewType() != null ? i.getViewType() : (Boolean.TRUE.equals(i.getIsPrimary()) ? "FRONT" : "ADDITIONAL"))).toList()
                 : List.of();
 
         List<ProductVariantDto> variantDtos = p.getVariants() != null

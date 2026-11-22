@@ -1,5 +1,7 @@
 package com.novapetzlife.tax;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -40,10 +42,17 @@ public record InvoiceDto(
         BigDecimal totalCgst,
         BigDecimal totalSgst,
         BigDecimal totalIgst,
+        BigDecimal discountAmount,
         BigDecimal deliveryCharge,
         BigDecimal grandTotal,
-        String amountInWords
+        String amountInWords,
+        String documentType
 ) {
+    @JsonProperty("finalPayableAmount")
+    public BigDecimal getFinalPayableAmount() {
+        return grandTotal;
+    }
+
     public record InvoiceItemDto(
             int itemNo,
             String productName,
@@ -59,5 +68,25 @@ public record InvoiceDto(
             BigDecimal sgstAmount,
             BigDecimal totalAmount,
             String returnPolicy
-    ) {}
+    ) {
+        @JsonProperty("itemNumber")
+        public int getItemNumber() {
+            return itemNo;
+        }
+
+        @JsonProperty("taxableAmount")
+        public BigDecimal getTaxableAmount() {
+            return taxableValue;
+        }
+
+        @JsonProperty("grossTotal")
+        public BigDecimal getGrossTotal() {
+            return totalAmount;
+        }
+
+        @JsonProperty("returnPolicySummary")
+        public String getReturnPolicySummary() {
+            return returnPolicy;
+        }
+    }
 }

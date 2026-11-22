@@ -80,9 +80,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/cart/**").permitAll()
                         .requestMatchers("/api/v1/delivery/**").permitAll()
                         .requestMatchers("/api/v1/settings/**").permitAll()
-                        // Public Order Tracking, Invoices & Returns (Checkout requires authentication)
+                        // Public Order Tracking & Returns (Checkout & Invoices require authentication)
                         .requestMatchers("/api/v1/orders/*/track").permitAll()
-                        .requestMatchers("/api/v1/orders/*/invoice").permitAll()
                         .requestMatchers("/api/v1/orders/*/return-eligibility").permitAll()
                         .requestMatchers("/api/v1/orders/*/cancel").permitAll()
                         .requestMatchers("/api/v1/returns/**").permitAll()
@@ -104,6 +103,7 @@ public class SecurityConfig {
                         // Customer Protected Endpoints
                         .requestMatchers("/api/v1/customer/**").authenticated()
                         .requestMatchers("/api/v1/orders/**").authenticated()
+                        .requestMatchers("/api/v1/invoices/**").authenticated()
                         // Any other request requires authentication
                         .anyRequest().authenticated()
                 )

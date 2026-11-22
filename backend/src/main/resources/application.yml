@@ -43,6 +43,9 @@ app:
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
     cookie-secure: ${JWT_COOKIE_SECURE:false}
     cookie-same-site: ${JWT_COOKIE_SAME_SITE:Lax}
+  oauth:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:4201}
   frontend:
@@ -61,12 +64,12 @@ app:
       username: ${BREVO_SMTP_USERNAME:}
       password: ${BREVO_SMTP_PASSWORD:}
   shop:
-    name: "NOVA PETZLIFE"
-    address: ${SHOP_ADDRESS:NOVA PETZLIFE, Thiruvananthapuram, Kerala 695003, India}
-    city: "Thiruvananthapuram"
-    state: "Kerala"
-    country: "India"
-    pin-code: "695003"
+    name: ${SHOP_NAME:NOVA PETZLIFE}
+    address: ${SHOP_ADDRESS:}
+    city: ${SHOP_CITY:}
+    state: ${SHOP_STATE:Kerala}
+    country: ${SHOP_COUNTRY:India}
+    pin-code: ${SHOP_PIN_CODE:}
     default-delivery-radius-km: 20.0
 
 resend:

@@ -7,8 +7,12 @@
     </div>
     <div class="actions-right">
       <button class="btn btn-outline" (click)="loadInvoice(orderNumber)">Refresh</button>
-      <button class="btn btn-primary" (click)="printInvoice()">
-        🖨️ Print / Save as PDF
+      <button class="btn btn-primary" (click)="downloadPdf()" [disabled]="isDownloadingPdf">
+        <span *ngIf="isDownloadingPdf" class="spinner-sm"></span>
+        <span *ngIf="!isDownloadingPdf">📥 Download PDF</span>
+      </button>
+      <button class="btn btn-secondary" (click)="printInvoice()">
+        🖨️ Print
       </button>
     </div>
   </div>
@@ -16,14 +20,14 @@
   <!-- Loading & Error States -->
   <div *ngIf="isLoading" class="loading-state">
     <div class="spinner"></div>
-    <p>Generating official GST Tax Invoice...</p>
+    <p>Loading order receipt / invoice...</p>
   </div>
 
   <div *ngIf="errorMessage && !isLoading" class="alert-error">
     <p>⚠️ {{ errorMessage }}</p>
   </div>
 
-  <!-- Printable GST Invoice Card -->
+  <!-- Printable Invoice / Receipt Sheet -->
   <div *ngIf="invoice && !isLoading" class="invoice-sheet" id="printable-invoice">
     <!-- Header -->
     <header class="invoice-header">
@@ -37,18 +41,21 @@
           {{ invoice.storeAddress }}, {{ invoice.storeCity }}, {{ invoice.storeState }} - {{ invoice.storePinCode }}
         </p>
         <p class="store-contact">Phone: {{ invoice.storePhone }} | State: {{ invoice.storeState }} (Code: {{ invoice.storeStateCode }})</p>
-        <p class="gstin-badge"><strong>GSTIN:</strong> {{ invoice.storeGstin }}</p>
+        <p *ngIf="invoice.storeGstin" class="gstin-badge"><strong>GSTIN:</strong> {{ invoice.storeGstin }}</p>
+        <div *ngIf="!invoice.storeGstin" class="provisional-notice">
+          <strong>Notice:</strong> GST details are not configured. This document is not represented as a GST tax invoice.
+        </div>
       </div>
 
       <div class="meta-block">
-        <div class="invoice-title-tag">TAX INVOICE</div>
+        <div class="invoice-title-tag">{{ invoice.storeGstin ? 'TAX INVOICE' : 'ORDER RECEIPT — PROVISIONAL' }}</div>
         <table class="meta-table">
           <tr>
-            <td><strong>Invoice No:</strong></td>
+            <td><strong>{{ invoice.storeGstin ? 'Invoice No:' : 'Receipt No:' }}</strong></td>
             <td>{{ invoice.invoiceNumber }}</td>
           </tr>
           <tr>
-            <td><strong>Invoice Date:</strong></td>
+            <td><strong>{{ invoice.storeGstin ? 'Invoice Date:' : 'Receipt Date:' }}</strong></td>
             <td>{{ invoice.invoiceDate }}</td>
           </tr>
           <tr>
@@ -91,12 +98,19 @@
         <p *ngIf="invoice.customerEmail" class="party-email">✉️ {{ invoice.customerEmail }}</p>
       </div>
 
-      <div class="party-card tax-specs">
+      <div *ngIf="invoice.storeGstin" class="party-card tax-specs">
         <h3>Tax Details:</h3>
         <p><strong>Place of Supply:</strong> {{ invoice.placeOfSupply }}</p>
         <p><strong>Reverse Charge:</strong> {{ invoice.reverseCharge }}</p>
         <p><strong>Tax Type:</strong> Intra-State Supply (CGST + SGST &#64; 9% each)</p>
         <p><strong>Store Delivery Radius:</strong> Within 20 km (our store)</p>
+      </div>
+
+      <div *ngIf="!invoice.storeGstin" class="party-card tax-specs">
+        <h3>Document Details:</h3>
+        <p><strong>Document Type:</strong> Order Receipt — Provisional</p>
+        <p><strong>Store Delivery Radius:</strong> Within 20 km (our store)</p>
+        <p><strong>Jurisdiction:</strong> Thiruvananthapuram, Kerala</p>
       </div>
     </section>
 
@@ -104,7 +118,7 @@
     <section class="items-section">
       <table class="items-table">
         <thead>
-          <tr>
+          <tr *ngIf="invoice.storeGstin">
             <th>#</th>
             <th>Description of Goods</th>
             <th>HSN</th>
@@ -113,6 +127,14 @@
             <th class="text-right">Taxable Value</th>
             <th class="text-right">CGST (9%)</th>
             <th class="text-right">SGST (9%)</th>
+            <th class="text-right">Total (₹)</th>
+          </tr>
+          <tr *ngIf="!invoice.storeGstin">
+            <th>#</th>
+            <th>Description of Goods</th>
+            <th>HSN</th>
+            <th class="text-center">Qty</th>
+            <th class="text-right">Unit Price</th>
             <th class="text-right">Total (₹)</th>
           </tr>
         </thead>
@@ -124,12 +146,14 @@
               <div class="item-brand">{{ item.brandName }} | SKU: {{ item.sku }}</div>
               <div class="item-policy"><small>Policy: {{ item.returnPolicySummary }}</small></div>
             </td>
-            <td>{{ item.hsnCode }}</td>
+            <td>{{ item.hsnCode || '-' }}</td>
             <td class="text-center">{{ item.quantity }}</td>
             <td class="text-right">₹{{ item.unitPrice | number:'1.2-2' }}</td>
-            <td class="text-right">₹{{ item.taxableAmount | number:'1.2-2' }}</td>
-            <td class="text-right">₹{{ item.cgstAmount | number:'1.2-2' }}</td>
-            <td class="text-right">₹{{ item.sgstAmount | number:'1.2-2' }}</td>
+            <ng-container *ngIf="invoice.storeGstin">
+              <td class="text-right">₹{{ item.taxableAmount | number:'1.2-2' }}</td>
+              <td class="text-right">₹{{ item.cgstAmount | number:'1.2-2' }}</td>
+              <td class="text-right">₹{{ item.sgstAmount | number:'1.2-2' }}</td>
+            </ng-container>
             <td class="text-right font-semibold">₹{{ item.grossTotal | number:'1.2-2' }}</td>
           </tr>
         </tbody>
@@ -148,31 +172,41 @@
             <li>Goods once sold are covered by the item-level return policy indicated above.</li>
             <li>Damaged/defective claims must be reported within 48 hours with packaging photo/video.</li>
             <li>Subject to Thiruvananthapuram jurisdiction only.</li>
+            <li *ngIf="invoice.storeGstin">This is a computer generated authentic GST Tax Invoice.</li>
+            <li *ngIf="!invoice.storeGstin">GST details are not configured. This document is not represented as a GST tax invoice.</li>
           </ol>
         </div>
       </div>
 
       <div class="calculation-column">
         <table class="calc-table">
-          <tr>
+          <tr *ngIf="invoice.storeGstin">
             <td>Total Taxable Value:</td>
             <td class="text-right">₹{{ invoice.totalTaxableValue | number:'1.2-2' }}</td>
           </tr>
-          <tr>
+          <tr *ngIf="invoice.storeGstin">
             <td>Central GST (CGST 9%):</td>
             <td class="text-right">₹{{ invoice.totalCgst | number:'1.2-2' }}</td>
           </tr>
-          <tr>
+          <tr *ngIf="invoice.storeGstin">
             <td>State GST (SGST 9%):</td>
             <td class="text-right">₹{{ invoice.totalSgst | number:'1.2-2' }}</td>
+          </tr>
+          <tr *ngIf="!invoice.storeGstin">
+            <td>Item Subtotal:</td>
+            <td class="text-right">₹{{ invoice.totalTaxableValue | number:'1.2-2' }}</td>
+          </tr>
+          <tr *ngIf="invoice.discountAmount && invoice.discountAmount > 0">
+            <td>Discount:</td>
+            <td class="text-right text-discount">-₹{{ invoice.discountAmount | number:'1.2-2' }}</td>
           </tr>
           <tr>
             <td>Delivery & Handling Charge:</td>
             <td class="text-right">₹{{ invoice.deliveryCharge | number:'1.2-2' }}</td>
           </tr>
           <tr class="grand-total-row">
-            <td><strong>Grand Total (Inclusive of GST):</strong></td>
-            <td class="text-right"><strong>₹{{ invoice.finalPayableAmount | number:'1.2-2' }}</strong></td>
+            <td><strong>{{ invoice.storeGstin ? 'Grand Total (Inclusive of GST):' : 'Grand Total / Amount Payable:' }}</strong></td>
+            <td class="text-right"><strong>₹{{ (invoice.grandTotal || invoice.finalPayableAmount) | number:'1.2-2' }}</strong></td>
           </tr>
         </table>
 
@@ -189,4 +223,3 @@
     </footer>
   </div>
 </div>
-

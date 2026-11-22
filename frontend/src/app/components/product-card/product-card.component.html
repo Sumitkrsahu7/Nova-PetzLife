@@ -14,8 +14,14 @@
   </div>
 
   <!-- Product Image Container -->
-  <a [routerLink]="['/product', product.id]" class="product-image-box">
-    <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+  <a
+    [routerLink]="['/product', product.id]"
+    class="product-image-box"
+    (mouseenter)="isHovered = true"
+    (mouseleave)="isHovered = false"
+  >
+    <img [src]="displayImageUrl" [alt]="product.name" loading="lazy" />
+    <span class="view-tag-pill" *ngIf="isHovered && product.backImageUrl">Back View</span>
     <span class="discount-pill" *ngIf="discountPercent">-{{ discountPercent }}%</span>
   </a>
 

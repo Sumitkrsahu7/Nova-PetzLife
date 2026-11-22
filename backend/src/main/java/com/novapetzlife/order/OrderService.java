@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -325,7 +326,13 @@ public class OrderService {
                         order.getOrderNumber()
                 );
             }
-            order.setPaymentStatus("COMPLETED");
+            // For COD/offline orders, confirm payment completion only upon verified customer delivery OTP handover
+            if (Boolean.TRUE.equals(order.getIsOtpVerified())) {
+                order.setPaymentStatus("COMPLETED");
+                if (order.getPaidAt() == null) {
+                    order.setPaidAt(Instant.now());
+                }
+            }
         }
 
         order.setOrderStatus(normalizedNewStatus);

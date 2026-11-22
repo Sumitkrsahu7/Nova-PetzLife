@@ -552,19 +552,15 @@ class PaymentAndInvoiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should retrieve GST tax invoice with Kerala State Code 32, store GSTIN, and HSN breakdown")
+    @DisplayName("Should retrieve order invoice / provisional receipt with Kerala State Code 32 and amount in words")
     void testGetOrderGstInvoice_Success() throws Exception {
-        mockMvc.perform(get("/api/v1/orders/" + testOrder.getOrderNumber() + "/invoice"))
+        mockMvc.perform(get("/api/v1/orders/" + testOrder.getOrderNumber() + "/invoice")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("aditya.payment@example.com").roles("CUSTOMER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
                 .andExpect(jsonPath("$.data.storeName", is("NOVA PETZLIFE")))
                 .andExpect(jsonPath("$.data.storeStateCode", is("32")))
-                .andExpect(jsonPath("$.data.storeGstin", is("32AAAAA0000A1Z5")))
-                .andExpect(jsonPath("$.data.placeOfSupply", is("Kerala (32)")))
                 .andExpect(jsonPath("$.data.items", hasSize(1)))
-                .andExpect(jsonPath("$.data.items[0].hsnCode", is("2309")))
-                .andExpect(jsonPath("$.data.items[0].cgstRate", is(9.00)))
-                .andExpect(jsonPath("$.data.items[0].sgstRate", is(9.00)))
                 .andExpect(jsonPath("$.data.amountInWords", containsString("Rupees")));
     }
 

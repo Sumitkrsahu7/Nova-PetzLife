@@ -82,6 +82,21 @@ export class AuthService implements OnDestroy {
     );
   }
 
+  loginWithGoogle(credential: string): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/auth/google`, { credential }, { withCredentials: true }).pipe(
+      tap(res => {
+        const authData = res?.data || res;
+        if (authData?.token) {
+          this.handleAuthSuccess(authData);
+        }
+      })
+    );
+  }
+
+  linkGoogle(credential: string): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/auth/google/link`, { credential }, { withCredentials: true });
+  }
+
   refreshToken(): Observable<any> {
     return this.http.post<any>(`${environment.apiUrl}/auth/refresh`, {}, {
       withCredentials: true,

@@ -17,6 +17,7 @@ public record ProductSummaryDto(
         String petType,
         String lifeStage,
         String primaryImageUrl,
+        String backImageUrl,
         Boolean inStock,
         Boolean isFeatured,
         Boolean returnAllowed,
@@ -37,9 +38,17 @@ public record ProductSummaryDto(
 
     public static ProductSummaryDto fromEntity(Product p, boolean inStock) {
         String primaryImage = p.getImages() != null && !p.getImages().isEmpty()
-                ? p.getImages().stream().filter(ProductImage::getIsPrimary).findFirst()
+                ? p.getImages().stream().filter(img -> Boolean.TRUE.equals(img.getIsPrimary()) || "FRONT".equalsIgnoreCase(img.getViewType())).findFirst()
                 .map(ProductImage::getImageUrl)
                 .orElse(p.getImages().get(0).getImageUrl())
+                : null;
+
+        String backImage = p.getImages() != null && p.getImages().size() > 1
+                ? p.getImages().stream()
+                .filter(img -> "BACK".equalsIgnoreCase(img.getViewType()) || img.getDisplayOrder() == 1)
+                .findFirst()
+                .map(ProductImage::getImageUrl)
+                .orElse(p.getImages().size() > 1 ? p.getImages().get(1).getImageUrl() : null)
                 : null;
 
         List<VariantSummaryDto> variantDtos = p.getVariants() != null
@@ -65,6 +74,7 @@ public record ProductSummaryDto(
                 p.getPetType(),
                 p.getLifeStage(),
                 primaryImage,
+                backImage,
                 inStock,
                 p.getIsFeatured(),
                 returnAllowed,

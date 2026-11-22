@@ -21,7 +21,7 @@ public class Customer {
     @Column(length = 150)
     private String email;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = true, length = 20)
     private String phone;
 
     @Column(name = "first_name", nullable = false, length = 100)

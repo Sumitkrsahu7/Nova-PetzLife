@@ -13,4 +13,6 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     Optional<Order> findByOrderNumber(String orderNumber);
     Page<Order> findByCustomerIdOrderByCreatedAtDesc(Long customerId, Pageable pageable);
     Optional<Order> findByOrderNumberAndCustomerId(String orderNumber, Long customerId);
+    java.util.List<Order> findByCreatedAtBetweenOrderByCreatedAtDesc(java.time.Instant start, java.time.Instant end);
+    java.util.List<Order> findByPaidAtBetweenOrderByPaidAtDesc(java.time.Instant start, java.time.Instant end);
 }

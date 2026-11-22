@@ -13,19 +13,49 @@
       <div class="gallery-column">
         <div class="main-image-wrap">
           <img [src]="selectedImageUrl" [alt]="product.name" class="main-image" />
+
+          <!-- Front / Back / View Badge -->
+          <span *ngIf="product.images && product.images.length > 0" class="view-type-badge" [class.front-view]="activeImageIndex === 0" [class.back-view]="activeImageIndex === 1">
+            {{ currentViewLabel }}
+          </span>
+
+          <!-- Prev / Next Navigation Arrows -->
+          <button
+            *ngIf="product.images && product.images.length > 1"
+            type="button"
+            class="gallery-arrow prev-arrow"
+            (click)="prevImage()"
+            aria-label="Previous image"
+          >
+            ‹
+          </button>
+          <button
+            *ngIf="product.images && product.images.length > 1"
+            type="button"
+            class="gallery-arrow next-arrow"
+            (click)="nextImage()"
+            aria-label="Next image"
+          >
+            ›
+          </button>
+
           <span *ngIf="product.discountedPrice && product.discountedPrice < product.basePrice" class="sale-badge">
             SAVE ₹{{ (product.basePrice - product.discountedPrice).toFixed(0) }}
           </span>
         </div>
+
+        <!-- Thumbnail Strip with View Badges -->
         <div *ngIf="product.images && product.images.length > 1" class="thumbnail-strip">
           <button
-            *ngFor="let img of product.images"
+            *ngFor="let img of product.images; let i = index"
             type="button"
             class="thumbnail-btn"
-            [class.active]="selectedImageUrl === img.imageUrl"
-            (click)="selectImage(img.imageUrl)"
+            [class.active]="activeImageIndex === i"
+            (click)="selectImageByIndex(i)"
+            [title]="getViewLabelForIndex(i)"
           >
             <img [src]="img.imageUrl" [alt]="img.altText || product.name" />
+            <span class="thumb-view-tag">{{ i === 0 ? 'Front' : (i === 1 ? 'Back' : '+' + (i + 1)) }}</span>
           </button>
         </div>
       </div>

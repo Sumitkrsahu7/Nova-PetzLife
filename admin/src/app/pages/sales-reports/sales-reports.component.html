@@ -1,0 +1,211 @@
+<div class="sales-reports-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">📊 Management Sales Reports</h1>
+      <p class="page-subtitle">Track revenue, order metrics, refunds, and download audited financial reports</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="exportCsv()" [disabled]="isExportingCsv || isLoading">
+        <span *ngIf="isExportingCsv" class="spinner-sm"></span>
+        <span *ngIf="!isExportingCsv">📥 Export CSV</span>
+      </button>
+      <button class="btn btn-primary" (click)="exportPdf()" [disabled]="isExportingPdf || isLoading">
+        <span *ngIf="isExportingPdf" class="spinner-sm"></span>
+        <span *ngIf="!isExportingPdf">📄 Export PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Controls Bar: Period Toggle & Date Selector -->
+  <div class="controls-card">
+    <div class="period-toggle-group" role="group" aria-label="Select report period">
+      <button
+        type="button"
+        class="toggle-btn"
+        [class.active]="period === 'WEEKLY'"
+        (click)="setPeriod('WEEKLY')"
+      >
+        📅 Weekly
+      </button>
+      <button
+        type="button"
+        class="toggle-btn"
+        [class.active]="period === 'MONTHLY'"
+        (click)="setPeriod('MONTHLY')"
+      >
+        🗓️ Monthly
+      </button>
+      <button
+        type="button"
+        class="toggle-btn"
+        [class.active]="period === 'YEARLY'"
+        (click)="setPeriod('YEARLY')"
+      >
+        📆 Yearly
+      </button>
+    </div>
+
+    <div class="date-picker-wrap">
+      <label for="reportDate">Select Anchor Date:</label>
+      <input
+        type="date"
+        id="reportDate"
+        [(ngModel)]="selectedDate"
+        (change)="onDateChange()"
+        class="date-input"
+      />
+      <button type="button" class="btn btn-sm btn-refresh" (click)="loadReport()" title="Refresh Report">
+        🔄 Refresh
+      </button>
+    </div>
+
+    <div class="range-display" *ngIf="report">
+      <span class="range-badge">
+        <strong>Range:</strong> {{ report.formattedDateRange }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+    ⚠️ {{ errorMessage }}
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Calculating sales metrics and order statistics...</p>
+  </div>
+
+  <!-- Un-attributable Exclusion Notice -->
+  <div *ngIf="report && !isLoading && report.unattributableOrdersCount && report.unattributableOrdersCount > 0" class="alert alert-warning" role="alert">
+    ℹ️ <strong>Attribution Notice:</strong> {{ report.unattributableOrdersCount }} paid order(s) totaling ₹{{ report.unattributableAmount | number:'1.2-2' }} were excluded from this date-attributed report due to unresolvable payment timestamps.
+  </div>
+
+  <!-- KPI Summary Cards (6 Cards) -->
+  <div *ngIf="report && !isLoading" class="kpi-grid">
+    <div class="kpi-card gross-card">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-info">
+        <span class="kpi-title">CUSTOMER RECEIPTS</span>
+        <span class="kpi-value">₹{{ (report.customerReceipts || report.grossSales) | number:'1.2-2' }}</span>
+        <span class="kpi-hint">Total paid order value (cash inflow)</span>
+      </div>
+    </div>
+
+    <div class="kpi-card net-card">
+      <div class="kpi-icon">✨</div>
+      <div class="kpi-info">
+        <span class="kpi-title">NET RECEIPTS</span>
+        <span class="kpi-value">₹{{ (report.netReceipts || report.netSales) | number:'1.2-2' }}</span>
+        <span class="kpi-hint">Customer Receipts − Completed Refunds</span>
+      </div>
+    </div>
+
+    <div class="kpi-card orders-card">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-info">
+        <span class="kpi-title">TOTAL ORDERS</span>
+        <span class="kpi-value">{{ report.successfulOrders }} / {{ report.totalOrders }}</span>
+        <span class="kpi-hint">Successful / Total Created</span>
+      </div>
+    </div>
+
+    <div class="kpi-card units-card">
+      <div class="kpi-icon">🏷️</div>
+      <div class="kpi-info">
+        <span class="kpi-title">UNITS SOLD</span>
+        <span class="kpi-value">{{ report.totalUnitsSold }}</span>
+        <span class="kpi-hint">Individual items dispatched</span>
+      </div>
+    </div>
+
+    <div class="kpi-card refunds-card">
+      <div class="kpi-icon">🔄</div>
+      <div class="kpi-info">
+        <span class="kpi-title">REFUNDS</span>
+        <span class="kpi-value">₹{{ report.totalRefunds | number:'1.2-2' }}</span>
+        <span class="kpi-hint">{{ report.refundedOrders }} completed refunds</span>
+      </div>
+    </div>
+
+    <div class="kpi-card aov-card">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-info">
+        <span class="kpi-title">AVG ORDER VALUE</span>
+        <span class="kpi-value">₹{{ report.averageOrderValue | number:'1.2-2' }}</span>
+        <span class="kpi-hint">Customer Receipts / Paid Orders</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Transactions Table -->
+  <div *ngIf="report && !isLoading" class="table-card">
+    <div class="table-card-header">
+      <h2>Order Transactions ({{ report.orders.length }} orders in range)</h2>
+      <div class="breakdown-meta">
+        <span>Item Subtotal: <strong>₹{{ (report.itemSubtotal || 0) | number:'1.2-2' }}</strong></span>
+        <span>•</span>
+        <span>Discounts: <strong>-₹{{ (report.totalDiscounts || 0) | number:'1.2-2' }}</strong></span>
+        <span>•</span>
+        <span>Delivery Fees: <strong>₹{{ report.totalShipping | number:'1.2-2' }}</strong></span>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Order No</th>
+            <th>Date & Time</th>
+            <th>Customer</th>
+            <th>Status</th>
+            <th>Payment</th>
+            <th class="text-center">Units</th>
+            <th class="text-right">Subtotal</th>
+            <th class="text-right">Discount</th>
+            <th class="text-right">Shipping</th>
+            <th class="text-right">Grand Total</th>
+            <th class="text-right">Net Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let o of report.orders">
+            <td>
+              <span class="order-num-link">{{ o.orderNumber }}</span>
+            </td>
+            <td class="text-muted">{{ o.formattedDate }}</td>
+            <td>
+              <div class="customer-cell">
+                <strong>{{ o.customerName }}</strong>
+                <small *ngIf="o.customerEmail">{{ o.customerEmail }}</small>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="o.orderStatus.toLowerCase()">
+                {{ o.orderStatus }}
+              </span>
+            </td>
+            <td>
+              <span class="payment-badge" [ngClass]="o.paymentStatus.toLowerCase()">
+                {{ o.paymentMethod }} ({{ o.paymentStatus }})
+              </span>
+            </td>
+            <td class="text-center">{{ o.itemsCount }}</td>
+            <td class="text-right">₹{{ o.subtotal | number:'1.2-2' }}</td>
+            <td class="text-right text-discount">-₹{{ o.discountAmount | number:'1.2-2' }}</td>
+            <td class="text-right">₹{{ o.shippingAmount | number:'1.2-2' }}</td>
+            <td class="text-right font-bold">₹{{ o.grandTotal | number:'1.2-2' }}</td>
+            <td class="text-right font-bold text-success">₹{{ o.netAmount | number:'1.2-2' }}</td>
+          </tr>
+          <tr *ngIf="report.orders.length === 0">
+            <td colspan="11" class="empty-state">
+              No orders found for the selected reporting period.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
