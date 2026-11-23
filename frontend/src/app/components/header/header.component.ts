@@ -120,10 +120,17 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   onKeyDown(event: KeyboardEvent): void {
-    if (!this.showSuggestions || this.suggestions.length === 0) {
-      if (event.key === 'Enter') {
-        this.onSearch();
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (this.showSuggestions && this.selectedSuggestionIndex >= 0 && this.selectedSuggestionIndex < this.suggestions.length) {
+        this.selectSuggestion(this.suggestions[this.selectedSuggestionIndex]);
+      } else {
+        this.onSearch(event);
       }
+      return;
+    }
+
+    if (!this.showSuggestions || this.suggestions.length === 0) {
       return;
     }
 
@@ -135,13 +142,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
       this.selectedSuggestionIndex = this.selectedSuggestionIndex <= 0
         ? this.suggestions.length - 1
         : this.selectedSuggestionIndex - 1;
-    } else if (event.key === 'Enter') {
-      event.preventDefault();
-      if (this.selectedSuggestionIndex >= 0 && this.selectedSuggestionIndex < this.suggestions.length) {
-        this.selectSuggestion(this.suggestions[this.selectedSuggestionIndex]);
-      } else {
-        this.onSearch();
-      }
     } else if (event.key === 'Escape') {
       this.showSuggestions = false;
     }
@@ -225,12 +225,22 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.requestLogout();
   }
 
-  onSearch(): void {
-    if (this.searchQuery.trim()) {
+  onSearch(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+    }
+    const query = this.searchQuery?.trim();
+    if (query) {
       this.showSuggestions = false;
       this.closeMobileMenu();
-      this.searchSubmitted.emit(this.searchQuery.trim());
-      this.router.navigate(['/shop'], { queryParams: { query: this.searchQuery.trim() } });
+
+      // Dismiss mobile virtual keyboard
+      if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+
+      this.searchSubmitted.emit(query);
+      this.router.navigate(['/shop'], { queryParams: { query } });
     }
   }
 }

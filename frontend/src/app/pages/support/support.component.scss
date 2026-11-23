@@ -198,6 +198,11 @@
       text-transform: uppercase;
       font-weight: 600;
       &:focus { outline: none; border-color: #248B58; }
+
+      &[type="password"] {
+        text-transform: none;
+        font-family: monospace;
+      }
     }
 
     button {

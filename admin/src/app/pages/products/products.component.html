@@ -51,6 +51,15 @@
         </select>
       </div>
       <div class="filter-group">
+        <label>Status:</label>
+        <select [(ngModel)]="statusFilter" (change)="catalogPage = 0">
+          <option value="ALL">All Status</option>
+          <option value="ACTIVE">Active Only</option>
+          <option value="INACTIVE">Inactive Only</option>
+          <option value="ARCHIVED">Archived Only</option>
+        </select>
+      </div>
+      <div class="filter-group">
         <label>Sort By:</label>
         <select [(ngModel)]="sortBy">
           <option value="name-asc">Product Name: A to Z</option>
@@ -62,6 +71,8 @@
         </select>
       </div>
     </div>
+
+    <div *ngIf="removeSuccessMessage" class="alert alert-success">{{ removeSuccessMessage }}</div>
 
     <!-- Products Table -->
     <div class="table-card">
@@ -93,25 +104,38 @@
               </span>
             </td>
             <td>
-              <span class="status-pill" [class.active]="p.isActive" [class.inactive]="!p.isActive">
+              <span *ngIf="p.isArchived" class="status-pill archived">
+                Archived
+              </span>
+              <span *ngIf="!p.isArchived" class="status-pill" [class.active]="p.isActive" [class.inactive]="!p.isActive">
                 {{ p.isActive ? 'Active' : 'Inactive' }}
               </span>
             </td>
             <td class="actions-cell">
-              <button
-                class="btn-sm"
-                [class.btn-danger]="p.isActive"
-                [class.btn-success]="!p.isActive"
-                (click)="toggleStatus(p)"
-              >
-                {{ p.isActive ? 'Deactivate' : 'Activate' }}
-              </button>
-              <button class="btn-sm btn-outline-sm" (click)="openPriceModal(p)">
-                Edit Price
-              </button>
-              <button class="btn-sm btn-outline-sm btn-gallery-trigger" (click)="openGalleryModal(p)">
-                🖼️ Gallery
-              </button>
+              <ng-container *ngIf="!p.isArchived">
+                <button
+                  class="btn-sm"
+                  [class.btn-danger]="p.isActive"
+                  [class.btn-success]="!p.isActive"
+                  (click)="toggleStatus(p)"
+                >
+                  {{ p.isActive ? 'Deactivate' : 'Activate' }}
+                </button>
+                <button class="btn-sm btn-outline-sm" (click)="openPriceModal(p)">
+                  Edit Price
+                </button>
+                <button class="btn-sm btn-outline-sm btn-gallery-trigger" (click)="openGalleryModal(p)">
+                  🖼️ Gallery
+                </button>
+                <button class="btn-sm btn-danger-action" (click)="openRemoveProductModal(p)" title="Archive product from customer catalog">
+                  📦 Archive
+                </button>
+              </ng-container>
+              <ng-container *ngIf="p.isArchived">
+                <button class="btn-sm btn-success" (click)="restoreProduct(p)" title="Restore product to active catalog">
+                  🔄 Restore
+                </button>
+              </ng-container>
             </td>
           </tr>
         </tbody>
@@ -650,6 +674,53 @@
 
         <div class="modal-actions" style="margin-top: 1.5rem;">
           <button type="button" class="btn btn-outline" (click)="showGalleryModal = false">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove Product Confirmation Modal -->
+  <div class="modal" *ngIf="showRemoveProductModal" (click)="closeRemoveProductModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 style="color: #B45309; display: flex; align-items: center; gap: 0.5rem;">
+          <span>📦</span> Archive Product from Storefront
+        </h3>
+        <button class="close-btn" (click)="closeRemoveProductModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedProductForRemoval">
+        <div *ngIf="removeErrorMessage" class="alert alert-danger" style="margin-bottom: 1rem;">
+          {{ removeErrorMessage }}
+        </div>
+
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+          <h4 style="margin: 0 0 0.5rem 0; font-size: 1.05rem; color: #1E293B;">{{ selectedProductForRemoval.name }}</h4>
+          <div style="font-size: 0.85rem; color: #64748B; display: flex; flex-direction: column; gap: 0.25rem;">
+            <div><strong>SKU:</strong> <code>{{ selectedProductForRemoval.sku }}</code></div>
+            <div><strong>Category:</strong> {{ selectedProductForRemoval.categoryName }} • <strong>Brand:</strong> {{ selectedProductForRemoval.brandName }}</div>
+            <div><strong>Price:</strong> ₹{{ selectedProductForRemoval.basePrice }}</div>
+          </div>
+        </div>
+
+        <div style="background: #FFFBEB; border-left: 4px solid #F59E0B; padding: 0.85rem 1rem; border-radius: 4px; margin-bottom: 1.25rem;">
+          <p style="margin: 0; font-size: 0.875rem; color: #92400E; line-height: 1.5;">
+            <strong>Are you sure you want to archive this product from the storefront?</strong>
+            It will immediately be removed from customer search, catalog browsing, and recommendations, and excluded from new orders.
+            All historical orders, invoices, payments, refunds, return records, and inventory ledgers are 100% preserved. The product can be restored at any time.
+          </p>
+        </div>
+
+        <p style="font-size: 0.825rem; color: #64748B; margin: 0; line-height: 1.4;">
+          ℹ️ <strong>Universal Archival Policy:</strong> Products are never permanently deleted through this action, guaranteeing strict financial audit compliance and data integrity.
+        </p>
+
+        <div class="modal-actions" style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" class="btn btn-outline" (click)="closeRemoveProductModal()" [disabled]="isRemovingProduct">Cancel</button>
+          <button type="button" class="btn btn-warning-action" style="background: #D97706; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 500; cursor: pointer;" (click)="confirmRemoveProduct()" [disabled]="isRemovingProduct">
+            <span *ngIf="isRemovingProduct">Archiving...</span>
+            <span *ngIf="!isRemovingProduct">📦 Confirm Archive</span>
+          </button>
         </div>
       </div>
     </div>

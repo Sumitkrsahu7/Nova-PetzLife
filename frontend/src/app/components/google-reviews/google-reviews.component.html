@@ -37,8 +37,8 @@
       </div>
     </div>
 
-    <!-- Review Cards Grid -->
-    <div class="review-cards-grid">
+    <!-- Review Cards Grid (Shown when genuine Google reviews are available) -->
+    <div class="review-cards-grid" *ngIf="featuredReviews.length > 0">
       <div *ngFor="let rev of featuredReviews" class="review-card">
         <div class="rev-header">
           <div class="author-avatar">{{ rev.authorName.charAt(0) }}</div>
@@ -54,8 +54,24 @@
       </div>
     </div>
 
-    <!-- Mobile-Only Action to Read All Reviews on Google (shown right after the 2 mobile reviews) -->
-    <div class="mobile-reviews-cta">
+    <!-- Authentic Google Reviews Card (Direct Google Maps / Search verified link) -->
+    <div class="google-direct-card" *ngIf="featuredReviews.length === 0">
+      <div class="direct-card-content">
+        <div class="google-badge-large">
+          <span class="g-letter">G</span>
+          <div class="g-meta">
+            <h4>Verified Google Business Listing — {{ businessInfo.businessName }}</h4>
+            <p>Our customers rate us ★ {{ businessInfo.overallRating.toFixed(1) }} out of 5 for pet food selection, grooming supplies, and local home delivery across Trivandrum.</p>
+          </div>
+        </div>
+        <a [href]="businessInfo.googleMapsUrl" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-google-direct">
+          <span>Read All {{ businessInfo.totalReviewCount }}+ Reviews on Google ↗</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Mobile-Only Action to Read All Reviews on Google (shown right after the mobile reviews) -->
+    <div class="mobile-reviews-cta" *ngIf="featuredReviews.length > 0">
       <a [href]="businessInfo.googleMapsUrl" target="_blank" rel="noopener noreferrer" class="mobile-read-all-btn">
         <span>Read All {{ businessInfo.totalReviewCount }}+ Google Reviews</span>
         <span class="arrow">↗</span>

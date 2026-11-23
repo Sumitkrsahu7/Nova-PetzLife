@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { CartService } from '../../core/services/cart.service';
+import { PetService, PetProfile } from '../../core/services/pet.service';
 import { environment } from '../../../environments/environment';
 import { BackButtonComponent } from '../../components/back-button/back-button.component';
 
@@ -46,8 +47,12 @@ export interface CustomerOrderSummary {
 export class AccountComponent implements OnInit {
   readonly shopAddress = environment.shopAddress;
   user: UserProfile | null = null;
-  activeTab: 'profile' | 'addresses' | 'orders' = 'profile';
+  activeTab: 'profile' | 'addresses' | 'orders' | 'pets' = 'profile';
   showLogoutConfirm = false;
+
+  // Pets
+  pets: PetProfile[] = [];
+  isLoadingPets = false;
 
   // Edit Email Modal
   showEditEmailModal = false;
@@ -99,6 +104,7 @@ export class AccountComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private cartService: CartService,
+    private petService: PetService,
     private http: HttpClient,
     private router: Router
   ) { }
@@ -120,10 +126,40 @@ export class AccountComponent implements OnInit {
 
     this.loadAddresses();
     this.loadOrders();
+    this.loadPets();
   }
 
-  setTab(tab: 'profile' | 'addresses' | 'orders'): void {
+  loadPets(): void {
+    this.isLoadingPets = true;
+    this.petService.getPets().subscribe({
+      next: res => {
+        this.isLoadingPets = false;
+        if (res?.success && res.data) {
+          this.pets = res.data;
+        }
+      },
+      error: () => {
+        this.isLoadingPets = false;
+      }
+    });
+  }
+
+  getSpeciesIcon(type: string): string {
+    switch (type?.toLowerCase()) {
+      case 'dog': return '🐶';
+      case 'cat': return '🐱';
+      case 'bird': return '🦜';
+      case 'fish': return '🐠';
+      case 'small animal': return '🐰';
+      default: return '🐾';
+    }
+  }
+
+  setTab(tab: 'profile' | 'addresses' | 'orders' | 'pets'): void {
     this.activeTab = tab;
+    if (tab === 'pets' && this.pets.length === 0) {
+      this.loadPets();
+    }
   }
 
   // --- Edit Email ---

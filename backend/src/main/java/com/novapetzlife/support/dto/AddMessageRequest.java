@@ -10,6 +10,7 @@ public class AddMessageRequest {
     private String senderType = "CUSTOMER"; // CUSTOMER, STAFF
     private String senderId;
     private String attachmentUrl;
+    private String guestAccessSecret;
 
     public AddMessageRequest() {}
 
@@ -20,6 +21,14 @@ public class AddMessageRequest {
         this.attachmentUrl = attachmentUrl;
     }
 
+    public AddMessageRequest(String message, String senderType, String senderId, String attachmentUrl, String guestAccessSecret) {
+        this.message = message;
+        this.senderType = senderType != null ? senderType : "CUSTOMER";
+        this.senderId = senderId;
+        this.attachmentUrl = attachmentUrl;
+        this.guestAccessSecret = guestAccessSecret;
+    }
+
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
     public String getSenderType() { return senderType; }
@@ -28,4 +37,6 @@ public class AddMessageRequest {
     public void setSenderId(String senderId) { this.senderId = senderId; }
     public String getAttachmentUrl() { return attachmentUrl; }
     public void setAttachmentUrl(String attachmentUrl) { this.attachmentUrl = attachmentUrl; }
+    public String getGuestAccessSecret() { return guestAccessSecret; }
+    public void setGuestAccessSecret(String guestAccessSecret) { this.guestAccessSecret = guestAccessSecret; }
 }

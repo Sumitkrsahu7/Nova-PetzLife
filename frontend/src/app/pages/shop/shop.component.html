@@ -97,15 +97,17 @@
 
       <!-- Department Toolbar: In-department Search, Brand Filter, In-Stock, Sort -->
       <div class="department-toolbar">
-        <div class="toolbar-search">
-          <span class="search-icon">🔍</span>
+        <form class="toolbar-search" (ngSubmit)="onFilterChange()" role="search">
+          <span class="search-icon" aria-hidden="true">🔍</span>
           <input
-            type="text"
+            type="search"
+            name="deptSearchQuery"
             [(ngModel)]="searchQuery"
-            (keyup.enter)="onFilterChange()"
+            (keydown.enter)="$event.preventDefault(); onFilterChange()"
             placeholder="Search in {{ activeDepartmentTitle }}..."
             class="dept-search-input"
             aria-label="Search within this department"
+            enterkeyhint="search"
           />
           <button
             *ngIf="searchQuery"
@@ -116,8 +118,8 @@
           >
             ✕
           </button>
-          <button type="button" class="btn-search-go" (click)="onFilterChange()">Search</button>
-        </div>
+          <button type="submit" class="btn-search-go">Search</button>
+        </form>
 
         <div class="toolbar-filters">
           <!-- Brand Filter Dropdown -->
@@ -127,12 +129,6 @@
               <option *ngFor="let b of availableBrandsForDepartment" [value]="b">{{ b }}</option>
             </select>
           </div>
-
-          <!-- In-Stock Only Toggle -->
-          <label class="instock-checkbox-label">
-            <input type="checkbox" [(ngModel)]="inStockOnly" (change)="onFilterChange()" />
-            <span>In Stock Only</span>
-          </label>
 
           <!-- Sort Dropdown -->
           <div class="filter-control-group">
@@ -181,10 +177,43 @@
 
       <!-- Empty State -->
       <div *ngIf="!isLoading && products.length === 0" class="empty-dept-state">
-        <div class="empty-icon">📦</div>
-        <h3>No products found</h3>
-        <p>We couldn't find any items matching your criteria in {{ activeDepartmentTitle }}.</p>
-        <button type="button" class="btn-primary-reset" (click)="resetDepartmentFilters()">Clear Filters</button>
+        <ng-container *ngIf="searchQuery?.trim(); else noFilterState">
+          <div class="empty-search-box">
+            <div class="empty-icon">🔍</div>
+            <h3 class="empty-search-heading">We couldn't find an exact match for your search.</h3>
+            <p class="empty-search-desc">
+              We couldn't find any products matching <strong>"{{ searchQuery.trim() }}"</strong>.
+              Try checking your spelling, using more general search terms, or explore popular recommendations below.
+            </p>
+            <button type="button" class="btn-primary-reset" (click)="resetDepartmentFilters()">Clear Search</button>
+          </div>
+
+          <!-- Similar Product Recommendations -->
+          <div class="similar-recommendations-wrapper" *ngIf="similarProducts.length > 0">
+            <div class="similar-header">
+              <span class="similar-sparkle">✨</span>
+              <div class="similar-titles">
+                <h3 class="similar-main-title">You may also like</h3>
+                <p class="similar-sub-title">Relevant pet supplies and popular alternatives matching your search</p>
+              </div>
+            </div>
+
+            <div class="dept-products-grid">
+              <app-product-card
+                *ngFor="let product of similarProducts"
+                [product]="product"
+                (addToCart)="handleAddToCart($event)"
+              ></app-product-card>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-template #noFilterState>
+          <div class="empty-icon">📦</div>
+          <h3>No products found</h3>
+          <p>We couldn't find any items matching your criteria in {{ activeDepartmentTitle }}.</p>
+          <button type="button" class="btn-primary-reset" (click)="resetDepartmentFilters()">Clear Filters</button>
+        </ng-template>
       </div>
 
       <!-- Pagination Controls -->

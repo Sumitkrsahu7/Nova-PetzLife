@@ -9,16 +9,19 @@
       </p>
 
       <div class="search-filter-row">
-        <div class="search-input-box">
-          <span class="search-icon">🔍</span>
+        <form class="search-input-box" (ngSubmit)="filterBrands()" role="search">
+          <span class="search-icon" aria-hidden="true">🔍</span>
           <input
-            type="text"
+            type="search"
+            name="brandSearchQuery"
             [(ngModel)]="searchQuery"
             (input)="filterBrands()"
+            (keydown.enter)="$event.preventDefault(); filterBrands()"
             placeholder="Search brands (e.g. Royal Canin, Farmina, Whiskas)..."
+            enterkeyhint="search"
           />
-          <button *ngIf="searchQuery" type="button" class="clear-btn" (click)="searchQuery = ''; filterBrands()">✕</button>
-        </div>
+          <button *ngIf="searchQuery" type="button" class="clear-btn" (click)="searchQuery = ''; filterBrands()" aria-label="Clear search">✕</button>
+        </form>
         <span class="count-pill">{{ filteredBrands.length }} Brands Available</span>
       </div>
     </div>

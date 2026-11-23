@@ -811,3 +811,194 @@
     transform: scale(1);
   }
 }
+
+/* Pets Account Tab & Summary Box */
+.account-pets-summary-box {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+
+  .pets-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+
+    h4 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1E293B;
+      margin-bottom: 0.2rem;
+    }
+
+    p {
+      font-size: 0.85rem;
+      color: #64748B;
+    }
+  }
+
+  .pets-pill-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+
+    .pet-summary-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      padding: 0.45rem 0.85rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #248B58;
+        box-shadow: 0 2px 6px rgba(36, 139, 88, 0.15);
+      }
+
+      .pet-icon {
+        font-size: 1.2rem;
+      }
+
+      .pet-meta {
+        strong {
+          display: block;
+          font-size: 0.85rem;
+          color: #1E293B;
+        }
+        small {
+          font-size: 0.75rem;
+          color: #64748B;
+        }
+      }
+    }
+  }
+
+  .empty-pets-hint {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+
+    p {
+      font-size: 0.875rem;
+      color: #64748B;
+    }
+  }
+}
+
+.pets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.pet-account-card {
+  padding: 1.25rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .pet-card-top {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+
+    .pet-avatar-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #E7F5E9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      flex-shrink: 0;
+    }
+
+    .pet-header-info {
+      h4 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 0.15rem;
+      }
+      .pet-species-badge {
+        font-size: 0.8rem;
+        color: #248B58;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .pet-details-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    background: #F8FAFC;
+    padding: 0.75rem;
+    border-radius: 8px;
+
+    .pet-detail-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+
+      .p-label {
+        color: #64748B;
+      }
+      .p-value {
+        font-weight: 600;
+        color: #1E293B;
+
+        &.danger-text {
+          color: #DC2626;
+        }
+      }
+    }
+  }
+
+  .pet-admin-feedback-box {
+    background: #FEF3C7;
+    border: 1px solid #FDE68A;
+    border-radius: 8px;
+    padding: 0.75rem;
+
+    .feedback-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+      color: #92400E;
+      margin-bottom: 0.35rem;
+    }
+
+    p {
+      font-size: 0.825rem;
+      color: #78350F;
+      line-height: 1.4;
+    }
+  }
+
+  .pet-card-actions {
+    margin-top: auto;
+    display: flex;
+    justify-content: flex-end;
+  }
+}

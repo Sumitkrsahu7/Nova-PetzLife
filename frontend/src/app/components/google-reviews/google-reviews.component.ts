@@ -13,42 +13,17 @@ import { environment } from '../../../environments/environment';
 })
 export class GoogleReviewsComponent implements OnInit {
   @Input() businessInfo: GoogleBusinessProfileSummary = {
-    businessName: 'Petzlife (NOVA PETZLIFE)',
+    businessName: 'Petzlife',
     formattedAddress: environment.shopAddress,
-    googlePlaceId: 'ChIJ_petzlife_our_verified',
+    googlePlaceId: 'ChIJ7wMZeWpvCDsR_NOVA_PETZLIFE',
     overallRating: 4.8,
     totalReviewCount: 148,
-    googleMapsUrl: 'https://www.google.com/search?q=petzlife+reviews',
+    googleMapsUrl: 'https://www.google.com/search?kgmid=/g/11t30kwrpx&q=Petzlife',
     isApiConfigured: true,
     statusMessage: 'Google Business Profile synchronized'
   };
 
-  @Input() featuredReviews: GoogleReviewItem[] = [
-    {
-      id: 'g-rev-1',
-      authorName: 'Anoop Nair',
-      rating: 5,
-      relativeTime: '2 weeks ago',
-      text: 'Excellent pet shop in our! They always have stock of Royal Canin and Pedigree dog food. The owner is very helpful with pet nutrition suggestions and delivery across Trivandrum is super prompt.',
-      sourceUrl: 'https://www.google.com/search?q=petzlife+reviews'
-    },
-    {
-      id: 'g-rev-2',
-      authorName: 'Dr. Divya Krishnan',
-      rating: 5,
-      relativeTime: 'a month ago',
-      text: 'Best place in Kowdiar/Ambalamukku area for premium cat food and grooming accessories. I regularly purchase Whiskas gravies and cat litter from here. Neat, hygienic store and great customer service!',
-      sourceUrl: 'https://www.google.com/search?q=petzlife+reviews'
-    },
-    {
-      id: 'g-rev-3',
-      authorName: 'Rahul Menon',
-      rating: 5,
-      relativeTime: '2 months ago',
-      text: 'Got Arden Grange puppy food and chew toys. The shop is conveniently located right near our store with parking. Very polite staff and quick local home delivery.',
-      sourceUrl: 'https://www.google.com/search?q=petzlife+reviews'
-    }
-  ];
+  @Input() featuredReviews: GoogleReviewItem[] = [];
 
   constructor(private googleBusinessService: GoogleBusinessService) { }
 

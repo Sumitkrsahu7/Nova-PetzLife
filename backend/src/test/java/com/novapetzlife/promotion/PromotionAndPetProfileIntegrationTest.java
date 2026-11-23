@@ -431,6 +431,7 @@ class PromotionAndPetProfileIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "arun.promo@example.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Pet Profiles: Customer can register, list, update and delete pets")
     void testCustomerPetProfileCrud() throws Exception {
         CreatePetProfileRequest req = new CreatePetProfileRequest(
@@ -447,7 +448,6 @@ class PromotionAndPetProfileIntegrationTest {
 
         // 1. Create Pet Profile
         mockMvc.perform(post("/api/v1/customer/pets")
-                        .param("customerId", testCustomer.getId().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -457,8 +457,7 @@ class PromotionAndPetProfileIntegrationTest {
                 .andExpect(jsonPath("$.data.lifeStage").value("Adult"));
 
         // 2. List Pets
-        mockMvc.perform(get("/api/v1/customer/pets")
-                        .param("customerId", testCustomer.getId().toString()))
+        mockMvc.perform(get("/api/v1/customer/pets"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].petName").value("Bruno"));
@@ -468,21 +467,20 @@ class PromotionAndPetProfileIntegrationTest {
         // 3. Update Pet Profile
         req.setWeightKg(new BigDecimal("29.2"));
         mockMvc.perform(put("/api/v1/customer/pets/" + petId)
-                        .param("customerId", testCustomer.getId().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.weightKg").value(29.2));
 
         // 4. Delete Pet Profile
-        mockMvc.perform(delete("/api/v1/customer/pets/" + petId)
-                        .param("customerId", testCustomer.getId().toString()))
+        mockMvc.perform(delete("/api/v1/customer/pets/" + petId))
                 .andExpect(status().isOk());
 
         assertEquals(0, petProfileRepository.count());
     }
 
     @Test
+    @WithMockUser(username = "arun.promo@example.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Pet Nutrition Recommendations: Suggests products matching pet species and life stage")
     void testPersonalizedPetRecommendations() throws Exception {
         // Register an Adult Dog

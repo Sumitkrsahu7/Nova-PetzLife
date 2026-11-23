@@ -17,6 +17,11 @@ public interface PetProfileRepository extends JpaRepository<PetProfile, Long> {
 
     List<PetProfile> findByCustomerIdAndPetType(Long customerId, String petType);
 
+    @Query("SELECT p FROM PetProfile p WHERE p.customer.id = :customerId " +
+           "OR (:userId IS NOT NULL AND p.customer.user.id = :userId) " +
+           "ORDER BY p.createdAt DESC")
+    List<PetProfile> findCustomerPets(@Param("customerId") Long customerId, @Param("userId") Long userId);
+
     @EntityGraph(attributePaths = {"customer"})
     @Query("SELECT p FROM PetProfile p WHERE " +
            "(:petType IS NULL OR :petType = '' OR LOWER(p.petType) = LOWER(:petType)) AND " +

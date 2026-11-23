@@ -383,19 +383,23 @@ class NotificationAndAnalyticsIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.ticketNumber").value(startsWith("TKT-")))
                 .andExpect(jsonPath("$.data.status").value("OPEN"))
+                .andExpect(jsonPath("$.data.guestAccessSecret").isNotEmpty())
                 .andReturn().getResponse().getContentAsString();
 
         String ticketNumber = objectMapper.readTree(responseContent).path("data").path("ticketNumber").asText();
+        String guestSecret = objectMapper.readTree(responseContent).path("data").path("guestAccessSecret").asText();
 
-        // 2. Fetch ticket by ticket number
-        mockMvc.perform(get("/api/v1/support/tickets/" + ticketNumber))
+        // 2. Fetch ticket by ticket number with guest access token header
+        mockMvc.perform(get("/api/v1/support/tickets/" + ticketNumber)
+                        .header("X-Guest-Access-Token", guestSecret))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.messages", hasSize(1)))
                 .andExpect(jsonPath("$.data.messages[0].message").value(containsString("15kg Royal Canin")));
 
-        // 3. Customer appends a reply
+        // 3. Customer appends a reply with guest access token header
         AddMessageRequest customerReply = new AddMessageRequest("Also wanted to know if free home delivery applies to this size.", "CUSTOMER", "Suresh Gopi", null);
         mockMvc.perform(post("/api/v1/support/tickets/" + ticketNumber + "/messages")
+                        .header("X-Guest-Access-Token", guestSecret)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(customerReply)))
                 .andExpect(status().isOk())

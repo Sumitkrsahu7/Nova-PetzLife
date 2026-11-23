@@ -24,8 +24,9 @@ public class ProductSearchSpecification {
         return (Root<Product> root, CriteriaQuery<?> cq, CriteriaBuilder cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Only active products
+            // Only active and non-archived products for customer catalog & search
             predicates.add(cb.isTrue(root.get("isActive")));
+            predicates.add(cb.or(cb.isNull(root.get("isArchived")), cb.isFalse(root.get("isArchived"))));
 
             // 1. Text Search across name, description, SKU, brand name, category name
             if (query != null && !query.trim().isEmpty()) {

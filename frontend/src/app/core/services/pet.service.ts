@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -65,44 +65,28 @@ export class PetService {
 
   constructor(private http: HttpClient) {}
 
-  public getPets(customerId?: number): Observable<{ success: boolean; data: PetProfile[] }> {
-    let params = new HttpParams();
-    if (customerId) {
-      params = params.set('customerId', customerId.toString());
-    }
-    return this.http.get<{ success: boolean; data: PetProfile[] }>(this.apiUrl, { params });
+  public getPets(): Observable<{ success: boolean; data: PetProfile[] }> {
+    return this.http.get<{ success: boolean; data: PetProfile[] }>(this.apiUrl);
   }
 
-  public getPet(id: number, customerId?: number): Observable<{ success: boolean; data: PetProfile }> {
-    let params = new HttpParams();
-    if (customerId) {
-      params = params.set('customerId', customerId.toString());
-    }
-    return this.http.get<{ success: boolean; data: PetProfile }>(`${this.apiUrl}/${id}`, { params });
+  public getPet(id: number): Observable<{ success: boolean; data: PetProfile }> {
+    return this.http.get<{ success: boolean; data: PetProfile }>(`${this.apiUrl}/${id}`);
   }
 
-  public createPet(payload: CreatePetPayload, customerId?: number): Observable<{ success: boolean; data: PetProfile }> {
-    let params = new HttpParams();
-    if (customerId) {
-      params = params.set('customerId', customerId.toString());
-    }
-    return this.http.post<{ success: boolean; data: PetProfile }>(this.apiUrl, payload, { params });
+  public createPet(payload: CreatePetPayload): Observable<{ success: boolean; data: PetProfile }> {
+    return this.http.post<{ success: boolean; data: PetProfile }>(this.apiUrl, payload);
   }
 
-  public updatePet(id: number, payload: CreatePetPayload, customerId?: number): Observable<{ success: boolean; data: PetProfile }> {
-    let params = new HttpParams();
-    if (customerId) {
-      params = params.set('customerId', customerId.toString());
-    }
-    return this.http.put<{ success: boolean; data: PetProfile }>(`${this.apiUrl}/${id}`, payload, { params });
+  public createGuestPet(payload: CreatePetPayload): Observable<{ success: boolean; data: PetProfile }> {
+    return this.http.post<{ success: boolean; data: PetProfile }>(`${this.apiUrl}/guest`, payload);
   }
 
-  public deletePet(id: number, customerId?: number): Observable<{ success: boolean; data: null }> {
-    let params = new HttpParams();
-    if (customerId) {
-      params = params.set('customerId', customerId.toString());
-    }
-    return this.http.delete<{ success: boolean; data: null }>(`${this.apiUrl}/${id}`, { params });
+  public updatePet(id: number, payload: CreatePetPayload): Observable<{ success: boolean; data: PetProfile }> {
+    return this.http.put<{ success: boolean; data: PetProfile }>(`${this.apiUrl}/${id}`, payload);
+  }
+
+  public deletePet(id: number): Observable<{ success: boolean; data: null }> {
+    return this.http.delete<{ success: boolean; data: null }>(`${this.apiUrl}/${id}`);
   }
 
   public getRecommendations(petId: number): Observable<{ success: boolean; data: PetRecommendation }> {

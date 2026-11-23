@@ -6,6 +6,9 @@ import com.novapetzlife.user.Permission;
 import com.novapetzlife.user.Role;
 import com.novapetzlife.user.User;
 import com.novapetzlife.user.UserRepository;
+import com.novapetzlife.user.UserOAuthIdentityRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,43 +20,102 @@ import java.util.List;
 @Service
 public class CustomerService {
 
+    private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
+
     private final CustomerRepository customerRepository;
     private final CustomerAddressRepository addressRepository;
     private final UserRepository userRepository;
+    private final UserOAuthIdentityRepository userOAuthIdentityRepository;
     private final JwtTokenProvider tokenProvider;
 
     public CustomerService(
             CustomerRepository customerRepository,
             CustomerAddressRepository addressRepository,
             UserRepository userRepository,
+            UserOAuthIdentityRepository userOAuthIdentityRepository,
             JwtTokenProvider tokenProvider) {
         this.customerRepository = customerRepository;
         this.addressRepository = addressRepository;
         this.userRepository = userRepository;
+        this.userOAuthIdentityRepository = userOAuthIdentityRepository;
         this.tokenProvider = tokenProvider;
+    }
+
+    public static String normalizeEmail(String email) {
+        if (email == null) return null;
+        String trimmed = email.trim();
+        return trimmed.isEmpty() ? null : trimmed.toLowerCase();
     }
 
     @Transactional
     public Customer getOrCreateCustomerForUser(User user) {
-        return customerRepository.findByUserId(user.getId())
-                .orElseGet(() -> {
-                    Customer customer = new Customer(
-                            user,
-                            user.getEmail(),
-                            user.getPhone() != null ? user.getPhone() : "",
-                            user.getFirstName(),
-                            user.getLastName(),
-                            false
-                    );
-                    return customerRepository.save(customer);
-                });
+        if (user == null || user.getId() == null) {
+            throw new IllegalArgumentException("User cannot be null when resolving customer profile");
+        }
+
+        // 1. If already linked to a Customer record, return it immediately
+        java.util.Optional<Customer> existingByUserId = customerRepository.findByUserId(user.getId());
+        if (existingByUserId.isPresent()) {
+            return existingByUserId.get();
+        }
+
+        String normalizedEmail = normalizeEmail(user.getEmail());
+
+        // 2. Safe Customer Identity Linking:
+        // A guest record may ONLY be linked if:
+        // a) Email is verified by an authoritative identity provider (Google OAuth).
+        // b) There is EXACTLY ONE eligible unlinked guest record for that email.
+        // If the email is unverified (standard registration) or multiple guest records exist (ambiguous),
+        // we DO NOT auto-link or merge; we create a fresh isolated Customer profile for this user.
+        if (normalizedEmail != null) {
+            boolean isEmailVerified = userOAuthIdentityRepository != null &&
+                    userOAuthIdentityRepository.findByUserIdAndProvider(user.getId(), "GOOGLE").isPresent();
+
+            if (isEmailVerified) {
+                List<Customer> matchingGuests = customerRepository.findAllByEmailIgnoreCase(normalizedEmail).stream()
+                        .filter(c -> c.getUser() == null)
+                        .toList();
+
+                if (matchingGuests.size() == 1) {
+                    Customer singleGuest = matchingGuests.get(0);
+                    singleGuest.setUser(user);
+                    singleGuest.setIsGuest(false);
+                    if (singleGuest.getFirstName() == null || singleGuest.getFirstName().isBlank()) {
+                        singleGuest.setFirstName(user.getFirstName());
+                    }
+                    if (singleGuest.getLastName() == null || singleGuest.getLastName().isBlank()) {
+                        singleGuest.setLastName(user.getLastName());
+                    }
+                    log.info("Safely linked verified Google OAuth user {} (ID: {}) to existing guest customer record ID: {}",
+                            normalizedEmail, user.getId(), singleGuest.getId());
+                    return customerRepository.save(singleGuest);
+                } else if (matchingGuests.size() > 1) {
+                    log.warn("Found {} duplicate unlinked guest records for verified email {}. Skipping auto-linking to avoid ambiguous assignment.",
+                            matchingGuests.size(), normalizedEmail);
+                }
+            } else {
+                log.info("User {} email is not verified via authoritative OAuth provider; skipping automatic guest record linking.",
+                        normalizedEmail);
+            }
+        }
+
+        // 3. Create fresh customer record for this user
+        Customer customer = new Customer(
+                user,
+                normalizedEmail,
+                user.getPhone() != null ? user.getPhone().trim() : "",
+                user.getFirstName() != null ? user.getFirstName().trim() : "",
+                user.getLastName() != null ? user.getLastName().trim() : "",
+                false
+        );
+        return customerRepository.save(customer);
     }
 
     @Transactional
     public Customer createGuestCustomer(String email, String phone, String firstName, String lastName) {
         Customer guest = new Customer(
                 null,
-                email != null ? email.trim().toLowerCase() : null,
+                normalizeEmail(email),
                 phone != null ? phone.trim() : "",
                 firstName != null ? firstName.trim() : "Guest",
                 lastName != null ? lastName.trim() : "Customer",

@@ -33,6 +33,7 @@ export class HomeComponent implements OnInit {
 
   // Featured Products (Dynamic from API with fallback)
   featuredProducts: ProductCardData[] = [];
+  whatsappUrl: string = 'https://wa.me/919447100000?text=Hi%2C%20i%20would%20like%20to%20know%20about%20your%20products';
 
   /**
    * Restrict initially displayed featured products to at most 2 rows (at most 8 items).
@@ -80,6 +81,15 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadFeaturedProducts();
+
+    this.http.get<any>(`${environment.apiUrl}/support/whatsapp`).subscribe({
+      next: res => {
+        if (res?.success && res.data?.whatsappUrl) {
+          this.whatsappUrl = res.data.whatsappUrl;
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadFeaturedProducts(): void {

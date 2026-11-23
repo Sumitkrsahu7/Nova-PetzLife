@@ -1,6 +1,7 @@
 package com.novapetzlife.product;
 
 import com.novapetzlife.common.ApiResponse;
+import com.novapetzlife.user.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -11,6 +12,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -64,6 +67,17 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.ok(productService.getSearchSuggestions(query)));
     }
 
+    @GetMapping("/api/v1/products/recommendations/similar")
+    @Operation(summary = "Get similar product recommendations", description = "Provides category, pet-type, and keyword-similar active products when exact search produces zero results")
+    public ResponseEntity<ApiResponse<List<ProductSummaryDto>>> getSimilarRecommendations(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String categorySlug,
+            @RequestParam(required = false) String petType,
+            @RequestParam(defaultValue = "8") int limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(productService.getSimilarRecommendations(query, categorySlug, petType, limit)));
+    }
+
     @GetMapping("/api/v1/products/{idOrSlug}")
     @Operation(summary = "Get product details by slug or ID", description = "Retrieve full product details including variants, images, and owner return policy snapshot")
     public ResponseEntity<ApiResponse<ProductDetailDto>> getProduct(@PathVariable String idOrSlug) {
@@ -73,6 +87,26 @@ public class ProductController {
         } catch (NumberFormatException e) {
             return ResponseEntity.ok(ApiResponse.ok(productService.getProductBySlug(idOrSlug)));
         }
+    }
+
+    @GetMapping("/api/v1/admin/products")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN')")
+    @Operation(summary = "Search all products (Admin)", description = "Search full catalog including active, inactive, and archived products with filters")
+    public ResponseEntity<ApiResponse<Page<ProductDetailDto>>> searchAdminProducts(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size,
+            @RequestParam(defaultValue = "id,desc") String sort
+    ) {
+        String[] sortParts = sort.split(",");
+        String sortProp = sortParts[0];
+        Sort.Direction direction = sortParts.length > 1 && sortParts[1].equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortProp));
+
+        Page<ProductDetailDto> result = productService.searchAdminProducts(query, status, categoryId, pageable);
+        return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
     @PostMapping("/api/v1/admin/products")
@@ -91,11 +125,36 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.ok("Product updated successfully", updated));
     }
 
-    @RequestMapping(value = {"/api/v1/admin/products/{id}/status", "/api/v1/admin/products/{id}/toggle-status"}, method = {RequestMethod.PATCH, RequestMethod.DELETE})
+    @RequestMapping(value = {"/api/v1/admin/products/{id}/status", "/api/v1/admin/products/{id}/toggle-status"}, method = {RequestMethod.PATCH, RequestMethod.POST})
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'PRODUCT_EDIT')")
     @Operation(summary = "Toggle active status (Admin)", description = "Activate or deactivate a product from customer catalog view")
     public ResponseEntity<ApiResponse<ProductDetailDto>> toggleProductStatus(@PathVariable Long id) {
         ProductDetailDto updated = productService.toggleProductStatus(id);
         return ResponseEntity.ok(ApiResponse.ok("Product status toggled successfully", updated));
+    }
+
+    @DeleteMapping("/api/v1/admin/products/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'PRODUCT_DELETE')")
+    @Operation(summary = "Archive product (Admin)", description = "Universal Product Archival: Archives the product and sets it inactive to preserve complete historical transactional integrity (orders, invoices, refunds, returns, audit logs). Products are never permanently deleted.")
+    public ResponseEntity<ApiResponse<ProductRemovalResult>> removeProduct(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        String admin = authentication != null ? authentication.getName() : "ADMIN";
+        ProductRemovalResult result = productService.removeProduct(id, admin);
+        return ResponseEntity.ok(ApiResponse.ok(result.message(), result));
+    }
+
+    @PostMapping("/api/v1/admin/products/{id}/restore")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'PRODUCT_EDIT')")
+    @Operation(summary = "Restore archived product (Admin)", description = "Restores an archived product back to catalog view with preserved active state or explicit activation")
+    public ResponseEntity<ApiResponse<ProductDetailDto>> restoreProduct(
+            @PathVariable Long id,
+            @RequestParam(required = false) Boolean activate,
+            Authentication authentication
+    ) {
+        String admin = authentication != null ? authentication.getName() : "ADMIN";
+        ProductDetailDto restored = productService.restoreProduct(id, admin, activate);
+        return ResponseEntity.ok(ApiResponse.ok("Product restored successfully", restored));
     }
 }

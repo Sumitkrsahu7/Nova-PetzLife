@@ -36,6 +36,7 @@ export class SupportComponent implements OnInit {
 
   // Track Ticket Section
   searchTicketNumber = '';
+  searchAccessSecret = '';
   isTrackingTicket = false;
   trackedTicket: SupportTicket | null = null;
   ticketSearchError = '';
@@ -100,7 +101,13 @@ export class SupportComponent implements OnInit {
         this.isSubmitting = false;
         if (res?.success && res.data) {
           this.submittedTicket = res.data;
-          this.successMessage = `Inquiry received! Your ticket number is #${res.data.ticketNumber}. Our team will get back to you shortly.`;
+          if (res.data.guestAccessSecret) {
+            this.successMessage = `Inquiry received! Your ticket reference is #${res.data.ticketNumber}.\nYour private Guest Access Key is: ${res.data.guestAccessSecret}\nPlease save this key. You will need both your ticket number and this key to view replies.`;
+            this.searchTicketNumber = res.data.ticketNumber;
+            this.searchAccessSecret = res.data.guestAccessSecret;
+          } else {
+            this.successMessage = `Inquiry received! Your ticket number is #${res.data.ticketNumber}. Our team will get back to you shortly.`;
+          }
           this.inquiryForm = {
             name: '',
             email: '',
@@ -130,7 +137,8 @@ export class SupportComponent implements OnInit {
     this.ticketSearchError = '';
     this.trackedTicket = null;
 
-    this.supportService.getTicket(tkt).subscribe({
+    const secret = this.searchAccessSecret ? this.searchAccessSecret.trim() : undefined;
+    this.supportService.getTicket(tkt, secret).subscribe({
       next: res => {
         this.isTrackingTicket = false;
         if (res?.success && res.data) {
@@ -139,7 +147,7 @@ export class SupportComponent implements OnInit {
       },
       error: err => {
         this.isTrackingTicket = false;
-        this.ticketSearchError = err.error?.message || 'Ticket not found. Please verify the ticket reference number.';
+        this.ticketSearchError = err.error?.message || 'Support ticket not found or access denied. Please verify your ticket number and guest access key.';
       }
     });
   }
@@ -148,7 +156,8 @@ export class SupportComponent implements OnInit {
     if (!this.trackedTicket || !this.replyMessageText.trim()) return;
 
     this.isSendingReply = true;
-    this.supportService.replyTicket(this.trackedTicket.ticketNumber, this.replyMessageText.trim()).subscribe({
+    const secret = this.searchAccessSecret ? this.searchAccessSecret.trim() : undefined;
+    this.supportService.replyTicket(this.trackedTicket.ticketNumber, this.replyMessageText.trim(), undefined, secret).subscribe({
       next: res => {
         this.isSendingReply = false;
         this.replyMessageText = '';
@@ -156,8 +165,9 @@ export class SupportComponent implements OnInit {
           this.trackedTicket = res.data;
         }
       },
-      error: () => {
+      error: err => {
         this.isSendingReply = false;
+        this.ticketSearchError = err.error?.message || 'Failed to send reply. Please verify your access key.';
       }
     });
   }

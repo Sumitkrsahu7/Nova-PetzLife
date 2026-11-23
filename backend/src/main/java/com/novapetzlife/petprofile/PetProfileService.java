@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,10 +65,25 @@ public class PetProfileService {
 
     @Transactional(readOnly = true)
     public List<PetProfileDto> getCustomerPetProfiles(Customer customer) {
-        if (customer == null) return List.of();
-        return petProfileRepository.findByCustomerIdOrderByCreatedAtDesc(customer.getId()).stream()
+        if (customer == null || customer.getId() == null) return List.of();
+        Long userId = customer.getUser() != null ? customer.getUser().getId() : null;
+        return petProfileRepository.findCustomerPets(customer.getId(), userId).stream()
                 .map(PetProfileDto::fromEntity)
                 .toList();
+    }
+
+    public boolean isOwner(PetProfile profile, Customer customer) {
+        if (customer == null || customer.getId() == null || profile == null || profile.getCustomer() == null) {
+            return false;
+        }
+        if (customer.getId().equals(profile.getCustomer().getId())) {
+            return true;
+        }
+        if (customer.getUser() != null && profile.getCustomer().getUser() != null
+                && customer.getUser().getId().equals(profile.getCustomer().getUser().getId())) {
+            return true;
+        }
+        return false;
     }
 
     @Transactional(readOnly = true)
@@ -75,8 +91,8 @@ public class PetProfileService {
         PetProfile profile = petProfileRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Pet profile not found with id: " + id));
 
-        if (customer != null && !profile.getCustomer().getId().equals(customer.getId())) {
-            throw new IllegalArgumentException("Unauthorized to access this pet profile");
+        if (!isOwner(profile, customer)) {
+            throw new AccessDeniedException("Unauthorized to access this pet profile");
         }
 
         return PetProfileDto.fromEntity(profile);
@@ -87,8 +103,8 @@ public class PetProfileService {
         PetProfile profile = petProfileRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Pet profile not found with id: " + id));
 
-        if (customer != null && !profile.getCustomer().getId().equals(customer.getId())) {
-            throw new IllegalArgumentException("Unauthorized to update this pet profile");
+        if (!isOwner(profile, customer)) {
+            throw new AccessDeniedException("Unauthorized to update this pet profile");
         }
 
         profile.setPetName(req.getPetName().trim());
@@ -109,8 +125,8 @@ public class PetProfileService {
         PetProfile profile = petProfileRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Pet profile not found with id: " + id));
 
-        if (customer != null && !profile.getCustomer().getId().equals(customer.getId())) {
-            throw new IllegalArgumentException("Unauthorized to delete this pet profile");
+        if (!isOwner(profile, customer)) {
+            throw new AccessDeniedException("Unauthorized to delete this pet profile");
         }
 
         petProfileRepository.delete(profile);
@@ -118,12 +134,22 @@ public class PetProfileService {
 
     @Transactional(readOnly = true)
     public PetRecommendationDto getRecommendationsForPet(Long petId) {
+        return getRecommendationsForPet(petId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public PetRecommendationDto getRecommendationsForPet(Long petId, Customer customer) {
         PetProfile profile = petProfileRepository.findById(petId)
                 .orElseThrow(() -> new IllegalArgumentException("Pet profile not found with id: " + petId));
+
+        if (customer != null && !isOwner(profile, customer)) {
+            throw new AccessDeniedException("Unauthorized to view recommendations for this pet profile");
+        }
 
         // Find products matching species (e.g. Dog / Cat) and life stage
         List<Product> matched = productRepository.findAll().stream()
                 .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
+                .filter(p -> !Boolean.TRUE.equals(p.getIsArchived()))
                 .filter(p -> profile.getPetType() == null || p.getPetType() == null || profile.getPetType().equalsIgnoreCase(p.getPetType()))
                 .filter(p -> profile.getLifeStage() == null || p.getLifeStage() == null || profile.getLifeStage().equalsIgnoreCase(p.getLifeStage()) || "All Stages".equalsIgnoreCase(p.getLifeStage()))
                 .limit(6)

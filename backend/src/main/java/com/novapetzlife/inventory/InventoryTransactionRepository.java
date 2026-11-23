@@ -8,4 +8,6 @@ import java.util.List;
 @Repository
 public interface InventoryTransactionRepository extends JpaRepository<InventoryTransaction, Long> {
     List<InventoryTransaction> findByProductIdOrderByCreatedAtDesc(Long productId);
+
+    boolean existsByProductId(Long productId);
 }

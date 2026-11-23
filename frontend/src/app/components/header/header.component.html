@@ -24,10 +24,11 @@
     </a>
 
     <!-- Search Form with Autocomplete -->
-    <div class="header-search">
+    <form class="header-search" (ngSubmit)="onSearch($event)" role="search">
       <div class="search-input-wrapper">
         <input
-          type="text"
+          type="search"
+          name="headerSearchQuery"
           [(ngModel)]="searchQuery"
           (input)="onSearchInput()"
           (keydown)="onKeyDown($event)"
@@ -35,6 +36,7 @@
           placeholder="Search cat food, dog kibble, shampoos, toys..."
           aria-label="Search products"
           autocomplete="off"
+          enterkeyhint="search"
         />
         <button
           *ngIf="searchQuery"
@@ -46,9 +48,9 @@
         >
           ✕
         </button>
-        <button type="button" class="search-submit-btn" (click)="onSearch()" aria-label="Search">
+        <button type="submit" class="search-submit-btn" aria-label="Search">
           <span class="search-btn-text">Search</span>
-          <span class="search-btn-icon">🔍</span>
+          <span class="search-btn-icon" aria-hidden="true">🔍</span>
         </button>
 
         <!-- Autocomplete Suggestions Dropdown -->
@@ -75,7 +77,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </form>
 
     <!-- Actions: Cart, Account, Mobile Toggle -->
     <div class="header-actions">
