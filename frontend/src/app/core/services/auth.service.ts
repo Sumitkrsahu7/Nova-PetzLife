@@ -44,6 +44,12 @@ export class AuthService implements OnDestroy {
         this.authChannel = null;
       }
     }
+
+    // Verify token validity on initialization so UI never presents a stale logged-in state
+    const initialToken = this.getToken();
+    if (initialToken && this.isTokenExpired(initialToken)) {
+      this.logout(false, false);
+    }
   }
 
   ngOnDestroy(): void {
@@ -207,6 +213,12 @@ export class AuthService implements OnDestroy {
   }
 
   getCurrentUser(): UserProfile | null {
+    if (!this.isAuthenticated()) {
+      if (this.currentUserSubject.value !== null) {
+        this.logout(false, false);
+      }
+      return null;
+    }
     return this.currentUserSubject.value;
   }
 
@@ -232,6 +244,14 @@ export class AuthService implements OnDestroy {
 
   private getStoredUser(): UserProfile | null {
     if (typeof window === 'undefined') return null;
+    const token = localStorage.getItem(this.TOKEN_KEY);
+    if (!token || this.isTokenExpired(token)) {
+      try {
+        localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.USER_KEY);
+      } catch (_) { }
+      return null;
+    }
     const raw = localStorage.getItem(this.USER_KEY);
     if (!raw) return null;
     try {

@@ -1,5 +1,6 @@
 package com.novapetzlife.support;
 
+import com.novapetzlife.common.ResourceNotFoundException;
 import com.novapetzlife.customer.Customer;
 import com.novapetzlife.customer.CustomerRepository;
 import com.novapetzlife.customer.CustomerService;
@@ -14,8 +15,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +30,7 @@ import java.util.UUID;
 public class SupportService {
 
     private static final Logger log = LoggerFactory.getLogger(SupportService.class);
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final SupportTicketRepository ticketRepository;
     private final SupportMessageRepository messageRepository;
@@ -151,22 +159,90 @@ public class SupportService {
         );
     }
 
+    /**
+     * Generate cryptographically secure 256-bit guest access secret (URL-safe Base64 encoded).
+     */
+    public static String generateGuestAccessSecret() {
+        byte[] bytes = new byte[32]; // 256 bits of cryptographic entropy
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    /**
+     * Compute SHA-256 hash of the guest access secret.
+     */
+    public static String hashGuestAccessSecret(String rawSecret) {
+        if (rawSecret == null || rawSecret.isBlank()) {
+            return null;
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(rawSecret.trim().getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 digest algorithm not available", e);
+        }
+    }
+
+    /**
+     * Constant-time comparison between raw guest secret and stored hash.
+     * Fails closed if either parameter is missing/null/empty.
+     */
+    public static boolean verifyGuestSecret(String rawSecret, String storedHash) {
+        if (rawSecret == null || rawSecret.isBlank() || storedHash == null || storedHash.isBlank()) {
+            return false;
+        }
+        String computedHash = hashGuestAccessSecret(rawSecret);
+        if (computedHash == null) {
+            return false;
+        }
+        byte[] a = computedHash.getBytes(StandardCharsets.UTF_8);
+        byte[] b = storedHash.getBytes(StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(a, b);
+    }
+
     @Transactional
     public SupportTicketDto createInquiry(CreateInquiryRequest request, Customer resolvedCustomer) {
         Customer customer = resolvedCustomer;
+        String rawGuestSecret = null;
+        String guestAccessHash = null;
+
         if (customer == null) {
-            customer = customerRepository.findByEmail(request.getEmail().toLowerCase().trim()).orElse(null);
-            if (customer == null) {
-                String[] nameParts = request.getName().trim().split(" ", 2);
-                String firstName = nameParts[0];
-                String lastName = nameParts.length > 1 ? nameParts[1] : "";
-                customer = customerService.createGuestCustomer(request.getEmail(), request.getPhone(), firstName, lastName);
-            }
+            // Never associate unauthenticated inquiries with existing customer records to prevent leaking personal customer data
+            String[] nameParts = (request.getName() != null ? request.getName().trim() : "").split(" ", 2);
+            String firstName = nameParts[0].isBlank() ? "Guest" : nameParts[0];
+            String lastName = nameParts.length > 1 ? nameParts[1] : "";
+            customer = customerService.createGuestCustomer(request.getEmail().trim(), request.getPhone(), firstName, lastName);
+
+            // Generate cryptographically secure 256-bit guest access secret
+            rawGuestSecret = generateGuestAccessSecret();
+            guestAccessHash = hashGuestAccessSecret(rawGuestSecret);
         }
 
         Order order = null;
+        String guestOrderNote = null;
         if (request.getOrderNumber() != null && !request.getOrderNumber().isBlank()) {
-            order = orderRepository.findByOrderNumber(request.getOrderNumber().trim()).orElse(null);
+            String requestedOrderNum = request.getOrderNumber().trim();
+            if (resolvedCustomer != null) {
+                // Authenticated customer: only allow attaching orders belonging to authenticated account
+                Order foundOrder = orderRepository.findByOrderNumber(requestedOrderNum).orElse(null);
+                if (foundOrder != null && foundOrder.getCustomer() != null
+                        && foundOrder.getCustomer().getId() != null
+                        && foundOrder.getCustomer().getId().equals(resolvedCustomer.getId())) {
+                    order = foundOrder;
+                } else {
+                    log.warn("Authenticated customer {} attempted to attach order {} which does not belong to their account or does not exist",
+                            resolvedCustomer.getId(), requestedOrderNum);
+                }
+            } else {
+                // Unauthenticated guest inquiry:
+                // Unauthenticated guest inquiries must not attach existing orders solely through email and order-number matching.
+                // We preserve legitimate guest support inquiries by noting the referenced order number in the inquiry message,
+                // without attaching the persistent Order entity to prevent unauthorized order data disclosure.
+                guestOrderNote = "[Guest Referenced Order: " + requestedOrderNum + "] ";
+                log.info("Guest support inquiry received referencing order {}; persistent Order entity is not attached to unauthenticated inquiry",
+                        requestedOrderNum);
+            }
         }
 
         String dateStr = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
@@ -179,12 +255,16 @@ public class SupportService {
                 request.getSubject(),
                 request.getPriority()
         );
+        if (guestAccessHash != null) {
+            ticket.setGuestAccessHash(guestAccessHash);
+        }
 
+        String initialMessageText = (guestOrderNote != null ? guestOrderNote : "") + (request.getMessage() != null ? request.getMessage() : "");
         SupportMessage firstMsg = new SupportMessage(
                 ticket,
                 "CUSTOMER",
                 customer.getFirstName() + " " + customer.getLastName(),
-                request.getMessage(),
+                initialMessageText,
                 null
         );
         ticket.addMessage(firstMsg);
@@ -201,14 +281,57 @@ public class SupportService {
         );
         notificationService.recordAndDispatch(customer, customer.getEmail(), "EMAIL", "SUPPORT_TICKET_CREATED", "Support Ticket Received: #" + ticketNumber, notificationContent);
 
-        return SupportTicketDto.fromEntity(saved);
+        SupportTicketDto result = SupportTicketDto.fromEntity(saved);
+        if (rawGuestSecret != null) {
+            // Return raw secret ONLY ONCE to original guest inquiry response
+            result.setGuestAccessSecret(rawGuestSecret);
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)
     public SupportTicketDto getTicketByNumber(String ticketNumber) {
         SupportTicket ticket = ticketRepository.findByTicketNumber(ticketNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Support ticket not found: " + ticketNumber));
+                .orElseThrow(() -> new ResourceNotFoundException("Support ticket not found or access denied"));
         return SupportTicketDto.fromEntity(ticket);
+    }
+
+    @Transactional(readOnly = true)
+    public SupportTicketDto getTicketForCaller(
+            String ticketNumber,
+            String guestSecret,
+            Customer callerCustomer,
+            boolean isAdmin) {
+        SupportTicket ticket = ticketRepository.findByTicketNumber(ticketNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Support ticket not found or access denied"));
+
+        if (isAdmin) {
+            return SupportTicketDto.fromEntity(ticket);
+        }
+
+        boolean isRegisteredCustomerTicket = ticket.getCustomer() != null && ticket.getCustomer().getUser() != null;
+        if (isRegisteredCustomerTicket) {
+            boolean isOwner = callerCustomer != null && ticket.getCustomer() != null
+                    && callerCustomer.getId() != null && callerCustomer.getId().equals(ticket.getCustomer().getId());
+            if (!isOwner) {
+                // Avoid leaking whether ticket number exists
+                throw new ResourceNotFoundException("Support ticket not found or access denied");
+            }
+            return SupportTicketDto.fromEntity(ticket);
+        }
+
+        // Guest ticket: require valid guest access secret
+        if (!verifyGuestSecret(guestSecret, ticket.getGuestAccessHash())) {
+            // Old guest tickets without a secret and invalid/missing secrets fail closed
+            throw new ResourceNotFoundException("Support ticket not found or access denied");
+        }
+
+        return SupportTicketDto.fromEntityPublic(ticket);
+    }
+
+    @Transactional(readOnly = true)
+    public SupportTicketDto getTicketForCaller(String ticketNumber, Customer callerCustomer, boolean isAdmin) {
+        return getTicketForCaller(ticketNumber, null, callerCustomer, isAdmin);
     }
 
     @Transactional(readOnly = true)
@@ -231,27 +354,83 @@ public class SupportService {
     }
 
     @Transactional
-    public SupportTicketDto addMessageToTicket(String ticketNumber, AddMessageRequest request) {
+    public SupportTicketDto addMessageToTicket(
+            String ticketNumber,
+            AddMessageRequest request,
+            String guestSecret,
+            Customer callerCustomer,
+            boolean isAdmin) {
         SupportTicket ticket = ticketRepository.findByTicketNumber(ticketNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Support ticket not found: " + ticketNumber));
+                .orElseThrow(() -> new ResourceNotFoundException("Support ticket not found or access denied"));
+
+        boolean isRegisteredCustomerTicket = ticket.getCustomer() != null && ticket.getCustomer().getUser() != null;
+        boolean isOwner = callerCustomer != null && ticket.getCustomer() != null
+                && callerCustomer.getId() != null && callerCustomer.getId().equals(ticket.getCustomer().getId());
+
+        // Authorization check:
+        if (!isAdmin) {
+            if (isRegisteredCustomerTicket) {
+                if (!isOwner) {
+                    throw new ResourceNotFoundException("Support ticket not found or access denied");
+                }
+            } else {
+                // Guest ticket verification: require valid guest secret
+                if (!verifyGuestSecret(guestSecret, ticket.getGuestAccessHash())) {
+                    throw new ResourceNotFoundException("Support ticket not found or access denied");
+                }
+            }
+        }
+
+        // Enforce sender type: non-admin callers cannot impersonate STAFF
+        String senderType = isAdmin
+                ? (request.getSenderType() != null && !request.getSenderType().isBlank() ? request.getSenderType().toUpperCase() : "STAFF")
+                : "CUSTOMER";
+
+        String senderId;
+        if (isAdmin) {
+            senderId = request.getSenderId() != null && !request.getSenderId().isBlank() ? request.getSenderId().trim() : "Staff";
+        } else if (callerCustomer != null) {
+            senderId = callerCustomer.getFirstName() + " " + (callerCustomer.getLastName() != null ? callerCustomer.getLastName() : "").trim();
+        } else {
+            senderId = request.getSenderId() != null && !request.getSenderId().isBlank() ? request.getSenderId().trim() : "Customer";
+        }
 
         SupportMessage msg = new SupportMessage(
                 ticket,
-                request.getSenderType(),
-                request.getSenderId() != null ? request.getSenderId() : "User",
+                senderType,
+                senderId,
                 request.getMessage(),
                 request.getAttachmentUrl()
         );
         ticket.addMessage(msg);
 
-        if ("STAFF".equalsIgnoreCase(request.getSenderType())) {
+        if ("STAFF".equalsIgnoreCase(senderType)) {
             ticket.setStatus("WAITING_FOR_CUSTOMER");
         } else {
             ticket.setStatus("IN_PROGRESS");
         }
 
         SupportTicket updated = ticketRepository.save(ticket);
-        return SupportTicketDto.fromEntity(updated);
+
+        // Apply public / owner / admin DTO privacy mapping
+        if (isAdmin || isOwner) {
+            return SupportTicketDto.fromEntity(updated);
+        }
+        return SupportTicketDto.fromEntityPublic(updated);
+    }
+
+    @Transactional
+    public SupportTicketDto addMessageToTicket(
+            String ticketNumber,
+            AddMessageRequest request,
+            Customer callerCustomer,
+            boolean isAdmin) {
+        return addMessageToTicket(ticketNumber, request, null, callerCustomer, isAdmin);
+    }
+
+    @Transactional
+    public SupportTicketDto addMessageToTicket(String ticketNumber, AddMessageRequest request) {
+        return addMessageToTicket(ticketNumber, request, null, null, true);
     }
 
     @Transactional

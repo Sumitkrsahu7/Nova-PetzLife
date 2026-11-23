@@ -33,6 +33,10 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
     List<Inventory> findByProductId(Long productId);
 
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM Inventory i WHERE i.product.id = :productId")
+    void deleteByProductId(@Param("productId") Long productId);
+
     @Query("SELECT COALESCE(SUM(i.availableStock), 0) FROM Inventory i WHERE i.product.id = :productId")
     Integer findTotalAvailableStockByProductId(@Param("productId") Long productId);
 }

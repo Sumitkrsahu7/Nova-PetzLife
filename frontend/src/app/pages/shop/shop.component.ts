@@ -28,7 +28,9 @@ export interface DepartmentItem {
 })
 export class ShopComponent implements OnInit {
   products: ProductCardData[] = [];
+  similarProducts: ProductCardData[] = [];
   isLoading: boolean = false;
+  isLoadingSimilar: boolean = false;
   cartMessage: string = '';
 
   // View state: true = inside a department view; false = 4 cards hub
@@ -342,6 +344,7 @@ export class ShopComponent implements OnInit {
           this.totalElements = res?.data?.totalElements ?? this.products.length;
           this.totalPages = res?.data?.totalPages ?? Math.ceil(this.totalElements / this.pageSize);
           this.populateAvailableBrands(this.products);
+          this.similarProducts = [];
           this.isLoading = false;
         } else {
           // If backend returns empty, apply high-precision client fallback
@@ -479,6 +482,70 @@ export class ShopComponent implements OnInit {
     const start = this.currentPage * this.pageSize;
     this.products = items.slice(start, start + this.pageSize);
     this.isLoading = false;
+
+    if (this.products.length === 0 && this.searchQuery.trim()) {
+      this.loadSimilarRecommendations();
+    } else {
+      this.similarProducts = [];
+    }
+  }
+
+  loadSimilarRecommendations(): void {
+    if (!this.searchQuery.trim()) {
+      this.similarProducts = [];
+      return;
+    }
+    this.isLoadingSimilar = true;
+    const query = encodeURIComponent(this.searchQuery.trim());
+    let url = `${environment.apiUrl}/products/recommendations/similar?query=${query}&limit=8`;
+    if (this.activeDepartmentId === 'dog-food' || this.activeDepartmentId === 'dog-care') {
+      url += `&petType=Dog`;
+    } else if (this.activeDepartmentId === 'cat-food' || this.activeDepartmentId === 'cat-care') {
+      url += `&petType=Cat`;
+    }
+
+    this.http.get<{ success: boolean; data: any[] }>(url).subscribe({
+      next: res => {
+        this.isLoadingSimilar = false;
+        if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+          this.similarProducts = res.data.map(p => this.mapToCard(p));
+        } else {
+          this.similarProducts = this.getFallbackSimilarProducts(this.searchQuery.trim());
+        }
+      },
+      error: () => {
+        this.isLoadingSimilar = false;
+        this.similarProducts = this.getFallbackSimilarProducts(this.searchQuery.trim());
+      }
+    });
+  }
+
+  private getFallbackSimilarProducts(query: string): ProductCardData[] {
+    const catalog = this.getFallbackCatalog();
+    const q = query.toLowerCase();
+
+    let petType: string | null = null;
+    if (q.includes('dog') || q.includes('puppy') || q.includes('canine')) petType = 'Dog';
+    else if (q.includes('cat') || q.includes('kitten') || q.includes('feline')) petType = 'Cat';
+
+    let category: string | null = null;
+    if (q.includes('food') || q.includes('kibble') || q.includes('gravy') || q.includes('biscuit')) category = 'Food';
+    else if (q.includes('shampoo') || q.includes('groom') || q.includes('litter') || q.includes('soap')) category = 'Grooming';
+    else if (q.includes('toy') || q.includes('chew') || q.includes('ball')) category = 'Accessories';
+
+    let matches = catalog.filter(p => p.inStock);
+
+    if (petType) {
+      matches = matches.filter(p => p.petType === petType || p.petType === 'All Pets');
+    }
+    if (category) {
+      const catMatches = matches.filter(p => p.category.toLowerCase().includes(category.toLowerCase()));
+      if (catMatches.length > 0) {
+        matches = catMatches;
+      }
+    }
+
+    return matches.slice(0, 8);
   }
 
   // Page-based Pagination Controls

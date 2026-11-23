@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -47,6 +47,7 @@ export interface SupportMessage {
 export interface SupportTicket {
   id: number;
   ticketNumber: string;
+  guestAccessSecret?: string;
   customerId: number;
   customerName: string;
   customerEmail?: string;
@@ -106,15 +107,23 @@ export class SupportService {
     return this.http.post<{ success: boolean; data: SupportTicket }>(`${this.apiUrl}/inquiries`, payload);
   }
 
-  public getTicket(ticketNumber: string): Observable<{ success: boolean; data: SupportTicket }> {
-    return this.http.get<{ success: boolean; data: SupportTicket }>(`${this.apiUrl}/tickets/${ticketNumber}`);
+  public getTicket(ticketNumber: string, guestSecret?: string): Observable<{ success: boolean; data: SupportTicket }> {
+    let headers = new HttpHeaders();
+    if (guestSecret && guestSecret.trim()) {
+      headers = headers.set('X-Guest-Access-Token', guestSecret.trim());
+    }
+    return this.http.get<{ success: boolean; data: SupportTicket }>(`${this.apiUrl}/tickets/${ticketNumber}`, { headers });
   }
 
-  public replyTicket(ticketNumber: string, message: string, senderId?: string): Observable<{ success: boolean; data: SupportTicket }> {
+  public replyTicket(ticketNumber: string, message: string, senderId?: string, guestSecret?: string): Observable<{ success: boolean; data: SupportTicket }> {
+    let headers = new HttpHeaders();
+    if (guestSecret && guestSecret.trim()) {
+      headers = headers.set('X-Guest-Access-Token', guestSecret.trim());
+    }
     return this.http.post<{ success: boolean; data: SupportTicket }>(`${this.apiUrl}/tickets/${ticketNumber}/messages`, {
       message,
       senderType: 'CUSTOMER',
       senderId: senderId || 'Customer'
-    });
+    }, { headers });
   }
 }

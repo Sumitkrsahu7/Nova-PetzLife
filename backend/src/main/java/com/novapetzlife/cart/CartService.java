@@ -67,7 +67,7 @@ public class CartService {
         Product product = productRepository.findById(request.productId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + request.productId()));
 
-        if (!Boolean.TRUE.equals(product.getIsActive())) {
+        if (Boolean.TRUE.equals(product.getIsArchived()) || !Boolean.TRUE.equals(product.getIsActive())) {
             throw new IllegalArgumentException("Product is currently unavailable: " + product.getName());
         }
 

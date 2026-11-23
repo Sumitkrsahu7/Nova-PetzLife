@@ -134,7 +134,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   let modifiedReq = req;
   if (token && !req.headers.has('Authorization') && !req.url.includes('/auth/refresh')) {
-    modifiedReq = addTokenHeader(req, token);
+    if (!authService.isTokenExpired(token)) {
+      modifiedReq = addTokenHeader(req, token);
+    }
   }
 
   return next(modifiedReq).pipe(

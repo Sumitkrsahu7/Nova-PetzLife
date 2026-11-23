@@ -185,4 +185,36 @@ describe('AuthService Cross-Tab Synchronization & Logout', () => {
     expect(service.getToken()).toBeNull();
     expect(service.getCurrentUser()).toBeNull();
   });
+
+  it('should detect expired tokens and clean up authentication state', () => {
+    // Generate expired JWT (exp in the past)
+    const pastExp = Math.floor(Date.now() / 1000) - 3600;
+    const expiredPayload = btoa(JSON.stringify({ sub: 'user@example.com', exp: pastExp }));
+    const expiredToken = `header.${expiredPayload}.signature`;
+
+    expect(service.isTokenExpired(expiredToken)).toBeTrue();
+    expect(service.isTokenExpired(null)).toBeTrue();
+    expect(service.isTokenExpired('malformed-token')).toBeTrue();
+
+    // Future token
+    const futureExp = Math.floor(Date.now() / 1000) + 3600;
+    const futurePayload = btoa(JSON.stringify({ sub: 'user@example.com', exp: futureExp }));
+    const validToken = `header.${futurePayload}.signature`;
+
+    expect(service.isTokenExpired(validToken)).toBeFalse();
+
+    // Storing expired token and verifying getCurrentUser() clears false logged-in state
+    const mockUser: UserProfile = {
+      email: 'expired@nova.com',
+      firstName: 'Expired',
+      lastName: 'User',
+      roles: ['ROLE_CUSTOMER']
+    };
+    service.updateCurrentUser(mockUser, expiredToken);
+
+    expect(service.isAuthenticated()).toBeFalse();
+    expect(service.getCurrentUser()).toBeNull();
+    expect(localStorage.getItem('nova_user_token')).toBeNull();
+    expect(localStorage.getItem('nova_user_profile')).toBeNull();
+  });
 });

@@ -27,4 +27,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Object[]> countRatingsByStar(@Param("productId") Long productId);
 
     boolean existsByProductIdAndCustomerId(Long productId, Long customerId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM Review r WHERE r.product.id = :productId")
+    void deleteByProductId(@Param("productId") Long productId);
 }

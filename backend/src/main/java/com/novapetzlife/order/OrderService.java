@@ -13,6 +13,7 @@ import com.novapetzlife.delivery.DeliveryEligibilityResponse;
 import com.novapetzlife.delivery.DeliveryService;
 import com.novapetzlife.inventory.InventoryService;
 import com.novapetzlife.product.Product;
+import com.novapetzlife.product.ProductRepository;
 import com.novapetzlife.product.ProductReturnPolicy;
 import com.novapetzlife.product.ProductVariant;
 import org.springframework.data.domain.Page;
@@ -45,6 +46,7 @@ public class OrderService {
     private final ObjectMapper objectMapper;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     private final com.novapetzlife.refund.RefundService refundService;
+    private final ProductRepository productRepository;
 
     public OrderService(
             OrderRepository orderRepository,
@@ -60,7 +62,8 @@ public class OrderService {
             com.novapetzlife.audit.AuditService auditService,
             ObjectMapper objectMapper,
             org.springframework.security.crypto.password.PasswordEncoder passwordEncoder,
-            com.novapetzlife.refund.RefundService refundService) {
+            com.novapetzlife.refund.RefundService refundService,
+            ProductRepository productRepository) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.statusHistoryRepository = statusHistoryRepository;
@@ -75,6 +78,7 @@ public class OrderService {
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder != null ? passwordEncoder : new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
         this.refundService = refundService;
+        this.productRepository = productRepository;
     }
 
     @Transactional
@@ -108,6 +112,33 @@ public class OrderService {
         if (cart.getCustomer() == null) {
             cart.setCustomer(orderCustomer);
             cartRepository.save(cart);
+        }
+
+        // 2b. Revalidate Cart Items Against Current Catalog Status (Universal Archival & Inactivity Protection)
+        // Acquire pessimistic write locks in sorted Product ID order to eliminate checkout-archival race conditions and prevent deadlocks
+        List<Long> productIdsToLock = cart.getItems().stream()
+                .map(item -> {
+                    if (item.getProduct() == null || item.getProduct().getId() == null) {
+                        throw new IllegalArgumentException("Cart contains an invalid product item");
+                    }
+                    return item.getProduct().getId();
+                })
+                .distinct()
+                .sorted()
+                .toList();
+
+        java.util.Map<Long, Product> lockedProductsById = new java.util.HashMap<>();
+        for (Long pid : productIdsToLock) {
+            Product freshProduct = productRepository.findByIdForUpdate(pid)
+                    .orElseThrow(() -> new IllegalArgumentException("Product is no longer available"));
+
+            if (Boolean.TRUE.equals(freshProduct.getIsArchived())) {
+                throw new IllegalArgumentException("Product '" + freshProduct.getName() + "' has been archived and is no longer available for purchase. Please remove it from your cart.");
+            }
+            if (!Boolean.TRUE.equals(freshProduct.getIsActive())) {
+                throw new IllegalArgumentException("Product '" + freshProduct.getName() + "' is currently inactive and cannot be purchased. Please remove it from your cart.");
+            }
+            lockedProductsById.put(pid, freshProduct);
         }
 
         // 3. Compute Subtotal
@@ -182,7 +213,19 @@ public class OrderService {
 
         // 8. Snapshot Items & Reserve Inventory
         for (CartItem cartItem : cart.getItems()) {
-            Product product = cartItem.getProduct();
+            Product product = lockedProductsById.get(cartItem.getProduct().getId());
+            if (product == null) {
+                product = productRepository.findById(cartItem.getProduct().getId())
+                        .orElseThrow(() -> new IllegalArgumentException("Product '" + cartItem.getProduct().getName() + "' is no longer available"));
+            }
+
+            if (Boolean.TRUE.equals(product.getIsArchived())) {
+                throw new IllegalArgumentException("Product '" + product.getName() + "' has been archived and cannot be purchased.");
+            }
+            if (!Boolean.TRUE.equals(product.getIsActive())) {
+                throw new IllegalArgumentException("Product '" + product.getName() + "' is currently inactive and cannot be purchased.");
+            }
+
             ProductVariant variant = cartItem.getVariant();
             Long variantId = variant != null ? variant.getId() : null;
 

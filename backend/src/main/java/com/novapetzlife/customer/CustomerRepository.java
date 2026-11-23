@@ -7,12 +7,24 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     Optional<Customer> findByUserId(Long userId);
-    Optional<Customer> findByEmail(String email);
+
+    List<Customer> findAllByEmailIgnoreCase(String email);
+
+    Optional<Customer> findFirstByEmailIgnoreCaseOrderByIdAsc(String email);
+
+    default Optional<Customer> findByEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        return findFirstByEmailIgnoreCaseOrderByIdAsc(email.trim());
+    }
+
     Optional<Customer> findByPhone(String phone);
     Optional<Customer> findFirstByOrderByIdAsc();
 

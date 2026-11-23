@@ -71,18 +71,41 @@ public class SupportController {
     }
 
     @GetMapping("/tickets/{ticketNumber}")
-    @Operation(summary = "Track support ticket by ticket number", description = "Retrieves ticket status and entire conversation message thread")
-    public ResponseEntity<ApiResponse<SupportTicketDto>> getTicket(@PathVariable String ticketNumber) {
-        SupportTicketDto ticket = supportService.getTicketByNumber(ticketNumber);
+    @Operation(summary = "Track support ticket by ticket number", description = "Retrieves ticket status and message thread safely with guest access key or authenticated customer ownership")
+    public ResponseEntity<ApiResponse<SupportTicketDto>> getTicket(
+            org.springframework.security.core.Authentication authentication,
+            @PathVariable String ticketNumber,
+            @RequestHeader(value = "X-Guest-Access-Token", required = false) String guestAccessToken) {
+        Customer customer = null;
+        boolean isAdmin = false;
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {
+            isAdmin = authentication.getAuthorities() != null && authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_SUPER_ADMIN".equals(a.getAuthority()) || "ROLE_STAFF_ADMIN".equals(a.getAuthority()) || "CUSTOMER_SUPPORT_VIEW".equals(a.getAuthority()));
+            customer = customerRepository.findByEmail(authentication.getName().toLowerCase().trim()).orElse(null);
+        }
+        SupportTicketDto ticket = supportService.getTicketForCaller(ticketNumber, guestAccessToken, customer, isAdmin);
         return ResponseEntity.ok(ApiResponse.ok(ticket));
     }
 
     @PostMapping("/tickets/{ticketNumber}/messages")
-    @Operation(summary = "Reply to support ticket", description = "Appends customer reply to the open ticket thread")
+    @Operation(summary = "Reply to support ticket", description = "Appends reply to the open ticket thread with guest access key verification or authenticated customer ownership")
     public ResponseEntity<ApiResponse<SupportTicketDto>> replyToTicket(
+            org.springframework.security.core.Authentication authentication,
             @PathVariable String ticketNumber,
+            @RequestHeader(value = "X-Guest-Access-Token", required = false) String guestAccessTokenHeader,
             @Valid @RequestBody AddMessageRequest request) {
-        SupportTicketDto updated = supportService.addMessageToTicket(ticketNumber, request);
+        Customer customer = null;
+        boolean isAdmin = false;
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {
+            isAdmin = authentication.getAuthorities() != null && authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_SUPER_ADMIN".equals(a.getAuthority()) || "ROLE_STAFF_ADMIN".equals(a.getAuthority()) || "CUSTOMER_SUPPORT_EDIT".equals(a.getAuthority()));
+            customer = customerRepository.findByEmail(authentication.getName().toLowerCase().trim()).orElse(null);
+        }
+        String effectiveGuestSecret = (guestAccessTokenHeader != null && !guestAccessTokenHeader.isBlank())
+                ? guestAccessTokenHeader.trim()
+                : (request.getGuestAccessSecret() != null && !request.getGuestAccessSecret().isBlank() ? request.getGuestAccessSecret().trim() : null);
+
+        SupportTicketDto updated = supportService.addMessageToTicket(ticketNumber, request, effectiveGuestSecret, customer, isAdmin);
         return ResponseEntity.ok(ApiResponse.ok("Message added", updated));
     }
 

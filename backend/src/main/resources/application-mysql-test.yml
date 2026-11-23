@@ -1,0 +1,55 @@
+spring:
+  config:
+    activate:
+      on-profile: mysql-test
+  datasource:
+    # Dedicated isolated test schema on MySQL 8.0/InnoDB.
+    # Never defaults to or uses production or staging databases.
+    url: ${MYSQL_TEST_URL:jdbc:mysql://localhost:3306/nova_petzlife_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true}
+    username: ${MYSQL_TEST_USERNAME:nova_test_user}
+    password: ${MYSQL_TEST_PASSWORD:nova_test_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+app:
+  rate-limiting:
+    enabled: false
+  oauth:
+    google:
+      client-id: test-mock-google-client-id.apps.googleusercontent.com
+  cors:
+    allowed-origins: http://localhost:4200
+  jwt:
+    secret: staging_mysql_test_jwt_signing_secret_key_minimum_256_bits_length_for_tests
+    expiration-ms: 86400000
+    refresh-expiration-ms: 604800000
+    cookie-secure: false
+    cookie-same-site: Lax
+
+razorpay:
+  key-id: rzp_test_mock_id
+  key-secret: mock_secret_key
+  webhook-secret: mock_webhook_secret
+  currency: INR
+
+logging:
+  level:
+    com.novapetzlife: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.flywaydb: INFO

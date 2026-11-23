@@ -21,6 +21,7 @@ public class SupportTicketDto {
     private String priority;
     private String status;
     private String assignedTo;
+    private String guestAccessSecret;
     private List<SupportMessageDto> messages;
     private Instant createdAt;
     private Instant updatedAt;
@@ -75,6 +76,36 @@ public class SupportTicketDto {
         );
     }
 
+    public static SupportTicketDto fromEntityPublic(SupportTicket t) {
+        List<SupportMessageDto> msgDtos = t.getMessages() != null
+                ? t.getMessages().stream()
+                    .filter(m -> !"STAFF_INTERNAL".equalsIgnoreCase(m.getSenderType()) && !"INTERNAL_NOTE".equalsIgnoreCase(m.getSenderType()))
+                    .map(SupportMessageDto::fromEntity)
+                    .toList()
+                : List.of();
+
+        return new SupportTicketDto(
+                t.getId(),
+                t.getTicketNumber(),
+                null,
+                t.getCustomer() != null ? t.getCustomer().getFirstName() + " " + (t.getCustomer().getLastName() != null && !t.getCustomer().getLastName().isEmpty() ? t.getCustomer().getLastName().charAt(0) + "." : "") : "Customer",
+                null,
+                null,
+                t.getOrder() != null ? t.getOrder().getOrderNumber() : null,
+                null,
+                null,
+                null,
+                null,
+                t.getSubject(),
+                t.getPriority(),
+                t.getStatus(),
+                null,
+                msgDtos,
+                t.getCreatedAt(),
+                t.getUpdatedAt()
+        );
+    }
+
     public String getOrderStatus() { return orderStatus; }
     public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
     public String getOrderPaymentStatus() { return orderPaymentStatus; }
@@ -106,6 +137,8 @@ public class SupportTicketDto {
     public void setStatus(String status) { this.status = status; }
     public String getAssignedTo() { return assignedTo; }
     public void setAssignedTo(String assignedTo) { this.assignedTo = assignedTo; }
+    public String getGuestAccessSecret() { return guestAccessSecret; }
+    public void setGuestAccessSecret(String guestAccessSecret) { this.guestAccessSecret = guestAccessSecret; }
     public List<SupportMessageDto> getMessages() { return messages; }
     public void setMessages(List<SupportMessageDto> messages) { this.messages = messages; }
     public Instant getCreatedAt() { return createdAt; }

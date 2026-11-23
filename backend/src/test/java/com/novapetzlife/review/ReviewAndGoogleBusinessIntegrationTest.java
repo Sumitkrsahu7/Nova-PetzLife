@@ -371,6 +371,17 @@ class ReviewAndGoogleBusinessIntegrationTest {
     @WithMockUser(roles = "SUPER_ADMIN")
     @DisplayName("Google Business Admin: Admin can trigger sync from Google Places and toggle homepage visibility")
     void testAdminGoogleSyncAndFeatureToggle() throws Exception {
+        // Seed authentic review for feature toggle testing
+        googleReviewRepository.save(new GoogleReview(
+                "Authentic Reviewer",
+                "https://example.com/avatar.jpg",
+                5,
+                "1 week ago",
+                "Great pet accessories and reliable advice at Kuravankonam shop.",
+                "ChIJ_genuine_test_01",
+                true
+        ));
+
         // Trigger sync
         mockMvc.perform(post("/api/v1/admin/google-business/sync"))
                 .andExpect(status().isOk())

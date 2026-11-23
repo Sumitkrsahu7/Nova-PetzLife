@@ -257,8 +257,7 @@ class AdminPetProfileIntegrationTest {
         petProfileRepository.save(petA1);
 
         // Customer fetches their own pets
-        mockMvc.perform(get("/api/v1/customer/pets")
-                        .param("customerId", customerA.getId().toString()))
+        mockMvc.perform(get("/api/v1/customer/pets"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 // Bruno has feedback
@@ -273,17 +272,15 @@ class AdminPetProfileIntegrationTest {
         );
 
         mockMvc.perform(put("/api/v1/customer/pets/" + petA1.getId())
-                        .param("customerId", customerA.getId().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateReq)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.weightKg").value(29.0))
                 .andExpect(jsonPath("$.data.adminFeedback").value("Explore our adult dog food collection."));
 
-        // Customer cannot access another customer's pet
-        mockMvc.perform(get("/api/v1/customer/pets/" + petB1.getId())
-                        .param("customerId", customerA.getId().toString()))
-                .andExpect(status().isBadRequest());
+        // Customer cannot access another customer's pet (403 Forbidden)
+        mockMvc.perform(get("/api/v1/customer/pets/" + petB1.getId()))
+                .andExpect(status().isForbidden());
     }
 
     @Test

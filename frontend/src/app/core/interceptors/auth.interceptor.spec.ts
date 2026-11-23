@@ -64,6 +64,18 @@ describe('AuthInterceptor', () => {
     req.flush({ success: true });
   });
 
+  it('should not attach Authorization header and call logout if token is expired before sending request', () => {
+    authServiceSpy.getToken.and.returnValue('expired-token');
+    authServiceSpy.isTokenExpired.and.returnValue(true);
+
+    http.get('/api/v1/products').subscribe();
+
+    const req = httpMock.expectOne('/api/v1/products');
+    expect(req.request.headers.has('Authorization')).toBeFalse();
+    expect(authServiceSpy.logout).toHaveBeenCalledWith(false);
+    req.flush({ success: true });
+  });
+
   it('should refresh token on 401 and retry request with new Bearer token', () => {
     authServiceSpy.getToken.and.returnValue('expired-token');
     authServiceSpy.refreshToken.and.returnValue(of({ success: true, data: { token: 'new-refreshed-token' } }));

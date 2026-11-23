@@ -96,12 +96,26 @@
                  [(ngModel)]="searchTicketNumber"
                  placeholder="Enter ticket number (e.g. TKT-20261114-A1B2C3)"
                  (keyup.enter)="trackTicket()">
+          <input type="password"
+                 [(ngModel)]="searchAccessSecret"
+                 placeholder="Guest Access Key (required for guest tickets)"
+                 autocomplete="off"
+                 (keyup.enter)="trackTicket()">
           <button (click)="trackTicket()" [disabled]="isTrackingTicket">
             {{ isTrackingTicket ? '...' : 'Track Ticket' }}
           </button>
         </div>
 
-        <p *ngIf="ticketSearchError" class="track-error">⚠️ {{ ticketSearchError }}</p>
+        <p class="track-hint" style="font-size: 0.78rem; color: #667085; margin: 0.35rem 0 0.5rem;">
+          ℹ️ Guest inquiries require the unique Access Key issued upon submission. Keys are not stored in browser storage after refresh for customer privacy.
+        </p>
+
+        <div *ngIf="ticketSearchError" class="track-error-box" style="margin: 0.75rem 0; padding: 0.75rem; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 8px;">
+          <p class="track-error" style="margin: 0 0 0.4rem; color: #c53030; font-weight: 600; font-size: 0.85rem;">⚠️ {{ ticketSearchError }}</p>
+          <p class="track-error-recovery" style="margin: 0; font-size: 0.78rem; color: #742a2a; line-height: 1.4;">
+            <strong>Lost your Access Key?</strong> For customer privacy, guest access keys cannot be recovered online once lost or after page refresh. If you lost your key, please submit a new inquiry or contact store desk directly.
+          </p>
+        </div>
 
         <div *ngIf="trackedTicket" class="tracked-result">
           <div class="ticket-header-row">
@@ -157,7 +171,12 @@
         <p class="card-desc">Have a question about product availability, order fulfillment, or returns? Send us a message.</p>
 
         <div *ngIf="successMessage" class="alert alert-success">
-          ✓ {{ successMessage }}
+          <p style="white-space: pre-line;">✓ {{ successMessage }}</p>
+          <div *ngIf="submittedTicket?.guestAccessSecret" class="guest-key-box" style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.9); border-radius: 6px; border: 1px solid #c3e6cb;">
+            <strong style="color: #155724; display: block; margin-bottom: 4px;">🔑 Private Guest Access Key:</strong>
+            <code style="display: block; font-size: 0.95rem; word-break: break-all; color: #0c5460; user-select: all; font-weight: bold; background: #e8f4f8; padding: 6px 8px; border-radius: 4px;">{{ submittedTicket?.guestAccessSecret }}</code>
+            <small style="display: block; margin-top: 6px; color: #495057;">Please copy and save this key. It is required along with your ticket number to track status and reply.</small>
+          </div>
         </div>
         <div *ngIf="errorMessage" class="alert alert-error">
           ⚠️ {{ errorMessage }}

@@ -2,6 +2,7 @@ package com.novapetzlife.auth;
 
 import com.novapetzlife.customer.Customer;
 import com.novapetzlife.customer.CustomerRepository;
+import com.novapetzlife.customer.CustomerService;
 import com.novapetzlife.security.JwtTokenProvider;
 import com.novapetzlife.user.Permission;
 import com.novapetzlife.user.Role;
@@ -41,6 +42,7 @@ public class AuthService {
     private final GoogleOAuthService googleOAuthService;
     private final UserOAuthIdentityRepository userOAuthIdentityRepository;
     private final CustomerRepository customerRepository;
+    private final CustomerService customerService;
 
     public AuthService(
             AuthenticationManager authenticationManager,
@@ -51,7 +53,8 @@ public class AuthService {
             RefreshTokenService refreshTokenService,
             GoogleOAuthService googleOAuthService,
             UserOAuthIdentityRepository userOAuthIdentityRepository,
-            CustomerRepository customerRepository) {
+            CustomerRepository customerRepository,
+            CustomerService customerService) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -61,6 +64,7 @@ public class AuthService {
         this.googleOAuthService = googleOAuthService;
         this.userOAuthIdentityRepository = userOAuthIdentityRepository;
         this.customerRepository = customerRepository;
+        this.customerService = customerService;
     }
 
     @Transactional
@@ -204,13 +208,12 @@ public class AuthService {
         newUser.setRoles(Set.of(customerRole));
         User savedUser = userRepository.save(newUser);
 
-        // Associate Customer profile
-        Customer customer = new Customer(savedUser, googleEmail, null, firstName, lastName, false);
-        customerRepository.save(customer);
-
-        // Save OAuth Identity mapping
+        // Save OAuth Identity mapping first so verified OAuth identity is established
         UserOAuthIdentity identity = new UserOAuthIdentity(savedUser, "GOOGLE", googleSub, googleEmail);
         userOAuthIdentityRepository.save(identity);
+
+        // Associate Customer profile safely (links guest if exactly one unlinked guest exists, or creates new)
+        customerService.getOrCreateCustomerForUser(savedUser);
 
         log.info("Registered and authenticated new customer via Google: {} (sub: {})", googleEmail, googleSub);
         return issueTokensForUser(savedUser, ipAddress);

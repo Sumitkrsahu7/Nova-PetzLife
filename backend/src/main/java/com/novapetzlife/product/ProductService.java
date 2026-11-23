@@ -16,6 +16,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.novapetzlife.cart.CartItemRepository;
+import com.novapetzlife.inventory.InventoryTransactionRepository;
+import com.novapetzlife.order.OrderItemRepository;
+import com.novapetzlife.review.ReviewRepository;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +36,11 @@ public class ProductService {
     private final InventoryService inventoryService;
     private final PricingService pricingService;
     private final com.novapetzlife.audit.AuditService auditService;
+    private final OrderItemRepository orderItemRepository;
+    private final CartItemRepository cartItemRepository;
+    private final InventoryTransactionRepository inventoryTransactionRepository;
+    private final ReviewRepository reviewRepository;
+    private final com.novapetzlife.audit.AuditLogRepository auditLogRepository;
 
     public ProductService(
             ProductRepository productRepository,
@@ -39,7 +49,12 @@ public class ProductService {
             InventoryRepository inventoryRepository,
             InventoryService inventoryService,
             PricingService pricingService,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) com.novapetzlife.audit.AuditService auditService) {
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.novapetzlife.audit.AuditService auditService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) OrderItemRepository orderItemRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) CartItemRepository cartItemRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) InventoryTransactionRepository inventoryTransactionRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) ReviewRepository reviewRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.novapetzlife.audit.AuditLogRepository auditLogRepository) {
         this.productRepository = productRepository;
         this.brandRepository = brandRepository;
         this.categoryRepository = categoryRepository;
@@ -47,6 +62,11 @@ public class ProductService {
         this.inventoryService = inventoryService;
         this.pricingService = pricingService;
         this.auditService = auditService;
+        this.orderItemRepository = orderItemRepository;
+        this.cartItemRepository = cartItemRepository;
+        this.inventoryTransactionRepository = inventoryTransactionRepository;
+        this.reviewRepository = reviewRepository;
+        this.auditLogRepository = auditLogRepository;
     }
 
     @Transactional(readOnly = true)
@@ -85,7 +105,11 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductDetailDto getProductBySlug(String slug) {
         Product product = productRepository.findBySlug(slug)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found with slug: " + slug));
+                .orElseThrow(() -> new com.novapetzlife.common.ResourceNotFoundException("Product not found with slug: " + slug));
+
+        if (Boolean.TRUE.equals(product.getIsArchived()) || !Boolean.TRUE.equals(product.getIsActive())) {
+            throw new com.novapetzlife.common.ResourceNotFoundException("Product not found with slug: " + slug);
+        }
 
         Integer stock = inventoryRepository.findTotalAvailableStockByProductId(product.getId());
         return ProductDetailDto.fromEntity(product, stock != null ? stock : 0);
@@ -322,5 +346,196 @@ public class ProductService {
 
         Integer stock = inventoryRepository.findTotalAvailableStockByProductId(saved.getId());
         return ProductDetailDto.fromEntity(saved, stock != null ? stock : 0);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductSummaryDto> getSimilarRecommendations(String query, String categorySlug, String petType, int limit) {
+        int max = limit > 0 && limit <= 24 ? limit : 8;
+        Pageable pageable = PageRequest.of(0, max);
+
+        String normalizedPetType = null;
+        String detectedKeyword = null;
+        String detectedBrand = null;
+
+        if (petType != null && !petType.trim().isBlank()) {
+            normalizedPetType = petType.trim();
+        }
+
+        if (query != null && !query.trim().isBlank()) {
+            String lower = query.trim().toLowerCase();
+
+            // Detect Pet Type if not already provided
+            if (normalizedPetType == null) {
+                if (lower.contains("dog") || lower.contains("puppy") || lower.contains("canine")) {
+                    normalizedPetType = "Dog";
+                } else if (lower.contains("cat") || lower.contains("kitten") || lower.contains("feline")) {
+                    normalizedPetType = "Cat";
+                } else if (lower.contains("bird") || lower.contains("parrot") || lower.contains("avian")) {
+                    normalizedPetType = "Bird";
+                } else if (lower.contains("fish") || lower.contains("aquarium")) {
+                    normalizedPetType = "Fish";
+                }
+            }
+
+            // Detect usage category/keywords
+            if (lower.contains("food") || lower.contains("kibble") || lower.contains("gravy") || lower.contains("biscuit") || lower.contains("treat")) {
+                detectedKeyword = "food";
+            } else if (lower.contains("shampoo") || lower.contains("groom") || lower.contains("soap") || lower.contains("litter") || lower.contains("brush")) {
+                detectedKeyword = "grooming";
+            } else if (lower.contains("toy") || lower.contains("chew") || lower.contains("ball") || lower.contains("rope")) {
+                detectedKeyword = "toy";
+            } else if (lower.contains("collar") || lower.contains("leash") || lower.contains("harness") || lower.contains("belt")) {
+                detectedKeyword = "collar";
+            }
+
+            // Detect brand
+            for (String b : List.of("royal canin", "pedigree", "whiskas", "drools", "farmina", "arden grange", "purepet", "meat up", "himalaya", "sheba")) {
+                if (lower.contains(b)) {
+                    detectedBrand = b;
+                    break;
+                }
+            }
+        }
+
+        List<Product> products = productRepository.findSimilarProducts(
+                normalizedPetType, categorySlug, detectedBrand, detectedKeyword, pageable
+        );
+
+        if (products == null || products.isEmpty()) {
+            products = productRepository.findTopActiveProducts(pageable);
+        }
+
+        return products.stream()
+                .filter(p -> Boolean.TRUE.equals(p.getIsActive()) && !Boolean.TRUE.equals(p.getIsArchived()))
+                .map(p -> {
+                    Integer stock = inventoryRepository.findTotalAvailableStockByProductId(p.getId());
+                    return ProductSummaryDto.fromEntity(p, stock != null && stock > 0);
+                })
+                .toList();
+    }
+
+    @Transactional
+    public ProductRemovalResult removeProduct(Long id, String adminUsername) {
+        Product product = productRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
+
+        boolean wasActive = Boolean.TRUE.equals(product.getIsActive());
+
+        // Universal Product Archival Policy:
+        // Products are NEVER permanently deleted through admin product removal.
+        // All product removals perform archival to preserve transactional integrity, historical
+        // orders, invoices, payments, refunds, return records, inventory ledger entries, and audit compliance.
+        product.setIsArchived(true);
+        product.setIsActive(false);
+        product.setArchivedAt(java.time.Instant.now());
+        product.setArchivedBy(adminUsername != null ? adminUsername : "ADMIN");
+
+        // Transactionally purge active shopping carts referencing this archived product
+        if (cartItemRepository != null) {
+            cartItemRepository.deleteByProductId(id);
+        }
+
+        productRepository.save(product);
+
+        if (auditService != null) {
+            auditService.recordAudit("Product", product.getSku(), "PRODUCT_ARCHIVED", adminUsername,
+                    wasActive ? "ACTIVE" : "INACTIVE", "ARCHIVED", null);
+        }
+
+        return new ProductRemovalResult(
+                product.getId(),
+                product.getName(),
+                product.getSku(),
+                "ARCHIVED",
+                "Product has been safely archived from the customer catalog. All historical orders, invoices, payments, refunds, and reports remain intact."
+        );
+    }
+
+    @Transactional
+    public ProductDetailDto restoreProduct(Long id, String adminUsername, Boolean explicitActivate) {
+        Product product = productRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
+
+        boolean targetActive;
+        if (explicitActivate != null) {
+            targetActive = explicitActivate;
+        } else {
+            // Check audit log for pre-archive active status to preserve pre-archive state safely
+            if (auditLogRepository != null) {
+                var lastArchiveLog = auditLogRepository
+                        .findFirstByEntityNameAndEntityIdAndActionOrderByCreatedAtDesc("Product", product.getSku(), "PRODUCT_ARCHIVED");
+                if (lastArchiveLog.isEmpty() && product.getId() != null) {
+                    lastArchiveLog = auditLogRepository
+                            .findFirstByEntityNameAndEntityIdAndActionOrderByCreatedAtDesc("Product", String.valueOf(product.getId()), "PRODUCT_ARCHIVED");
+                }
+                // Safe default: only activate if explicitly recorded as "ACTIVE"; null, empty, malformed, or historical pre-audit records safely evaluate to inactive (false)
+                targetActive = lastArchiveLog.isPresent()
+                        && lastArchiveLog.get().getOldValue() != null
+                        && "ACTIVE".equalsIgnoreCase(lastArchiveLog.get().getOldValue().trim());
+            } else {
+                targetActive = false; // Safe default: remain inactive if audit log repository is unavailable
+            }
+        }
+
+        product.setIsArchived(false);
+        product.setIsActive(targetActive);
+        product.setArchivedAt(null);
+        product.setArchivedBy(null);
+
+        Product saved = productRepository.save(product);
+        if (auditService != null) {
+            auditService.recordAudit("Product", saved.getSku(), "PRODUCT_RESTORED", adminUsername,
+                    "ARCHIVED", targetActive ? "ACTIVE" : "INACTIVE", null);
+        }
+
+        Integer stock = inventoryRepository.findTotalAvailableStockByProductId(saved.getId());
+        return ProductDetailDto.fromEntity(saved, stock != null ? stock : 0);
+    }
+
+    @Transactional
+    public ProductDetailDto restoreProduct(Long id, String adminUsername) {
+        return restoreProduct(id, adminUsername, null);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductDetailDto> searchAdminProducts(String query, String status, Long categoryId, Pageable pageable) {
+        Specification<Product> spec = (root, cq, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+
+            if ("ACTIVE".equalsIgnoreCase(status)) {
+                predicates.add(cb.isTrue(root.get("isActive")));
+                predicates.add(cb.or(cb.isNull(root.get("isArchived")), cb.isFalse(root.get("isArchived"))));
+            } else if ("INACTIVE".equalsIgnoreCase(status)) {
+                predicates.add(cb.isFalse(root.get("isActive")));
+                predicates.add(cb.or(cb.isNull(root.get("isArchived")), cb.isFalse(root.get("isArchived"))));
+            } else if ("ARCHIVED".equalsIgnoreCase(status)) {
+                predicates.add(cb.isTrue(root.get("isArchived")));
+            }
+
+            if (query != null && !query.trim().isBlank()) {
+                String clean = "%" + query.trim().toLowerCase() + "%";
+                jakarta.persistence.criteria.Join<Product, Brand> brandJoin = root.join("brand", jakarta.persistence.criteria.JoinType.LEFT);
+                jakarta.persistence.criteria.Join<Product, Category> categoryJoin = root.join("category", jakarta.persistence.criteria.JoinType.LEFT);
+
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), clean),
+                        cb.like(cb.lower(root.get("sku")), clean),
+                        cb.like(cb.lower(brandJoin.get("name")), clean),
+                        cb.like(cb.lower(categoryJoin.get("name")), clean)
+                ));
+            }
+
+            if (categoryId != null) {
+                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        Page<Product> page = productRepository.findAll(spec, pageable);
+        return page.map(p -> {
+            Integer stock = inventoryRepository.findTotalAvailableStockByProductId(p.getId());
+            return ProductDetailDto.fromEntity(p, stock != null ? stock : 0);
+        });
     }
 }

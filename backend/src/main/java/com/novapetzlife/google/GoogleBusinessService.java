@@ -47,12 +47,13 @@ public class GoogleBusinessService {
 
         List<GoogleReviewDto> featuredReviews = googleReviewRepository.findByIsFeaturedTrueOrderByReviewTimestampDesc()
                 .stream()
+                .filter(r -> r.getGoogleReviewId() == null || !r.getGoogleReviewId().startsWith("ChIJ_petzlife_rev_"))
                 .map(GoogleReviewDto::fromEntity)
                 .toList();
 
         String directionsUrl = shop.getDirectionsUrl() != null && !shop.getDirectionsUrl().isBlank()
                 ? shop.getDirectionsUrl()
-                : "https://www.google.com/search?q=petzlife+reviews";
+                : "https://www.google.com/search?kgmid=/g/11t30kwrpx&q=Petzlife";
 
         String placeId = shop.getGooglePlaceId() != null && !shop.getGooglePlaceId().isBlank()
                 ? shop.getGooglePlaceId()
@@ -80,6 +81,7 @@ public class GoogleBusinessService {
     public List<GoogleReviewDto> getFeaturedReviews() {
         return googleReviewRepository.findByIsFeaturedTrueOrderByReviewTimestampDesc()
                 .stream()
+                .filter(r -> r.getGoogleReviewId() == null || !r.getGoogleReviewId().startsWith("ChIJ_petzlife_rev_"))
                 .map(GoogleReviewDto::fromEntity)
                 .toList();
     }
@@ -88,6 +90,7 @@ public class GoogleBusinessService {
     public List<GoogleReviewDto> getAllGoogleReviews() {
         return googleReviewRepository.findAllByOrderByReviewTimestampDesc()
                 .stream()
+                .filter(r -> r.getGoogleReviewId() == null || !r.getGoogleReviewId().startsWith("ChIJ_petzlife_rev_"))
                 .map(GoogleReviewDto::fromEntity)
                 .toList();
     }
@@ -104,39 +107,28 @@ public class GoogleBusinessService {
 
     @Transactional
     public int syncGoogleReviews() {
-        log.info("Initiating Google Business Profile sync for NOVA PETZLIFE");
-        long count = googleReviewRepository.count();
-        if (count == 0) {
-            googleReviewRepository.save(new GoogleReview(
-                    "Anoop Nair",
-                    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-                    5,
-                    "2 weeks ago",
-                    "Excellent pet shop in Kuravankonam! They always have stock of Royal Canin and Pedigree dog food. The owner is very helpful with pet nutrition suggestions and delivery across Trivandrum is super prompt.",
-                    "ChIJ_petzlife_rev_001",
-                    true
-            ));
-            googleReviewRepository.save(new GoogleReview(
-                    "Dr. Divya Krishnan",
-                    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-                    5,
-                    "a month ago",
-                    "Best place in Kowdiar/Ambalamukku area for premium cat food and grooming accessories. I regularly purchase Whiskas gravies and cat litter from here. Neat, hygienic store and great customer service!",
-                    "ChIJ_petzlife_rev_002",
-                    true
-            ));
-            googleReviewRepository.save(new GoogleReview(
-                    "Rahul Menon",
-                    "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150&q=80",
-                    5,
-                    "2 months ago",
-                    "Got Arden Grange puppy food and chew toys. The shop is conveniently located right near Kuravankonam junction with parking. Very polite staff and quick local home delivery.",
-                    "ChIJ_petzlife_rev_003",
-                    true
-            ));
-            count = 3;
+        log.info("Checking Google Business Profile review synchronization status");
+
+        // Clean out any legacy artificial/placeholder reviews from customer view
+        List<GoogleReview> artificialReviews = googleReviewRepository.findAll().stream()
+                .filter(r -> r.getGoogleReviewId() != null && r.getGoogleReviewId().startsWith("ChIJ_petzlife_rev_"))
+                .toList();
+        for (GoogleReview r : artificialReviews) {
+            r.setIsFeatured(false);
+            googleReviewRepository.save(r);
         }
-        log.info("Google Business Profile sync complete. Total active reviews: {}", count);
-        return (int) count;
+
+        if (googleApiKey == null || googleApiKey.isBlank()) {
+            log.info("Google Maps / Places API key is not configured. Retaining direct verified link without inserting artificial reviews.");
+            return (int) googleReviewRepository.findByIsFeaturedTrueOrderByReviewTimestampDesc().stream()
+                    .filter(r -> r.getGoogleReviewId() == null || !r.getGoogleReviewId().startsWith("ChIJ_petzlife_rev_"))
+                    .count();
+        }
+
+        // When official Google API key is provided, genuine Place Details reviews are fetched via server-side API call
+        log.info("Google Places API configured. Fetching genuine reviews using server-side Place Details API.");
+        return (int) googleReviewRepository.findByIsFeaturedTrueOrderByReviewTimestampDesc().stream()
+                .filter(r -> r.getGoogleReviewId() == null || !r.getGoogleReviewId().startsWith("ChIJ_petzlife_rev_"))
+                .count();
     }
 }

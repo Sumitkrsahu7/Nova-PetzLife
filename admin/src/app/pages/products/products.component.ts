@@ -17,6 +17,7 @@ export interface ProductItem {
   basePrice: number;
   discountedPrice?: number;
   isActive: boolean;
+  isArchived?: boolean;
   stock?: number;
 }
 
@@ -45,7 +46,15 @@ export class ProductsComponent implements OnInit {
   isLoading = false;
   searchQuery = '';
   selectedCategoryId = 'ALL';
+  statusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' = 'ALL';
   sortBy: 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' = 'name-asc';
+
+  // Remove Product Modal State
+  showRemoveProductModal = false;
+  selectedProductForRemoval: ProductItem | null = null;
+  isRemovingProduct = false;
+  removeErrorMessage = '';
+  removeSuccessMessage = '';
 
   // Catalog Pagination
   catalogPage = 0;
@@ -53,6 +62,16 @@ export class ProductsComponent implements OnInit {
 
   get sortedProducts(): ProductItem[] {
     let list = [...this.products];
+
+    // Status Filter
+    if (this.statusFilter === 'ACTIVE') {
+      list = list.filter(p => p.isActive && !p.isArchived);
+    } else if (this.statusFilter === 'INACTIVE') {
+      list = list.filter(p => !p.isActive && !p.isArchived);
+    } else if (this.statusFilter === 'ARCHIVED') {
+      list = list.filter(p => !!p.isArchived);
+    }
+
     switch (this.sortBy) {
       case 'name-asc':
         return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -213,7 +232,7 @@ export class ProductsComponent implements OnInit {
   fetchProducts(): void {
     this.isLoading = true;
     this.catalogPage = 0;
-    let url = `${environment.apiUrl}/products?page=0&size=200`;
+    let url = `${environment.apiUrl}/admin/products?page=0&size=200`;
     if (this.searchQuery.trim()) url += `&query=${encodeURIComponent(this.searchQuery.trim())}`;
     if (this.selectedCategoryId !== 'ALL') url += `&categoryId=${encodeURIComponent(this.selectedCategoryId)}`;
 
@@ -225,7 +244,68 @@ export class ProductsComponent implements OnInit {
         }
       },
       error: () => {
-        this.isLoading = false;
+        // Fallback to public products endpoint if needed
+        this.http.get<any>(`${environment.apiUrl}/products?page=0&size=200`).subscribe({
+          next: fallbackRes => {
+            this.isLoading = false;
+            if (fallbackRes?.success && fallbackRes.data?.content) {
+              this.products = fallbackRes.data.content;
+            }
+          },
+          error: () => {
+            this.isLoading = false;
+          }
+        });
+      }
+    });
+  }
+
+  openRemoveProductModal(p: ProductItem): void {
+    this.selectedProductForRemoval = p;
+    this.removeErrorMessage = '';
+    this.removeSuccessMessage = '';
+    this.showRemoveProductModal = true;
+  }
+
+  closeRemoveProductModal(): void {
+    if (this.isRemovingProduct) return;
+    this.showRemoveProductModal = false;
+    this.selectedProductForRemoval = null;
+    this.removeErrorMessage = '';
+  }
+
+  confirmRemoveProduct(): void {
+    if (!this.selectedProductForRemoval || this.isRemovingProduct) return;
+    this.isRemovingProduct = true;
+    this.removeErrorMessage = '';
+
+    const id = this.selectedProductForRemoval.id;
+    this.http.delete<any>(`${environment.apiUrl}/admin/products/${id}`).subscribe({
+      next: res => {
+        this.isRemovingProduct = false;
+        this.showRemoveProductModal = false;
+        this.selectedProductForRemoval = null;
+        const msg = res?.data?.message || res?.message || 'Product archived successfully.';
+        this.removeSuccessMessage = msg;
+        setTimeout(() => this.removeSuccessMessage = '', 6000);
+        this.fetchProducts();
+      },
+      error: err => {
+        this.isRemovingProduct = false;
+        this.removeErrorMessage = err.error?.message || 'Failed to archive product. Please try again.';
+      }
+    });
+  }
+
+  restoreProduct(p: ProductItem): void {
+    this.http.post<any>(`${environment.apiUrl}/admin/products/${p.id}/restore`, {}).subscribe({
+      next: res => {
+        this.removeSuccessMessage = `Product "${p.name}" restored to active catalog.`;
+        setTimeout(() => this.removeSuccessMessage = '', 6000);
+        this.fetchProducts();
+      },
+      error: err => {
+        alert(err.error?.message || 'Failed to restore product.');
       }
     });
   }

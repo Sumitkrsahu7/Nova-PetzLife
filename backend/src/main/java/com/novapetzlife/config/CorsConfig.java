@@ -50,7 +50,8 @@ public class CorsConfig {
                 "Access-Control-Request-Method",
                 "Access-Control-Request-Headers",
                 "X-Session-Token",
-                "X-Refresh-Retry"
+                "X-Refresh-Retry",
+                "X-Guest-Access-Token"
         ));
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",

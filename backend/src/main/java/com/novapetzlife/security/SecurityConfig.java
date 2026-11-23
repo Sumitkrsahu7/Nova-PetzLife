@@ -85,12 +85,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/orders/*/return-eligibility").permitAll()
                         .requestMatchers("/api/v1/orders/*/cancel").permitAll()
                         .requestMatchers("/api/v1/returns/**").permitAll()
-                        // Public Promotions & Customer Pet Profiles
+                        // Public Promotions & Customer Pet Guest Registration (onboarding only; listing & management require authentication)
                         .requestMatchers("/api/v1/promotions/coupons/**").permitAll()
-                        .requestMatchers("/api/v1/customer/pets/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/customer/pets/guest").permitAll()
+                        .requestMatchers("/api/v1/customer/pets/**").authenticated()
                         // Public Customer Support, FAQs & Notifications
                         .requestMatchers("/api/v1/support/**").permitAll()
-                        .requestMatchers("/api/v1/customer/notifications/**").permitAll()
+                        // Customer Notifications (strictly authenticated; Customer A cannot read Customer B's notifications)
+                        .requestMatchers("/api/v1/customer/notifications/**").authenticated()
                         // Public Customer Product Reviews & Ratings
                         .requestMatchers("/api/v1/reviews/**").permitAll()
                         // Public Google Business Profile & Synced Reviews

@@ -1,6 +1,9 @@
 package com.novapetzlife.cart;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -9,4 +12,8 @@ import java.util.Optional;
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     Optional<CartItem> findByCartIdAndProductIdAndVariantId(Long cartId, Long productId, Long variantId);
     Optional<CartItem> findByCartIdAndProductIdAndVariantIsNull(Long cartId, Long productId);
+
+    @Modifying
+    @Query("DELETE FROM CartItem ci WHERE ci.product.id = :productId")
+    void deleteByProductId(@Param("productId") Long productId);
 }

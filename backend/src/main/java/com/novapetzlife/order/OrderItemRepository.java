@@ -11,6 +11,8 @@ import java.util.List;
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     List<OrderItem> findByOrderId(Long orderId);
 
+    boolean existsByProductId(Long productId);
+
     @Query("SELECT COUNT(oi) > 0 FROM OrderItem oi WHERE oi.order.customer.id = :customerId AND oi.order.orderStatus = 'DELIVERED' AND oi.product.id = :productId")
     boolean isVerifiedPurchase(@Param("customerId") Long customerId, @Param("productId") Long productId);
 }

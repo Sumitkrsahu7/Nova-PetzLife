@@ -50,6 +50,12 @@ class InventoryConcurrencyTest {
     @Autowired
     private OrderRepository orderRepository;
 
+    @Autowired(required = false)
+    private com.novapetzlife.support.SupportTicketRepository supportTicketRepository;
+
+    @Autowired(required = false)
+    private com.novapetzlife.support.SupportMessageRepository supportMessageRepository;
+
     @Autowired
     private ProductRepository productRepository;
 
@@ -63,6 +69,8 @@ class InventoryConcurrencyTest {
 
     @BeforeEach
     void setUp() {
+        if (supportMessageRepository != null) supportMessageRepository.deleteAll();
+        if (supportTicketRepository != null) supportTicketRepository.deleteAll();
         orderItemRepository.deleteAll();
         orderRepository.deleteAll();
         cartItemRepository.deleteAll();

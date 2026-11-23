@@ -38,6 +38,9 @@ public class SupportTicket {
     @Column(name = "assigned_to", length = 100)
     private String assignedTo;
 
+    @Column(name = "guest_access_hash", length = 64)
+    private String guestAccessHash;
+
     @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("createdAt ASC")
     private List<SupportMessage> messages = new ArrayList<>();
@@ -88,6 +91,8 @@ public class SupportTicket {
     public void setStatus(String status) { this.status = status; this.updatedAt = Instant.now(); }
     public String getAssignedTo() { return assignedTo; }
     public void setAssignedTo(String assignedTo) { this.assignedTo = assignedTo; }
+    public String getGuestAccessHash() { return guestAccessHash; }
+    public void setGuestAccessHash(String guestAccessHash) { this.guestAccessHash = guestAccessHash; }
     public List<SupportMessage> getMessages() { return messages; }
     public void setMessages(List<SupportMessage> messages) { this.messages = messages; }
     public Instant getCreatedAt() { return createdAt; }
