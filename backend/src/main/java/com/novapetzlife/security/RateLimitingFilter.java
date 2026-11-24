@@ -45,6 +45,12 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private static final int DELIVERY_CHECK_LIMIT = 40;
     private static final long DELIVERY_CHECK_WINDOW_MS = 60_000L; // 1 minute
 
+    private static final int DELIVERY_OTP_LIMIT = 5;
+    private static final long DELIVERY_OTP_WINDOW_MS = 900_000L; // 15 minutes
+
+    private static final int PAYMENT_ORDER_LIMIT = 10;
+    private static final long PAYMENT_ORDER_WINDOW_MS = 60_000L; // 1 minute
+
     @org.springframework.beans.factory.annotation.Value("${app.rate-limiting.enabled:true}")
     private boolean rateLimitingEnabled;
 
@@ -92,6 +98,16 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         } else if (path.contains("/api/v1/delivery/check-address")) {
             if (!isAllowed(ClientIpUtil.getClientIp(request) + ":delivery-check", DELIVERY_CHECK_LIMIT, DELIVERY_CHECK_WINDOW_MS)) {
                 sendRateLimitResponse(response, "Too many address lookup requests. Please wait a moment.");
+                return;
+            }
+        } else if ("POST".equalsIgnoreCase(method) && (path.contains("/verify-delivery-otp") || path.contains("/verify-cod-otp"))) {
+            if (!isAllowed(ClientIpUtil.getClientIp(request) + ":" + path + ":otp", DELIVERY_OTP_LIMIT, DELIVERY_OTP_WINDOW_MS)) {
+                sendRateLimitResponse(response, "Too many OTP verification attempts. Please wait 15 minutes before trying again.");
+                return;
+            }
+        } else if ("POST".equalsIgnoreCase(method) && path.endsWith("/api/v1/payments/create-order")) {
+            if (!isAllowed(ClientIpUtil.getClientIp(request) + ":create-payment-order", PAYMENT_ORDER_LIMIT, PAYMENT_ORDER_WINDOW_MS)) {
+                sendRateLimitResponse(response, "Too many payment order requests. Please wait 1 minute before trying again.");
                 return;
             }
         }

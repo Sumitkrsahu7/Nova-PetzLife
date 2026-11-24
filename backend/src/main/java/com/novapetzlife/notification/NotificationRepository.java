@@ -17,4 +17,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     Page<Notification> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     long countByStatus(String status);
+
+    boolean existsByRecipientAndTemplateAndCreatedAtAfter(String recipient, String template, java.time.Instant after);
 }

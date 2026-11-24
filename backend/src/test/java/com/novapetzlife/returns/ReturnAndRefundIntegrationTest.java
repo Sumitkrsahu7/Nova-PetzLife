@@ -41,6 +41,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import com.novapetzlife.payment.RazorpayClientService;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -64,6 +66,9 @@ class ReturnAndRefundIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockBean
+    private RazorpayClientService razorpayClientService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -574,6 +579,31 @@ class ReturnAndRefundIntegrationTest {
         assertThrows(IllegalArgumentException.class, () -> {
             orderService.verifyDeliveryOtp(pendingOrder.getId(), "123456", "AGENT");
         });
+    }
+
+    @Test
+    @DisplayName("Security: Delivery OTP verification locks out after 5 consecutive failed attempts")
+    void testDeliveryOtpLockoutAfter5FailedAttempts() {
+        for (int i = 1; i <= 4; i++) {
+            final int attempt = i;
+            assertThrows(IllegalArgumentException.class, () -> {
+                orderService.verifyDeliveryOtp(pendingOrder.getId(), "99999" + attempt, "AGENT");
+            }, "Attempt " + attempt + " should fail with IllegalArgumentException");
+        }
+
+        org.springframework.web.server.ResponseStatusException ex5 = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> orderService.verifyDeliveryOtp(pendingOrder.getId(), "999995", "AGENT")
+        );
+        assertEquals(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS, ex5.getStatusCode());
+        assertTrue(ex5.getReason().contains("Maximum failed OTP attempts (5) reached"));
+
+        org.springframework.web.server.ResponseStatusException ex6 = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> orderService.verifyDeliveryOtp(pendingOrder.getId(), "999996", "AGENT")
+        );
+        assertEquals(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS, ex6.getStatusCode());
+        assertTrue(ex6.getReason().contains("is locked"));
     }
 
     @Test

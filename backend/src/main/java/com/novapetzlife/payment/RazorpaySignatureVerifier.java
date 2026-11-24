@@ -17,7 +17,8 @@ public class RazorpaySignatureVerifier {
      * signature = HmacSHA256(order_id + "|" + payment_id, secret)
      */
     public boolean verifyCheckoutSignature(String orderId, String paymentId, String signature, String secret) {
-        if (orderId == null || paymentId == null || signature == null || secret == null) {
+        if (orderId == null || paymentId == null || signature == null || signature.isBlank()
+                || secret == null || secret.isBlank()) {
             return false;
         }
 
@@ -43,7 +44,8 @@ public class RazorpaySignatureVerifier {
      * signature = HmacSHA256(request_body, webhook_secret)
      */
     public boolean verifyWebhookSignature(String requestBody, String signatureHeader, String webhookSecret) {
-        if (requestBody == null || signatureHeader == null || webhookSecret == null) {
+        if (requestBody == null || signatureHeader == null || signatureHeader.isBlank()
+                || webhookSecret == null || webhookSecret.isBlank()) {
             return false;
         }
 
@@ -59,6 +61,9 @@ public class RazorpaySignatureVerifier {
     }
 
     public String calculateHmacSha256(String data, String secret) throws Exception {
+        if (data == null || secret == null || secret.isBlank()) {
+            throw new IllegalArgumentException("Data and secret must not be null, empty or blank for HMAC-SHA256 calculation");
+        }
         Mac mac = Mac.getInstance(HMAC_SHA256);
         SecretKeySpec secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), HMAC_SHA256);
         mac.init(secretKey);

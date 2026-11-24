@@ -62,6 +62,22 @@ public class MediaService {
         return uploadDir;
     }
 
+    public boolean isStorageHealthy() {
+        if (!localStorageEnabled) {
+            return false;
+        }
+        try {
+            Path path = Paths.get(uploadDir).toAbsolutePath().normalize();
+            if (!Files.exists(path)) {
+                Files.createDirectories(path);
+            }
+            return Files.isDirectory(path) && Files.isWritable(path);
+        } catch (Exception e) {
+            log.error("Media storage health check failed for path {}: {}", uploadDir, e.getMessage());
+            return false;
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<ProductImageDto> getProductImages(Long productId) {
         return productImageRepository.findByProductIdOrderByDisplayOrderAsc(productId)

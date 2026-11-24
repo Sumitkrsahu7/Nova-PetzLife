@@ -131,6 +131,9 @@ class PaymentAndInvoiceIntegrationTest {
     @Autowired
     private RazorpayConfig razorpayConfig;
 
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private RazorpayClientService razorpayClientService;
+
     @Autowired
     private NotificationRepository notificationRepository;
 
@@ -293,6 +296,20 @@ class PaymentAndInvoiceIntegrationTest {
         );
         testOrder.addItem(orderItem);
         testOrder = orderRepository.save(testOrder);
+
+        org.mockito.Mockito.when(razorpayClientService.isConfigured()).thenReturn(true);
+        org.mockito.Mockito.when(razorpayClientService.createOrder(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any()
+        )).thenReturn(new RazorpayClientService.GatewayOrderResult("order_mock_gateway_12345", 118000L, "INR"));
+
+        org.mockito.Mockito.when(razorpayClientService.createRefund(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyString()
+        )).thenReturn(new RazorpayClientService.GatewayRefundResult("rfnd_mock_gateway_12345", "processed", 118000L));
     }
 
     @Test
@@ -602,6 +619,63 @@ class PaymentAndInvoiceIntegrationTest {
         Order updated = orderRepository.findByOrderNumber(testOrder.getOrderNumber()).orElseThrow();
         assertEquals("CONFIRMED", updated.getOrderStatus());
         assertEquals("COMPLETED", updated.getPaymentStatus());
+    }
+
+    @Test
+    @DisplayName("Payment Test 11: Webhook rejected with HTTP 400 when webhook secret is empty string")
+    void testRazorpayWebhook_EmptySecret_Rejected() throws Exception {
+        String originalSecret = razorpayConfig.getWebhookSecret();
+        try {
+            razorpayConfig.setWebhookSecret("");
+            String payload = "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_test_empty\",\"order_id\":\"order_test_empty\"}}}}";
+
+            mockMvc.perform(post("/api/v1/payments/webhook")
+                            .header("X-Razorpay-Signature", "any_incoming_signature_value")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payload))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message", is("Invalid Razorpay webhook signature")));
+        } finally {
+            razorpayConfig.setWebhookSecret(originalSecret);
+        }
+    }
+
+    @Test
+    @DisplayName("Payment Test 12: Webhook rejected with HTTP 400 when webhook secret is whitespace only")
+    void testRazorpayWebhook_WhitespaceSecret_Rejected() throws Exception {
+        String originalSecret = razorpayConfig.getWebhookSecret();
+        try {
+            razorpayConfig.setWebhookSecret("   \t   ");
+            String payload = "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_test_ws\",\"order_id\":\"order_test_ws\"}}}}";
+
+            mockMvc.perform(post("/api/v1/payments/webhook")
+                            .header("X-Razorpay-Signature", "any_incoming_signature_value")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payload))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message", is("Invalid Razorpay webhook signature")));
+        } finally {
+            razorpayConfig.setWebhookSecret(originalSecret);
+        }
+    }
+
+    @Test
+    @DisplayName("Payment Test 13: Webhook rejected with HTTP 400 when webhook secret is null")
+    void testRazorpayWebhook_NullSecret_Rejected() throws Exception {
+        String originalSecret = razorpayConfig.getWebhookSecret();
+        try {
+            razorpayConfig.setWebhookSecret(null);
+            String payload = "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_test_null\",\"order_id\":\"order_test_null\"}}}}";
+
+            mockMvc.perform(post("/api/v1/payments/webhook")
+                            .header("X-Razorpay-Signature", "any_incoming_signature_value")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payload))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message", is("Invalid Razorpay webhook signature")));
+        } finally {
+            razorpayConfig.setWebhookSecret(originalSecret);
+        }
     }
 
     @Test

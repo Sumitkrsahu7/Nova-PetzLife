@@ -50,6 +50,11 @@ public class OrderService {
     private final com.novapetzlife.refund.RefundService refundService;
     private final ProductRepository productRepository;
 
+    private final java.util.Map<Long, java.util.concurrent.atomic.AtomicInteger> failedOtpAttempts = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<Long, Long> otpLockoutExpiry = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final int MAX_FAILED_OTP_ATTEMPTS = 5;
+    private static final long OTP_LOCKOUT_DURATION_MS = 15 * 60 * 1000L; // 15 minutes
+
     public OrderService(
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
@@ -409,11 +414,36 @@ public class OrderService {
             throw new IllegalArgumentException("Delivery OTP code cannot be empty");
         }
 
+        long now = System.currentTimeMillis();
+        Long lockoutUntil = otpLockoutExpiry.get(orderId);
+        if (lockoutUntil != null && now < lockoutUntil) {
+            long remainingMinutes = Math.max(1, (lockoutUntil - now) / 60000);
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
+                    "Maximum failed OTP attempts (5) reached for order #" + order.getOrderNumber() + ". Verification is locked for " + remainingMinutes + " more minutes."
+            );
+        }
+
         boolean matches = order.getDeliveryOtpHash() != null && passwordEncoder.matches(otp.trim(), order.getDeliveryOtpHash());
 
         if (!matches) {
-            throw new IllegalArgumentException("Invalid delivery verification OTP. Please ask customer to provide the 6-digit code received via SMS/Email.");
+            int attempts = failedOtpAttempts.computeIfAbsent(orderId, k -> new java.util.concurrent.atomic.AtomicInteger(0)).incrementAndGet();
+            if (attempts >= MAX_FAILED_OTP_ATTEMPTS) {
+                otpLockoutExpiry.put(orderId, now + OTP_LOCKOUT_DURATION_MS);
+                failedOtpAttempts.remove(orderId);
+                log.warn("Delivery OTP verification locked for order {} after {} failed attempts", order.getOrderNumber(), attempts);
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
+                        "Maximum failed OTP attempts (5) reached. Verification for order #" + order.getOrderNumber() + " is locked for 15 minutes."
+                );
+            }
+            int remaining = MAX_FAILED_OTP_ATTEMPTS - attempts;
+            throw new IllegalArgumentException("Invalid delivery verification OTP. Remaining attempts: " + remaining);
         }
+
+        // On successful verification, clear failure counters and lockout
+        failedOtpAttempts.remove(orderId);
+        otpLockoutExpiry.remove(orderId);
 
         order.setDeliveryOtpHash(null);
         order.setIsOtpVerified(true);

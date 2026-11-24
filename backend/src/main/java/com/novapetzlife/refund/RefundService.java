@@ -24,16 +24,19 @@ public class RefundService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final com.novapetzlife.notification.NotificationService notificationService;
+    private final com.novapetzlife.payment.RazorpayClientService razorpayClientService;
 
     public RefundService(
             RefundRepository refundRepository,
             PaymentRepository paymentRepository,
             OrderRepository orderRepository,
-            com.novapetzlife.notification.NotificationService notificationService) {
+            com.novapetzlife.notification.NotificationService notificationService,
+            com.novapetzlife.payment.RazorpayClientService razorpayClientService) {
         this.refundRepository = refundRepository;
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
         this.notificationService = notificationService;
+        this.razorpayClientService = razorpayClientService;
     }
 
     @Transactional
@@ -92,18 +95,48 @@ public class RefundService {
 
         Payment payment = paymentRepository.findFirstByOrderIdOrderByCreatedAtDesc(lockedOrder.getId()).orElse(null);
 
-        // 5. Explicit status: PENDING_MANUAL_REFUND distinguishes internal ledger approval from live gateway disbursement.
-        // gatewayRefundId and completedAt remain NULL until confirmed by gateway API callback.
+        // 5. Genuine Gateway Refund Initiation vs Safe Manual Ledger Fallback
+        String gatewayRefundId = null;
+        String refundStatus = "PENDING_MANUAL_REFUND";
+        Instant completedAt = null;
+
+        boolean canAttemptGatewayRefund = payment != null
+                && "RAZORPAY".equalsIgnoreCase(lockedOrder.getPaymentMethod())
+                && payment.getGatewayPaymentId() != null
+                && !payment.getGatewayPaymentId().isBlank()
+                && razorpayClientService != null
+                && razorpayClientService.isConfigured();
+
+        if (canAttemptGatewayRefund) {
+            try {
+                long refundAmountPaise = scaledAmount.multiply(BigDecimal.valueOf(100)).longValue();
+                var result = razorpayClientService.createRefund(payment.getGatewayPaymentId(), refundAmountPaise, reason);
+                gatewayRefundId = result.gatewayRefundId();
+                refundStatus = "processed".equalsIgnoreCase(result.status()) ? "SUCCESS" : "PROCESSING";
+                if ("SUCCESS".equalsIgnoreCase(refundStatus)) {
+                    completedAt = Instant.now();
+                }
+                log.info("Razorpay automated refund executed for order {}. Gateway Refund ID: {}, status: {}",
+                        lockedOrder.getOrderNumber(), gatewayRefundId, refundStatus);
+            } catch (Exception ex) {
+                log.warn("Automated Razorpay refund failed for order {}: {}. Falling back to internal PENDING_MANUAL_REFUND",
+                        lockedOrder.getOrderNumber(), ex.getMessage());
+                gatewayRefundId = null;
+                refundStatus = "PENDING_MANUAL_REFUND";
+                completedAt = null;
+            }
+        }
+
         Refund refund = new Refund(
                 lockedOrder,
                 payment,
-                null, // No simulated gateway ID
+                gatewayRefundId,
                 scaledAmount,
-                "PENDING_MANUAL_REFUND",
+                refundStatus,
                 reason != null ? reason : "Order refund approved",
                 approvedBy != null ? approvedBy : "SYSTEM"
         );
-        refund.setCompletedAt(null); // completedAt MUST NOT be set prior to genuine disbursement
+        refund.setCompletedAt(completedAt);
         refund = refundRepository.save(refund);
 
         BigDecimal newTotalRefunded = currentTotalRefunded.add(scaledAmount);

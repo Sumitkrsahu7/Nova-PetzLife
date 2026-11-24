@@ -40,6 +40,15 @@ app:
   password-reset-path: ${APP_PASSWORD_RESET_PATH:/reset-password}
   auth:
     password-reset-token-expiration-minutes: ${PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES:15}
+  oauth:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
+  media:
+    local-storage-enabled: ${LOCAL_MEDIA_STORAGE_ENABLED:true}
+    upload-dir: ${MEDIA_UPLOAD_DIR:/app/uploads/products}
+    base-url: ${MEDIA_BASE_URL:}
+  rate-limiting:
+    enabled: ${RATE_LIMITING_ENABLED:true}
   mail:
     enabled: ${APP_MAIL_ENABLED:false}
     from-email: ${BREVO_FROM_EMAIL:support@novapetzlife.com}

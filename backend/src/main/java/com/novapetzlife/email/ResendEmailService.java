@@ -23,7 +23,6 @@ import java.util.Map;
  * logged as deferred without exposing secrets or raw reset tokens.
  */
 @Service
-@Primary
 public class ResendEmailService implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(ResendEmailService.class);
@@ -187,5 +186,14 @@ public class ResendEmailService implements EmailService {
             — NOVA PETZLIFE Team
             Kuravankonam, Thiruvananthapuram, Kerala
             """.formatted(name, resetLink, expMinutes);
+    }
+
+    @Override
+    public boolean sendTransactionalEmail(String toEmail, String recipientName, String subject, String textContent) {
+        if (!StringUtils.hasText(resendApiKey)) {
+            log.info("[EMAIL DEFERRED] Resend transactional email deferred. API key unconfigured. Recipient: {}", maskEmail(toEmail));
+            return false;
+        }
+        return false;
     }
 }

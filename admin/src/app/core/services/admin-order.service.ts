@@ -105,4 +105,10 @@ export class AdminOrderService {
       { headers: this.getAuthHeaders() }
     );
   }
+
+  public downloadInvoicePdf(orderNumber: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/orders/${orderNumber}/invoice/download`, {
+      responseType: 'blob'
+    });
+  }
 }

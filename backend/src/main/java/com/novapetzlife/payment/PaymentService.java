@@ -31,6 +31,7 @@ public class PaymentService {
     private final OrderRepository orderRepository;
     private final RazorpayConfig razorpayConfig;
     private final RazorpaySignatureVerifier signatureVerifier;
+    private final RazorpayClientService razorpayClientService;
     private final InvoiceService invoiceService;
     private final com.novapetzlife.notification.NotificationService notificationService;
     private final com.novapetzlife.inventory.InventoryService inventoryService;
@@ -41,6 +42,7 @@ public class PaymentService {
             OrderRepository orderRepository,
             RazorpayConfig razorpayConfig,
             RazorpaySignatureVerifier signatureVerifier,
+            RazorpayClientService razorpayClientService,
             InvoiceService invoiceService,
             com.novapetzlife.notification.NotificationService notificationService,
             com.novapetzlife.inventory.InventoryService inventoryService,
@@ -49,6 +51,7 @@ public class PaymentService {
         this.orderRepository = orderRepository;
         this.razorpayConfig = razorpayConfig;
         this.signatureVerifier = signatureVerifier;
+        this.razorpayClientService = razorpayClientService;
         this.invoiceService = invoiceService;
         this.notificationService = notificationService;
         this.inventoryService = inventoryService;
@@ -94,27 +97,48 @@ public class PaymentService {
                 .multiply(BigDecimal.valueOf(100))
                 .longValue();
 
-        // In live integration with Razorpay REST API, an order is generated via https://api.razorpay.com/v1/orders.
-        // For production/sandbox environment interoperability, we generate a valid unique Razorpay order ID.
-        String razorpayOrderId = "order_" + UUID.randomUUID().toString().replace("-", "").substring(0, 14);
-
-        Payment payment = new Payment(
-                order,
-                razorpayOrderId,
-                order.getFinalPayableAmount(),
-                "CREATED",
-                "RAZORPAY"
-        );
-        paymentRepository.save(payment);
-
         String customerName = order.getCustomer() != null
                 ? (order.getCustomer().getFirstName() + " " + (order.getCustomer().getLastName() != null ? order.getCustomer().getLastName() : "")).trim()
                 : "Customer";
         String customerEmail = order.getCustomer() != null ? order.getCustomer().getEmail() : "";
         String customerPhone = order.getCustomer() != null ? order.getCustomer().getPhone() : "";
 
-        log.info("Created Razorpay payment order {} for orderNumber {} with amount {} paise",
-                razorpayOrderId, order.getOrderNumber(), amountInPaise);
+        // Idempotency: Reuse existing CREATED payment order if one was already generated for this exact order
+        Payment payment = paymentRepository.findFirstByOrderIdOrderByCreatedAtDesc(order.getId())
+                .filter(p -> "CREATED".equalsIgnoreCase(p.getStatus()) && p.getGatewayOrderId() != null && !p.getGatewayOrderId().isBlank())
+                .orElse(null);
+
+        String razorpayOrderId;
+        if (payment != null) {
+            razorpayOrderId = payment.getGatewayOrderId();
+            log.info("Reusing existing CREATED Razorpay payment order {} for orderNumber {}", razorpayOrderId, order.getOrderNumber());
+        } else {
+            java.util.Map<String, String> notes = new java.util.HashMap<>();
+            notes.put("orderNumber", order.getOrderNumber());
+            if (!customerEmail.isBlank()) {
+                notes.put("customerEmail", customerEmail);
+            }
+
+            RazorpayClientService.GatewayOrderResult gatewayResult = razorpayClientService.createOrder(
+                    order.getOrderNumber(),
+                    amountInPaise,
+                    razorpayConfig.getCurrency(),
+                    notes
+            );
+            razorpayOrderId = gatewayResult.gatewayOrderId();
+
+            payment = new Payment(
+                    order,
+                    razorpayOrderId,
+                    order.getFinalPayableAmount(),
+                    "CREATED",
+                    "RAZORPAY"
+            );
+            paymentRepository.save(payment);
+
+            log.info("Created genuine Razorpay payment order {} for orderNumber {} with amount {} paise",
+                    razorpayOrderId, order.getOrderNumber(), amountInPaise);
+        }
 
         return new PaymentOrderResponse(
                 razorpayOrderId,

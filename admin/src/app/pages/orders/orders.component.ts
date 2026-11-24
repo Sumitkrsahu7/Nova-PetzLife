@@ -181,8 +181,33 @@ export class OrdersComponent implements OnInit {
     });
   }
 
+  isDownloadingInvoice = false;
+  invoiceDownloadError = '';
+
   printInvoice(orderNumber: string): void {
-    window.open(`http://localhost:4200/invoice/${orderNumber}`, '_blank');
+    if (!orderNumber) return;
+    this.isDownloadingInvoice = true;
+    this.invoiceDownloadError = '';
+
+    this.adminOrderService.downloadInvoicePdf(orderNumber).subscribe({
+      next: (blob: Blob) => {
+        this.isDownloadingInvoice = false;
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `Invoice-${orderNumber}.pdf`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 2000);
+      },
+      error: (err) => {
+        this.isDownloadingInvoice = false;
+        this.invoiceDownloadError = err.error?.message || 'Failed to download official invoice PDF';
+        console.error('Invoice download error:', err);
+      }
+    });
   }
 
   deliveryOtpInput = '';
