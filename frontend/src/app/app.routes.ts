@@ -46,6 +46,6 @@ export const routes: Routes = [
   { path: 'faqs', redirectTo: 'support', pathMatch: 'full' },
   { path: 'about', redirectTo: 'check-delivery', pathMatch: 'full' },
   { path: 'track/:orderNumber', component: OrderTrackingComponent },
-  { path: 'invoice/:orderNumber', component: InvoiceComponent },
+  { path: 'invoice/:orderNumber', component: InvoiceComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '' }
 ];

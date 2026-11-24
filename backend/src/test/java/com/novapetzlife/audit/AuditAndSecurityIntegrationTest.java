@@ -47,6 +47,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -166,6 +167,24 @@ class AuditAndSecurityIntegrationTest {
 
     @Autowired
     private ShopLocationRepository shopLocationRepository;
+
+    @Autowired
+    private com.novapetzlife.user.UserRepository userRepository;
+
+    @Autowired
+    private com.novapetzlife.user.RoleRepository roleRepository;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private com.novapetzlife.customer.CustomerService customerService;
+
+    @Autowired
+    private com.novapetzlife.order.OrderService orderService;
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private Customer testCustomer;
     private Product testProduct;
@@ -371,5 +390,179 @@ class AuditAndSecurityIntegrationTest {
     void testAuditLogEndpointRejectsUnauthenticated() throws Exception {
         mockMvc.perform(get("/api/v1/admin/audit-logs"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Security: Email change requires valid current password")
+    void testEmailUpdateRequiresPassword() {
+        com.novapetzlife.user.Role role = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseGet(() -> roleRepository.save(new com.novapetzlife.user.Role("ROLE_CUSTOMER", "Customer account")));
+        String email = "pwd_test_" + UUID.randomUUID().toString().substring(0, 6) + "@test.com";
+        com.novapetzlife.user.User user = new com.novapetzlife.user.User(
+                email, passwordEncoder.encode("CurrentPass123!"), "Test", "User", "+919447300001"
+        );
+        user.setRoles(java.util.Set.of(role));
+        user = userRepository.save(user);
+
+        final com.novapetzlife.user.User finalUser = user;
+        // Incorrect password rejected
+        assertThrows(IllegalArgumentException.class, () -> {
+            customerService.updateEmail(finalUser, "new_" + email, "WrongPassword!");
+        });
+
+        // Correct password succeeds
+        var res = customerService.updateEmail(finalUser, "new_" + email, "CurrentPass123!");
+        assertNotNull(res);
+        assertEquals("new_" + email, res.email());
+    }
+
+    @Test
+    @DisplayName("Security: Account deletion requires valid current password")
+    void testAccountDeletionRequiresPassword() {
+        com.novapetzlife.user.Role role = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseGet(() -> roleRepository.save(new com.novapetzlife.user.Role("ROLE_CUSTOMER", "Customer account")));
+        String email = "del_test_" + UUID.randomUUID().toString().substring(0, 6) + "@test.com";
+        com.novapetzlife.user.User user = new com.novapetzlife.user.User(
+                email, passwordEncoder.encode("DeletePass123!"), "Del", "User", "+919447300002"
+        );
+        user.setRoles(java.util.Set.of(role));
+        user = userRepository.save(user);
+
+        final com.novapetzlife.user.User finalUser = user;
+        // Incorrect password rejected
+        assertThrows(IllegalArgumentException.class, () -> {
+            customerService.deleteAccount(finalUser, "WrongPassword!");
+        });
+
+        // Correct password succeeds
+        customerService.deleteAccount(finalUser, "DeletePass123!");
+        com.novapetzlife.user.User updated = userRepository.findById(finalUser.getId()).orElseThrow();
+        assertFalse(updated.getIsActive());
+    }
+
+    @Test
+    @DisplayName("Security: Abandoned checkout inventory cleanup cancels expired orders")
+    void testAbandonedCheckoutCleanup() {
+        Order order = new Order();
+        order.setOrderNumber("ORD-ABANDONED-" + UUID.randomUUID().toString().substring(0, 6));
+        order.setCustomer(testCustomer);
+        order.setOrderStatus("PENDING_PAYMENT");
+        order.setPaymentStatus("PENDING");
+        order.setPaymentMethod("RAZORPAY");
+        order.setTotalAmount(new BigDecimal("500.00"));
+        order.setDiscountAmount(BigDecimal.ZERO);
+        order.setDeliveryCharge(BigDecimal.ZERO);
+        order.setTaxAmount(BigDecimal.ZERO);
+        order.setFinalPayableAmount(new BigDecimal("500.00"));
+        order.setDeliveryAddressJson("{}");
+        order.setDeliverySlot("Evening");
+        order.setShopDistanceKm(BigDecimal.ONE);
+        order.setIsWithinRadius(true);
+        order = orderRepository.save(order);
+        jdbcTemplate.update("UPDATE orders SET created_at = ? WHERE id = ?",
+                java.sql.Timestamp.from(java.time.Instant.now().minus(java.time.Duration.ofMinutes(45))),
+                order.getId());
+
+        orderService.cleanupAbandonedCheckoutReservations();
+
+        Order cancelled = orderRepository.findByOrderNumber(order.getOrderNumber()).orElseThrow();
+        assertEquals("CANCELLED", cancelled.getOrderStatus());
+        assertTrue(cancelled.getCancellationReason().contains("30 minutes"));
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("NPZ-VERIFY-006: Super Admin invariant prevents deactivating sole active Super Admin")
+    void testSuperAdminInvariant_SoleSuperAdminCannotBeDeactivated() {
+        com.novapetzlife.user.Role superAdminRole = roleRepository.findByName("ROLE_SUPER_ADMIN")
+                .orElseGet(() -> roleRepository.save(new com.novapetzlife.user.Role("ROLE_SUPER_ADMIN", "Super Admin role")));
+
+        // Ensure exactly 1 active Super Admin in the system
+        List<com.novapetzlife.user.User> existingAdmins = userRepository.findAll().stream()
+                .filter(u -> u.getRoles().stream().anyMatch(r -> "ROLE_SUPER_ADMIN".equalsIgnoreCase(r.getName())))
+                .toList();
+
+        for (com.novapetzlife.user.User a : existingAdmins) {
+            a.setIsActive(false);
+            userRepository.save(a);
+        }
+
+        com.novapetzlife.user.User soleAdmin = new com.novapetzlife.user.User(
+                "sole.admin@novapetzlife.com", passwordEncoder.encode("AdminPass123!"), "Sole", "Admin", "+919447300099"
+        );
+        soleAdmin.setRoles(java.util.Set.of(superAdminRole));
+        soleAdmin.setIsActive(true);
+        soleAdmin = userRepository.save(soleAdmin);
+
+        var controller = new com.novapetzlife.user.AdminStaffController(
+                userRepository, roleRepository, null, passwordEncoder, auditService, null
+        );
+
+        // Another admin attempts to deactivate the sole active Super Admin
+        org.springframework.security.core.Authentication otherAdminAuth =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("other.admin@novapetzlife.com", null);
+
+        final Long targetId = soleAdmin.getId();
+        assertThrows(IllegalStateException.class, () -> {
+            controller.toggleStaffStatus(targetId, otherAdminAuth);
+        });
+
+        com.novapetzlife.user.User reloaded = userRepository.findById(soleAdmin.getId()).orElseThrow();
+        assertTrue(reloaded.getIsActive(), "Sole Super Admin must remain active");
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-006: Super Admin account cannot be deleted via customer deleteAccount endpoint")
+    void testSuperAdminCannotDeleteAccountViaCustomerEndpoint() {
+        com.novapetzlife.user.Role superAdminRole = roleRepository.findByName("ROLE_SUPER_ADMIN")
+                .orElseGet(() -> roleRepository.save(new com.novapetzlife.user.Role("ROLE_SUPER_ADMIN", "Super Admin role")));
+
+        com.novapetzlife.user.User superAdmin = new com.novapetzlife.user.User(
+                "super.delete.test@novapetzlife.com", passwordEncoder.encode("Pass@123"), "Super", "Admin", "+919447300088"
+        );
+        superAdmin.setRoles(java.util.Set.of(superAdminRole));
+        superAdmin.setIsActive(true);
+        superAdmin = userRepository.save(superAdmin);
+
+        final com.novapetzlife.user.User targetUser = superAdmin;
+        assertThrows(IllegalArgumentException.class, () -> {
+            customerService.deleteAccount(targetUser, "Pass@123", null);
+        }, "Super Administrator accounts must be rejected from customer deleteAccount endpoint");
+
+        com.novapetzlife.user.User reloaded = userRepository.findById(superAdmin.getId()).orElseThrow();
+        assertTrue(reloaded.getIsActive(), "Super Admin must remain active");
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-007: OAuth-only user with null password cannot bypass re-authentication")
+    void testOAuthUserWithoutPassword_ReAuthenticationGuardsEnforced() {
+        com.novapetzlife.user.Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseGet(() -> roleRepository.save(new com.novapetzlife.user.Role("ROLE_CUSTOMER", "Customer account")));
+
+        com.novapetzlife.user.User oauthUser = new com.novapetzlife.user.User();
+        oauthUser.setEmail("oauth.customer@example.com");
+        oauthUser.setPasswordHash(null); // OAuth user with NO local password
+        oauthUser.setFirstName("OAuth");
+        oauthUser.setLastName("User");
+        oauthUser.setRoles(java.util.Set.of(customerRole));
+        oauthUser.setIsActive(true);
+        oauthUser = userRepository.save(oauthUser);
+
+        final com.novapetzlife.user.User finalOauthUser = oauthUser;
+
+        // 1. updateEmail without Google ID token rejected
+        assertThrows(IllegalArgumentException.class, () -> {
+            customerService.updateEmail(finalOauthUser, "hacked@example.com", null);
+        });
+
+        // 2. deleteAccount without Google ID token rejected
+        assertThrows(IllegalArgumentException.class, () -> {
+            customerService.deleteAccount(finalOauthUser, null);
+        });
+
+        // Account must remain active and untampered
+        com.novapetzlife.user.User reloaded = userRepository.findById(oauthUser.getId()).orElseThrow();
+        assertTrue(reloaded.getIsActive());
+        assertEquals("oauth.customer@example.com", reloaded.getEmail());
     }
 }

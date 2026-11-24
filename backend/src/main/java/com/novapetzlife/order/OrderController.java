@@ -156,4 +156,19 @@ public class OrderController {
         OrderDetailDto updated = orderService.adminCancelItemOutOfStock(id, request.orderItemId(), request.reason(), operator);
         return ResponseEntity.ok(ApiResponse.ok("Order item cancelled and refund processed successfully", updated));
     }
+
+    @PostMapping("/api/v1/admin/orders/{id}/collect-cod")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_STAFF_ADMIN', 'ORDER_EDIT')")
+    @Operation(summary = "Record COD cash collection (Admin)", description = "Explicitly records physical cash collection for Cash on Delivery orders, decoupling parcel handover from payment recognition")
+    public ResponseEntity<ApiResponse<OrderDetailDto>> collectCodPayment(
+            Authentication authentication,
+            @PathVariable Long id,
+            @RequestBody(required = false) CollectCodRequest request) {
+
+        String operator = authentication != null ? authentication.getName() : "ADMIN_DELIVERY_AGENT";
+        java.math.BigDecimal amount = request != null ? request.amount() : null;
+        String notes = request != null ? request.notes() : null;
+        OrderDetailDto updated = orderService.adminRecordCodPayment(id, amount, operator, notes);
+        return ResponseEntity.ok(ApiResponse.ok("COD payment successfully recorded", updated));
+    }
 }

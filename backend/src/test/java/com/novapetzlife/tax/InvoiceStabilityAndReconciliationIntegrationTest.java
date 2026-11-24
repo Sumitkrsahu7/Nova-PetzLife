@@ -307,4 +307,64 @@ public class InvoiceStabilityAndReconciliationIntegrationTest {
         // Reset
         ReflectionTestUtils.setField(invoiceService, "configuredGstin", "");
     }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-008: GST Tax Invoice line-item arithmetic reconciles post-discount: taxable + tax == totalAmount")
+    void testGstInvoice_LineItemArithmetic_ReconcilesPostDiscount() {
+        ReflectionTestUtils.setField(invoiceService, "configuredGstin", "32AAACN0123M1Z5");
+        taxConfigRepository.deleteAll();
+
+        // 18% GST (CGST 9%, SGST 9%)
+        TaxConfiguration config = new TaxConfiguration("Pet Nutrition", "23091000", new BigDecimal("9.00"), new BigDecimal("9.00"), BigDecimal.ZERO);
+        taxConfigRepository.save(config);
+
+        // Gross = 1180.00 (1000 base + 180 tax), Discount = 118.00 (100 base + 18 tax discount)
+        // Net payable = 1062.00 goods + 50.00 shipping = 1112.00
+        BigDecimal gross = new BigDecimal("1180.00");
+        BigDecimal discount = new BigDecimal("118.00");
+        BigDecimal shipping = new BigDecimal("50.00");
+        Order order = createOrder(gross, discount, shipping);
+
+        OrderItem item = order.getItems().get(0);
+        item.setHsnCode("23091000");
+        orderItemRepository.save(item);
+
+        InvoiceDto dto = invoiceService.getInvoiceDtoByOrder(order);
+        assertNotNull(dto);
+        assertEquals("GST_TAX_INVOICE", dto.documentType());
+
+        // Verify line item reconciliation
+        assertEquals(1, dto.items().size());
+        InvoiceDto.InvoiceItemDto itemDto = dto.items().get(0);
+
+        // Effective net gross after discount = 1180.00 - 118.00 = 1062.00
+        BigDecimal expectedEffectiveGross = new BigDecimal("1062.00");
+        BigDecimal expectedTaxable = new BigDecimal("900.00");
+        BigDecimal expectedCgst = new BigDecimal("81.00");
+        BigDecimal expectedSgst = new BigDecimal("81.00");
+
+        assertEquals(0, expectedTaxable.compareTo(itemDto.taxableValue()), "Taxable value must reflect net post-discount (900.00)");
+        assertEquals(0, expectedCgst.compareTo(itemDto.cgstAmount()), "CGST must be 9% of 900.00 (81.00)");
+        assertEquals(0, expectedSgst.compareTo(itemDto.sgstAmount()), "SGST must be 9% of 900.00 (81.00)");
+        assertEquals(0, expectedEffectiveGross.compareTo(itemDto.totalAmount()), "Item totalAmount must match net effective gross (1062.00)");
+
+        // Strict line-item reconciliation assertion: taxableValue + cgst + sgst == totalAmount
+        BigDecimal computedLineTotal = itemDto.taxableValue().add(itemDto.cgstAmount()).add(itemDto.sgstAmount());
+        assertEquals(0, computedLineTotal.compareTo(itemDto.totalAmount()), "Line item taxableValue + tax must strictly equal totalAmount without discrepancy");
+
+        // Financial summary totals reconciliation: taxable + cgst + sgst + shipping == grandTotal
+        BigDecimal expectedGrandTotal = new BigDecimal("1112.00");
+        assertEquals(0, expectedGrandTotal.compareTo(dto.grandTotal()), "Grand total must strictly match net + shipping (1112.00)");
+
+        BigDecimal computedGrandTotal = dto.totalTaxableValue().add(dto.totalCgst()).add(dto.totalSgst()).add(dto.deliveryCharge());
+        assertEquals(0, computedGrandTotal.compareTo(dto.grandTotal()), "Invoice summary totals must balance with grandTotal");
+
+        // Verify PDF builds cleanly with reconciled amounts
+        byte[] pdfBytes = invoicePdfService.generateInvoicePdf(dto);
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 500);
+
+        // Reset
+        ReflectionTestUtils.setField(invoiceService, "configuredGstin", "");
+    }
 }

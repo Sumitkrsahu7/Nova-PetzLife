@@ -27,18 +27,24 @@ public class CustomerService {
     private final UserRepository userRepository;
     private final UserOAuthIdentityRepository userOAuthIdentityRepository;
     private final JwtTokenProvider tokenProvider;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final com.novapetzlife.auth.GoogleOAuthService googleOAuthService;
 
     public CustomerService(
             CustomerRepository customerRepository,
             CustomerAddressRepository addressRepository,
             UserRepository userRepository,
             UserOAuthIdentityRepository userOAuthIdentityRepository,
-            JwtTokenProvider tokenProvider) {
+            JwtTokenProvider tokenProvider,
+            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.novapetzlife.auth.GoogleOAuthService googleOAuthService) {
         this.customerRepository = customerRepository;
         this.addressRepository = addressRepository;
         this.userRepository = userRepository;
         this.userOAuthIdentityRepository = userOAuthIdentityRepository;
         this.tokenProvider = tokenProvider;
+        this.passwordEncoder = passwordEncoder;
+        this.googleOAuthService = googleOAuthService;
     }
 
     public static String normalizeEmail(String email) {
@@ -179,6 +185,36 @@ public class CustomerService {
 
     @Transactional
     public AuthResponse updateEmail(User user, String newEmail) {
+        return updateEmail(user, newEmail, null, null);
+    }
+
+    @Transactional
+    public AuthResponse updateEmail(User user, String newEmail, String currentPassword) {
+        return updateEmail(user, newEmail, currentPassword, null);
+    }
+
+    @Transactional
+    public AuthResponse updateEmail(User user, String newEmail, String currentPassword, String googleIdToken) {
+        if (user.getPasswordHash() != null && !user.getPasswordHash().isBlank()) {
+            if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+                throw new IllegalArgumentException("Current password verification failed. Please enter your correct current password to update email.");
+            }
+        } else {
+            // OAuth-managed user without local password: must not bypass re-authentication
+            if (googleIdToken == null || googleIdToken.isBlank()) {
+                throw new IllegalArgumentException("Fresh Google OAuth re-authentication (googleIdToken) is required for OAuth-managed accounts.");
+            }
+            if (googleOAuthService == null || !googleOAuthService.isConfigured()) {
+                throw new IllegalStateException("Google OAuth service is not configured on this server to verify OAuth re-authentication.");
+            }
+            var payload = googleOAuthService.verifyToken(googleIdToken);
+            if (!payload.email().equalsIgnoreCase(user.getEmail())) {
+                throw new IllegalArgumentException("Google identity does not match this account's registered email.");
+            }
+            // Direct email modification cannot replace active login email without external verification
+            throw new IllegalArgumentException("Direct email modification is not permitted for Google OAuth accounts. Please update your email through your Google account or link a verified local password first.");
+        }
+
         String trimmed = newEmail.trim().toLowerCase();
         if (user.getEmail().equalsIgnoreCase(trimmed)) {
             List<String> roles = user.getRoles().stream().map(Role::getName).toList();
@@ -220,6 +256,39 @@ public class CustomerService {
 
     @Transactional
     public void deleteAccount(User user) {
+        deleteAccount(user, null, null);
+    }
+
+    @Transactional
+    public void deleteAccount(User user, String currentPassword) {
+        deleteAccount(user, currentPassword, null);
+    }
+
+    @Transactional
+    public void deleteAccount(User user, String currentPassword, String googleIdToken) {
+        // Super Administrator accounts cannot be deactivated/deleted via customer endpoint
+        if (user.getRoles().stream().anyMatch(r -> "ROLE_SUPER_ADMIN".equalsIgnoreCase(r.getName()))) {
+            throw new IllegalArgumentException("Super Administrator accounts cannot be deleted via the customer account endpoint.");
+        }
+
+        if (user.getPasswordHash() != null && !user.getPasswordHash().isBlank()) {
+            if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+                throw new IllegalArgumentException("Current password verification required to delete your account.");
+            }
+        } else {
+            // OAuth-managed user without local password: must not bypass re-authentication
+            if (googleIdToken == null || googleIdToken.isBlank()) {
+                throw new IllegalArgumentException("Fresh Google OAuth re-authentication (googleIdToken) is required to delete OAuth-managed accounts.");
+            }
+            if (googleOAuthService == null || !googleOAuthService.isConfigured()) {
+                throw new IllegalStateException("Google OAuth service is not configured on this server to verify OAuth re-authentication.");
+            }
+            var payload = googleOAuthService.verifyToken(googleIdToken);
+            if (!payload.email().equalsIgnoreCase(user.getEmail())) {
+                throw new IllegalArgumentException("Google identity does not match this account's registered email.");
+            }
+        }
+
         user.setIsActive(false);
         String deletedSuffix = "deleted_" + user.getId() + "_" + System.currentTimeMillis();
         user.setEmail(deletedSuffix + "@novapetzlife.deleted");

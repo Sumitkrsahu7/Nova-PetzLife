@@ -213,7 +213,17 @@ public class AdminStaffController {
             throw new IllegalArgumentException("Cannot deactivate your own active session account.");
         }
 
-        boolean next = !Boolean.TRUE.equals(user.getIsActive());
+        boolean isSuperAdmin = user.getRoles().stream().anyMatch(r -> "ROLE_SUPER_ADMIN".equalsIgnoreCase(r.getName()));
+        boolean currentActive = Boolean.TRUE.equals(user.getIsActive());
+        if (isSuperAdmin && currentActive) {
+            // Acquire pessimistic row locks across all active Super Admin accounts to serialize concurrent deactivation attempts
+            List<User> activeSuperAdmins = userRepository.findActiveSuperAdminsForUpdate();
+            if (activeSuperAdmins.size() <= 1) {
+                throw new IllegalStateException("Cannot deactivate the sole active Super Administrator.");
+            }
+        }
+
+        boolean next = !currentActive;
         user.setIsActive(next);
         User saved = userRepository.save(user);
 

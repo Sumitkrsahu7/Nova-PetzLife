@@ -77,18 +77,30 @@ public class CustomerController {
             @RequestBody Map<String, String> request) {
         User user = getAuthenticatedUser(authentication);
         String newEmail = request.get("email");
+        String currentPassword = request.get("currentPassword");
+        String googleIdToken = request.get("googleIdToken");
+        if (googleIdToken == null) {
+            googleIdToken = request.get("idToken");
+        }
         if (newEmail == null || newEmail.trim().isEmpty() || !newEmail.contains("@")) {
             throw new IllegalArgumentException("A valid email address is required");
         }
-        AuthResponse response = customerService.updateEmail(user, newEmail);
+        AuthResponse response = customerService.updateEmail(user, newEmail, currentPassword, googleIdToken);
         return ResponseEntity.ok(ApiResponse.ok("Email address updated successfully", response));
     }
 
     @DeleteMapping("/account")
     @Operation(summary = "Delete customer account", description = "Permanently deactivates account and clears customer identity")
-    public ResponseEntity<ApiResponse<Void>> deleteAccount(Authentication authentication) {
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(
+            Authentication authentication,
+            @RequestBody(required = false) Map<String, String> request) {
         User user = getAuthenticatedUser(authentication);
-        customerService.deleteAccount(user);
+        String currentPassword = request != null ? request.get("currentPassword") : null;
+        String googleIdToken = request != null ? request.get("googleIdToken") : null;
+        if (googleIdToken == null && request != null) {
+            googleIdToken = request.get("idToken");
+        }
+        customerService.deleteAccount(user, currentPassword, googleIdToken);
         return ResponseEntity.ok(ApiResponse.ok("Account deleted successfully", null));
     }
 }

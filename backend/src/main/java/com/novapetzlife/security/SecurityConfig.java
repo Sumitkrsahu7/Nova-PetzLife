@@ -76,15 +76,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/media/files/**").permitAll()
                         // Public Shopping Cart, Delivery Geolocation & Store Settings
                         .requestMatchers("/api/v1/cart/**").permitAll()
                         .requestMatchers("/api/v1/delivery/**").permitAll()
                         .requestMatchers("/api/v1/settings/**").permitAll()
-                        // Public Order Tracking & Returns (Checkout & Invoices require authentication)
+                        // Public Order Tracking (Tracking is public by order number; cancellations & returns require authentication)
                         .requestMatchers("/api/v1/orders/*/track").permitAll()
-                        .requestMatchers("/api/v1/orders/*/return-eligibility").permitAll()
-                        .requestMatchers("/api/v1/orders/*/cancel").permitAll()
-                        .requestMatchers("/api/v1/returns/**").permitAll()
                         // Public Promotions & Customer Pet Guest Registration (onboarding only; listing & management require authentication)
                         .requestMatchers("/api/v1/promotions/coupons/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/pets/guest").permitAll()
@@ -93,8 +91,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/support/**").permitAll()
                         // Customer Notifications (strictly authenticated; Customer A cannot read Customer B's notifications)
                         .requestMatchers("/api/v1/customer/notifications/**").authenticated()
-                        // Public Customer Product Reviews & Ratings
-                        .requestMatchers("/api/v1/reviews/**").permitAll()
+                        // Public Customer Product Reviews & Ratings (Browsing GET is public; submissions & modifications require authentication)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
+                        .requestMatchers("/api/v1/reviews/**").authenticated()
                         // Public Google Business Profile & Synced Reviews
                         .requestMatchers("/api/v1/google-business/**").permitAll()
                         // Payment Processing: Webhooks are public with HMAC signature check; all client payment endpoints require authentication

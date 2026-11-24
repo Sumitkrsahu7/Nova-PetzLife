@@ -33,6 +33,7 @@ public class PaymentService {
     private final RazorpaySignatureVerifier signatureVerifier;
     private final InvoiceService invoiceService;
     private final com.novapetzlife.notification.NotificationService notificationService;
+    private final com.novapetzlife.inventory.InventoryService inventoryService;
     private final ObjectMapper objectMapper;
 
     public PaymentService(
@@ -42,6 +43,7 @@ public class PaymentService {
             RazorpaySignatureVerifier signatureVerifier,
             InvoiceService invoiceService,
             com.novapetzlife.notification.NotificationService notificationService,
+            com.novapetzlife.inventory.InventoryService inventoryService,
             ObjectMapper objectMapper) {
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
@@ -49,6 +51,7 @@ public class PaymentService {
         this.signatureVerifier = signatureVerifier;
         this.invoiceService = invoiceService;
         this.notificationService = notificationService;
+        this.inventoryService = inventoryService;
         this.objectMapper = objectMapper;
     }
 
@@ -160,12 +163,7 @@ public class PaymentService {
             throw new IllegalArgumentException("Gateway order ID does not belong to the specified application order: " + request.getOrderNumber());
         }
 
-        // Prevent duplicate/replayed verification
-        if ("SUCCESS".equalsIgnoreCase(payment.getStatus()) || "COMPLETED".equalsIgnoreCase(order.getPaymentStatus())) {
-            throw new IllegalStateException("Payment has already been verified and completed for order: " + request.getOrderNumber());
-        }
-
-        // Verify HMAC-SHA256 signature
+        // 1. Verify HMAC-SHA256 signature strictly before accepting or processing payment
         boolean isValid = signatureVerifier.verifyCheckoutSignature(
                 request.getRazorpayOrderId(),
                 request.getRazorpayPaymentId(),
@@ -181,44 +179,127 @@ public class PaymentService {
             throw new IllegalArgumentException("Payment verification failed: Invalid transaction signature");
         }
 
-        Instant paymentTime = Instant.now();
-        payment.setGatewayPaymentId(request.getRazorpayPaymentId());
-        payment.setGatewaySignature(request.getRazorpaySignature());
-        payment.setStatus("SUCCESS");
-        payment.setCompletedAt(paymentTime);
-        paymentRepository.save(payment);
-
-        String prevStatus = order.getOrderStatus();
-        order.setPaymentStatus("COMPLETED");
-        order.setOrderStatus("CONFIRMED");
-        order.setPaymentMethod("RAZORPAY");
-        order.setPaidAt(paymentTime);
-        order.addStatusHistory(new OrderStatusHistory(
-                order,
-                prevStatus,
-                "CONFIRMED",
-                "RAZORPAY_GATEWAY",
-                "Online payment verified successfully (Payment ID: " + request.getRazorpayPaymentId() + ")"
-        ));
-        orderRepository.save(order);
-
-        // Automatically trigger GST Tax Invoice generation
-        try {
-            invoiceService.generateInvoiceForOrder(order);
-        } catch (Exception e) {
-            log.error("Failed to auto-generate invoice for order {}: {}", order.getOrderNumber(), e.getMessage());
+        // 2. Idempotent return for already verified / completed orders (e.g. concurrent webhook or page reload)
+        if ("SUCCESS".equalsIgnoreCase(payment.getStatus())
+                || "COMPLETED".equalsIgnoreCase(order.getPaymentStatus())
+                || "PAYMENT_RECEIVED_OUT_OF_STOCK".equalsIgnoreCase(order.getPaymentStatus())) {
+            log.info("Payment for order {} (gatewayOrderId: {}) is already processed (Status: {}). Returning idempotent success response.",
+                    order.getOrderNumber(), request.getRazorpayOrderId(), order.getOrderStatus());
+            return PaymentStatusResponse.success(
+                    order.getOrderNumber(),
+                    order.getOrderStatus(),
+                    payment.getGatewayPaymentId() != null ? payment.getGatewayPaymentId() : request.getRazorpayPaymentId(),
+                    order.getFinalPayableAmount()
+            );
         }
 
-        // Trigger Automated Payment Success Notification
-        notificationService.notifyPaymentSuccess(order, payment);
+        Instant paymentTime = Instant.now();
+        payment.setGatewaySignature(request.getRazorpaySignature());
+        applyCapturedPayment(payment, order, request.getRazorpayPaymentId(), paymentTime, "RAZORPAY_CLIENT_VERIFY");
 
-        log.info("Payment verified successfully for order {}. Status updated to CONFIRMED.", order.getOrderNumber());
         return PaymentStatusResponse.success(
                 order.getOrderNumber(),
                 order.getOrderStatus(),
                 request.getRazorpayPaymentId(),
                 order.getFinalPayableAmount()
         );
+    }
+
+    /**
+     * Applies captured online payment to order state with strict atomicity and monotonic state transition guarantees.
+     * Shared by both client return callback (verifyPayment) and asynchronous webhook (handleWebhook).
+     *
+     * Rules:
+     * 1. Monotonic transitions: Never regresses PACKED, DISPATCHED, or DELIVERED orders to CONFIRMED.
+     * 2. Cancelled order protection: If order was CANCELLED, attempts atomic all-or-nothing re-reservation.
+     *    If stock is insufficient, records payment received but leaves order unfulfillable (PAYMENT_RECEIVED_OUT_OF_STOCK).
+     * 3. Idempotent: Redundant capture events for already COMPLETED orders are safely ignored without duplicating inventory or invoices.
+     */
+    private void applyCapturedPayment(Payment payment, Order order, String razorpayPaymentId, Instant paymentTime, String source) {
+        payment.setGatewayPaymentId(razorpayPaymentId);
+        payment.setStatus("SUCCESS");
+        payment.setCompletedAt(paymentTime);
+        paymentRepository.save(payment);
+
+        if ("COMPLETED".equalsIgnoreCase(order.getPaymentStatus())
+                || "PAYMENT_RECEIVED_OUT_OF_STOCK".equalsIgnoreCase(order.getPaymentStatus())) {
+            log.info("Order {} payment is already captured/processed (PaymentStatus: {}). Ignoring duplicate/replayed capture from {}",
+                    order.getOrderNumber(), order.getPaymentStatus(), source);
+            return;
+        }
+
+        String currentStatus = order.getOrderStatus();
+        if ("CANCELLED".equalsIgnoreCase(currentStatus)) {
+            // Atomic re-reservation: all-or-nothing check across all items
+            boolean stockReserved = inventoryService.tryReserveAllItems(order.getItems(), order.getOrderNumber());
+            if (stockReserved) {
+                order.setPaymentStatus("COMPLETED");
+                order.setOrderStatus("CONFIRMED");
+                order.setPaymentMethod("RAZORPAY");
+                order.setPaidAt(paymentTime);
+                order.addStatusHistory(new OrderStatusHistory(
+                        order,
+                        "CANCELLED",
+                        "CONFIRMED",
+                        source,
+                        "Payment confirmed via " + source + " and inventory atomically re-reserved (Txn: " + razorpayPaymentId + ")"
+                ));
+                orderRepository.save(order);
+                try {
+                    invoiceService.generateInvoiceForOrder(order);
+                } catch (Exception e) {
+                    log.error("Failed to auto-generate invoice for order {}: {}", order.getOrderNumber(), e.getMessage());
+                }
+                notificationService.notifyPaymentSuccess(order, payment);
+                log.info("Late payment captured for cancelled order {}. Stock successfully re-reserved, status set to CONFIRMED.", order.getOrderNumber());
+            } else {
+                // Stock unavailable: record payment received but keep order unfulfillable
+                order.setPaymentStatus("PAYMENT_RECEIVED_OUT_OF_STOCK");
+                order.setPaymentMethod("RAZORPAY");
+                order.setPaidAt(paymentTime);
+                order.addStatusHistory(new OrderStatusHistory(
+                        order,
+                        "CANCELLED",
+                        "CANCELLED",
+                        source,
+                        "Payment captured after cancellation, but stock unavailable for atomic re-reservation. Marked PAYMENT_RECEIVED_OUT_OF_STOCK (Txn: " + razorpayPaymentId + ")"
+                ));
+                orderRepository.save(order);
+                log.warn("Late payment captured for cancelled order {} but stock was unavailable. Status set to PAYMENT_RECEIVED_OUT_OF_STOCK", order.getOrderNumber());
+            }
+        } else {
+            order.setPaymentStatus("COMPLETED");
+            order.setPaymentMethod("RAZORPAY");
+            order.setPaidAt(paymentTime);
+
+            // Monotonic order state transition: Never regress PACKED, DISPATCHED, or DELIVERED to CONFIRMED
+            if ("PENDING_PAYMENT".equalsIgnoreCase(currentStatus) || "PENDING".equalsIgnoreCase(currentStatus)) {
+                order.setOrderStatus("CONFIRMED");
+                order.addStatusHistory(new OrderStatusHistory(
+                        order,
+                        currentStatus,
+                        "CONFIRMED",
+                        source,
+                        "Payment confirmed via " + source + " (Payment ID: " + razorpayPaymentId + ")"
+                ));
+            } else {
+                order.addStatusHistory(new OrderStatusHistory(
+                        order,
+                        currentStatus,
+                        currentStatus,
+                        source,
+                        "Payment confirmed via " + source + " for in-flight/completed order (Payment ID: " + razorpayPaymentId + ")"
+                ));
+            }
+            orderRepository.save(order);
+            try {
+                invoiceService.generateInvoiceForOrder(order);
+            } catch (Exception e) {
+                log.error("Failed to auto-generate invoice for order {}: {}", order.getOrderNumber(), e.getMessage());
+            }
+            notificationService.notifyPaymentSuccess(order, payment);
+            log.info("Payment confirmed via {} for order {}. Order status: {}", source, order.getOrderNumber(), order.getOrderStatus());
+        }
     }
 
     @Transactional
@@ -240,26 +321,7 @@ public class PaymentService {
                 if (razorpayOrderId != null) {
                     paymentRepository.findByGatewayOrderId(razorpayOrderId).ifPresent(payment -> {
                         Instant webhookTime = Instant.now();
-                        payment.setGatewayPaymentId(razorpayPaymentId);
-                        payment.setStatus("SUCCESS");
-                        payment.setCompletedAt(webhookTime);
-                        paymentRepository.save(payment);
-
-                        Order order = payment.getOrder();
-                        if (!"COMPLETED".equalsIgnoreCase(order.getPaymentStatus())) {
-                            order.setPaymentStatus("COMPLETED");
-                            order.setOrderStatus("CONFIRMED");
-                            order.setPaidAt(webhookTime);
-                            order.addStatusHistory(new OrderStatusHistory(
-                                    order,
-                                    order.getOrderStatus(),
-                                    "CONFIRMED",
-                                    "RAZORPAY_WEBHOOK",
-                                    "Payment confirmed via Razorpay webhook (Txn: " + razorpayPaymentId + ")"
-                            ));
-                            orderRepository.save(order);
-                            invoiceService.generateInvoiceForOrder(order);
-                        }
+                        applyCapturedPayment(payment, payment.getOrder(), razorpayPaymentId, webhookTime, "RAZORPAY_WEBHOOK");
                     });
                 }
             } else if ("payment.failed".equalsIgnoreCase(event)) {
@@ -269,9 +331,18 @@ public class PaymentService {
 
                 if (razorpayOrderId != null) {
                     paymentRepository.findByGatewayOrderId(razorpayOrderId).ifPresent(payment -> {
-                        payment.setStatus("FAILED");
-                        payment.setFailureReason(errorDescription);
-                        paymentRepository.save(payment);
+                        boolean alreadyCaptured = "SUCCESS".equalsIgnoreCase(payment.getStatus())
+                                || (payment.getOrder() != null && ("COMPLETED".equalsIgnoreCase(payment.getOrder().getPaymentStatus())
+                                || "PAYMENT_RECEIVED_OUT_OF_STOCK".equalsIgnoreCase(payment.getOrder().getPaymentStatus())));
+                        if (!alreadyCaptured) {
+                            payment.setStatus("FAILED");
+                            payment.setFailureReason(errorDescription);
+                            paymentRepository.save(payment);
+                            log.info("Recorded payment failure for order {} (Gateway Order: {}): {}",
+                                    payment.getOrder() != null ? payment.getOrder().getOrderNumber() : "N/A", razorpayOrderId, errorDescription);
+                        } else {
+                            log.warn("Late payment.failed webhook ignored for already successful payment on gateway order: {}", razorpayOrderId);
+                        }
                     });
                 }
             }

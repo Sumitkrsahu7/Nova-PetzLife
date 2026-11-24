@@ -38,6 +38,7 @@ public class ReturnService {
     private final RefundService refundService;
     private final com.novapetzlife.notification.NotificationService notificationService;
     private final ObjectMapper objectMapper;
+    private final com.novapetzlife.order.OrderStatusHistoryRepository statusHistoryRepository;
 
     public ReturnService(
             ReturnRequestRepository returnRequestRepository,
@@ -48,7 +49,8 @@ public class ReturnService {
             InventoryService inventoryService,
             RefundService refundService,
             com.novapetzlife.notification.NotificationService notificationService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.novapetzlife.order.OrderStatusHistoryRepository statusHistoryRepository) {
         this.returnRequestRepository = returnRequestRepository;
         this.returnRequestItemRepository = returnRequestItemRepository;
         this.returnInspectionRepository = returnInspectionRepository;
@@ -58,22 +60,54 @@ public class ReturnService {
         this.refundService = refundService;
         this.notificationService = notificationService;
         this.objectMapper = objectMapper;
+        this.statusHistoryRepository = statusHistoryRepository;
+    }
+
+    private Optional<LocalDate> resolveDeliveryDate(Order order) {
+        if (statusHistoryRepository != null && order.getId() != null) {
+            List<com.novapetzlife.order.OrderStatusHistory> history = statusHistoryRepository.findByOrderIdOrderByCreatedAtDesc(order.getId());
+            for (com.novapetzlife.order.OrderStatusHistory h : history) {
+                if ("DELIVERED".equalsIgnoreCase(h.getNewStatus()) && h.getCreatedAt() != null) {
+                    return Optional.of(LocalDate.ofInstant(h.getCreatedAt(), ZoneId.of("Asia/Kolkata")));
+                }
+            }
+        }
+        // Fail safely: Never silently fallback to order.createdAt, which penalizes customers for long shipping times
+        return Optional.empty();
     }
 
     @Transactional(readOnly = true)
     public ReturnEligibilityDto checkOrderReturnEligibility(String orderNumber, Customer customer) {
+        return checkOrderReturnEligibility(orderNumber, customer, customer == null);
+    }
+
+    @Transactional(readOnly = true)
+    public ReturnEligibilityDto checkOrderReturnEligibility(String orderNumber, Customer customer, boolean isAdmin) {
         Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with number: " + orderNumber));
 
+        if (!isAdmin) {
+            if (customer == null || order.getCustomer() == null || !customer.getId().equals(order.getCustomer().getId())) {
+                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to view return eligibility for this order.");
+            }
+        }
+
         String orderStatus = order.getOrderStatus();
-        LocalDate orderLocalDate = LocalDate.ofInstant(order.getCreatedAt(), ZoneId.systemDefault());
-        LocalDate today = LocalDate.now();
+        Optional<LocalDate> deliveryDateOpt = resolveDeliveryDate(order);
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
 
         // Check if order was delivered
         boolean isDelivered = "DELIVERED".equalsIgnoreCase(orderStatus);
-        String generalMessage = isDelivered
-                ? "Order is eligible for return evaluation under NOVA PETZLIFE store policy."
-                : "Return requests can only be submitted for DELIVERED orders. Current order status: " + orderStatus;
+        boolean deliveryDateVerified = deliveryDateOpt.isPresent();
+
+        String generalMessage;
+        if (!isDelivered) {
+            generalMessage = "Return requests can only be submitted for DELIVERED orders. Current order status: " + orderStatus;
+        } else if (!deliveryDateVerified) {
+            generalMessage = "Order is marked DELIVERED but lacks a verified delivery timestamp in store records. Please contact store support for manual return authorization.";
+        } else {
+            generalMessage = "Order is eligible for return evaluation under NOVA PETZLIFE store policy.";
+        }
 
         List<ReturnEligibilityDto.ItemEligibilityDto> itemDtos = new ArrayList<>();
         boolean anyEligible = false;
@@ -96,13 +130,16 @@ public class ReturnService {
                 log.warn("Could not parse return policy snapshot for item {}: {}", item.getId(), e.getMessage());
             }
 
-            LocalDate deadline = orderLocalDate.plusDays(returnWindowDays);
-            boolean withinWindow = !today.isAfter(deadline);
-            boolean isEligible = isDelivered && returnAllowed && withinWindow;
+            final int windowDays = returnWindowDays;
+            LocalDate deadline = deliveryDateOpt.map(d -> d.plusDays(windowDays)).orElse(null);
+            boolean withinWindow = deadline != null && !today.isAfter(deadline);
+            boolean isEligible = isDelivered && deliveryDateVerified && returnAllowed && withinWindow;
 
             String reasonIfNotEligible = null;
             if (!isDelivered) {
                 reasonIfNotEligible = "Order is not yet marked as delivered.";
+            } else if (!deliveryDateVerified) {
+                reasonIfNotEligible = "Delivery date could not be verified from store tracking records. Admin manual authorization required.";
             } else if (!returnAllowed) {
                 reasonIfNotEligible = "This consumable/perishable item is non-returnable under store policy.";
             } else if (!withinWindow) {
@@ -112,8 +149,6 @@ public class ReturnService {
             if (isEligible) {
                 anyEligible = true;
             }
-
-            Long variantId = item.getVariant() != null ? item.getVariant().getId() : null;
 
             itemDtos.add(new ReturnEligibilityDto.ItemEligibilityDto(
                     item.getId(),
@@ -138,7 +173,7 @@ public class ReturnService {
         return new ReturnEligibilityDto(
                 order.getOrderNumber(),
                 order.getOrderStatus(),
-                orderLocalDate.toString(),
+                deliveryDateOpt.map(LocalDate::toString).orElse(null),
                 anyEligible,
                 generalMessage,
                 itemDtos
@@ -150,13 +185,20 @@ public class ReturnService {
         Order order = orderRepository.findByOrderNumber(request.getOrderNumber())
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with number: " + request.getOrderNumber()));
 
+        if (customer == null || order.getCustomer() == null || !customer.getId().equals(order.getCustomer().getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("You do not have permission to create a return request for this order.");
+        }
+
         if (!"DELIVERED".equalsIgnoreCase(order.getOrderStatus())) {
             throw new IllegalStateException("Return requests can only be placed for delivered orders. Current status: " + order.getOrderStatus());
         }
 
-        Customer requestCustomer = customer != null ? customer : order.getCustomer();
-        LocalDate today = LocalDate.now();
-        LocalDate orderLocalDate = LocalDate.ofInstant(order.getCreatedAt(), ZoneId.systemDefault());
+        Optional<LocalDate> deliveryDateOpt = resolveDeliveryDate(order);
+        if (deliveryDateOpt.isEmpty()) {
+            throw new IllegalStateException("Order delivery date could not be verified from store tracking history. Please contact customer support for manual return authorization.");
+        }
+        LocalDate effectiveDeliveryDate = deliveryDateOpt.get();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
 
         // Validate items and quantities
         Map<Long, OrderItem> orderItemMap = new HashMap<>();
@@ -170,7 +212,7 @@ public class ReturnService {
         ReturnRequest returnRequest = new ReturnRequest(
                 requestNumber,
                 order,
-                requestCustomer,
+                customer,
                 request.getReason(),
                 request.getCustomerComments()
         );
@@ -193,7 +235,7 @@ public class ReturnService {
                 if (!allowed) {
                     throw new IllegalArgumentException("Item " + orderItem.getProductName() + " is marked as non-returnable");
                 }
-                LocalDate deadline = orderLocalDate.plusDays(days);
+                LocalDate deadline = effectiveDeliveryDate.plusDays(days);
                 if (today.isAfter(deadline)) {
                     throw new IllegalArgumentException("Return window expired for item " + orderItem.getProductName() + " on " + deadline);
                 }
@@ -224,8 +266,19 @@ public class ReturnService {
 
     @Transactional(readOnly = true)
     public ReturnRequestDto getReturnRequestByNumber(String requestNumber) {
+        return getReturnRequestByNumber(requestNumber, null, true);
+    }
+
+    @Transactional(readOnly = true)
+    public ReturnRequestDto getReturnRequestByNumber(String requestNumber, Customer customer, boolean isAdmin) {
         ReturnRequest req = returnRequestRepository.findByRequestNumber(requestNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Return request not found with number: " + requestNumber));
+
+        if (!isAdmin) {
+            if (customer == null || req.getCustomer() == null || !customer.getId().equals(req.getCustomer().getId())) {
+                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to view this return request.");
+            }
+        }
         return ReturnRequestDto.fromEntity(req);
     }
 
@@ -313,24 +366,26 @@ public class ReturnService {
     }
 
     @Transactional
-    public OrderDetailDto cancelOrder(String orderNumber, String reason, String cancelledBy, boolean isCustomer) {
+    public OrderDetailDto cancelOrder(String orderNumber, String reason, String operator, Customer customer, boolean isAdmin) {
         Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with number: " + orderNumber));
 
         String currentStatus = order.getOrderStatus();
 
-        // 1. Ownership validation for customer
-        if (isCustomer && cancelledBy != null && !"CUSTOMER".equalsIgnoreCase(cancelledBy)) {
-            String customerEmail = order.getCustomer() != null && order.getCustomer().getUser() != null
-                    ? order.getCustomer().getUser().getEmail()
-                    : null;
-            if (customerEmail != null && !customerEmail.equalsIgnoreCase(cancelledBy)) {
+        // Idempotency: if already cancelled, return existing state safely
+        if ("CANCELLED".equalsIgnoreCase(currentStatus)) {
+            return OrderDetailDto.fromEntity(order);
+        }
+
+        // 1. Ownership validation
+        if (!isAdmin) {
+            if (customer == null || order.getCustomer() == null || !customer.getId().equals(order.getCustomer().getId())) {
                 throw new org.springframework.security.access.AccessDeniedException("You do not have permission to cancel this order.");
             }
         }
 
         // 2. State validation: Customer cancellation allowed ONLY before packing
-        if (isCustomer) {
+        if (!isAdmin) {
             boolean allowed = "PENDING_PAYMENT".equalsIgnoreCase(currentStatus)
                     || "PENDING".equalsIgnoreCase(currentStatus)
                     || "CONFIRMED".equalsIgnoreCase(currentStatus)
@@ -342,7 +397,6 @@ public class ReturnService {
         } else {
             if ("DELIVERED".equalsIgnoreCase(currentStatus)
                     || "OUT_FOR_DELIVERY".equalsIgnoreCase(currentStatus)
-                    || "CANCELLED".equalsIgnoreCase(currentStatus)
                     || "RETURNED".equalsIgnoreCase(currentStatus)) {
                 throw new IllegalStateException("Order cannot be cancelled in status: " + currentStatus + ". Please use the return request workflow if delivered.");
             }
@@ -356,17 +410,17 @@ public class ReturnService {
                     variantId,
                     item.getQuantity(),
                     order.getOrderNumber(),
-                    "Order cancelled by " + cancelledBy + ": " + reason
+                    "Order cancelled by " + operator + ": " + reason
             );
         }
 
         // If online payment was already completed, automatically trigger full refund
-        if ("COMPLETED".equalsIgnoreCase(order.getPaymentStatus())) {
+        if ("COMPLETED".equalsIgnoreCase(order.getPaymentStatus()) || "PAID".equalsIgnoreCase(order.getPaymentStatus())) {
             refundService.processRefund(
                     order,
                     order.getFinalPayableAmount(),
                     "Order cancellation refund (" + reason + ")",
-                    cancelledBy
+                    operator
             );
         }
 
@@ -376,13 +430,21 @@ public class ReturnService {
                 order,
                 currentStatus,
                 "CANCELLED",
-                cancelledBy,
+                operator,
                 reason
         ));
         order = orderRepository.save(order);
         notificationService.notifyOrderStatusChanged(order, currentStatus, "CANCELLED");
 
-        log.info("Order {} successfully cancelled by {}. Reason: {}", order.getOrderNumber(), cancelledBy, reason);
+        log.info("Order {} successfully cancelled by {}. Reason: {}", order.getOrderNumber(), operator, reason);
         return OrderDetailDto.fromEntity(order);
+    }
+
+    @Transactional
+    public OrderDetailDto cancelOrder(String orderNumber, String reason, String cancelledBy, boolean isCustomer) {
+        Order order = orderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with number: " + orderNumber));
+        Customer customer = order.getCustomer();
+        return cancelOrder(orderNumber, reason, cancelledBy, customer, !isCustomer);
     }
 }

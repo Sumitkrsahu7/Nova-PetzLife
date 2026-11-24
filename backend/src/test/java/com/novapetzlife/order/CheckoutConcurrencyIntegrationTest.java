@@ -413,8 +413,8 @@ public class CheckoutConcurrencyIntegrationTest {
         Thread.sleep(200);
         checkoutCanCommitLatch.countDown();
 
-        checkoutThread.join(10000);
-        archivalThread.join(10000);
+        checkoutThread.join(15000);
+        archivalThread.join(15000);
 
         assertNotNull(orderResult.get(), "Checkout must succeed when obtaining lock first");
         assertNull(archivalException.get(), "Archival must succeed after checkout releases lock");

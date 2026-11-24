@@ -176,6 +176,7 @@ export class ProductsComponent implements OnInit {
   newImageUrlInput = '';
   newImageAltInput = '';
   isUploadingNewImage = false;
+  uploadProgressText = '';
 
   // Gallery Modal for Existing Products
   showGalleryModal = false;
@@ -187,6 +188,7 @@ export class ProductsComponent implements OnInit {
   galleryAddUrl = '';
   galleryAddAlt = '';
   isUploadingGalleryImage = false;
+  galleryUploadProgressText = '';
   editingGalleryImageId: number | null = null;
   replaceImageUrl = '';
 
@@ -551,10 +553,11 @@ export class ProductsComponent implements OnInit {
     if (!this.newImageUrlInput.trim()) return;
     if (this.newProductImages.length >= 6) {
       this.modalErrorMessage = 'Maximum of 6 images allowed per product.';
+      this.scrollToModalTop();
       return;
     }
     const alt = this.newImageAltInput.trim() ||
-      (this.newProductImages.length === 0 ? 'Front View' : (this.newProductImages.length === 1 ? 'Back View' : 'Additional View'));
+      (this.newProductImages.length === 0 ? 'Front View' : (this.newProductImages.length === 1 ? 'Back View' : `Image ${this.newProductImages.length + 1}`));
     this.newProductImages.push({ url: this.newImageUrlInput.trim(), altText: alt });
     this.newImageUrlInput = '';
     this.newImageAltInput = '';
@@ -565,47 +568,107 @@ export class ProductsComponent implements OnInit {
     this.newProductImages.splice(index, 1);
   }
 
-  onNewImageFileUpload(event: any): void {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (this.newProductImages.length >= 6) {
+  scrollToModalTop(): void {
+    setTimeout(() => {
+      const modalCard = document.querySelector('.modal-card');
+      if (modalCard) {
+        modalCard.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      const alertEl = document.querySelector('.modal-card .alert-danger');
+      if (alertEl) {
+        alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 60);
+  }
+
+  scrollToGalleryTop(): void {
+    setTimeout(() => {
+      const galleryCard = document.querySelector('.gallery-modal-card');
+      if (galleryCard) {
+        galleryCard.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      const alertEl = document.querySelector('.gallery-modal-card .alert-danger');
+      if (alertEl) {
+        alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 60);
+  }
+
+  async onNewImageFileUpload(event: any): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const files = input?.files;
+    if (!files || files.length === 0) return;
+
+    const availableSlots = 6 - this.newProductImages.length;
+    if (availableSlots <= 0) {
       this.modalErrorMessage = 'Maximum of 6 images allowed per product.';
+      this.scrollToModalTop();
+      input.value = '';
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-    this.isUploadingNewImage = true;
-    this.modalErrorMessage = '';
+    const filesToUpload = Array.from(files).slice(0, availableSlots);
+    if (files.length > availableSlots) {
+      this.modalErrorMessage = `Only ${availableSlots} image(s) could be added (maximum is 6 per product).`;
+    } else {
+      this.modalErrorMessage = '';
+    }
 
-    this.http.post<any>(`${environment.apiUrl}/admin/media/upload`, formData).subscribe({
-      next: res => {
-        this.isUploadingNewImage = false;
-        if (res?.success && res.data?.url) {
-          const alt = this.newProductImages.length === 0 ? 'Front View' : (this.newProductImages.length === 1 ? 'Back View' : 'Additional View');
-          this.newProductImages.push({ url: res.data.url, altText: alt });
+    this.isUploadingNewImage = true;
+    this.uploadProgressText = `Uploading 1 of ${filesToUpload.length}...`;
+
+    const failureErrors: string[] = [];
+
+    try {
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        this.uploadProgressText = `Uploading ${i + 1} of ${filesToUpload.length} image(s)...`;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+          const res: any = await this.http.post<any>(`${environment.apiUrl}/admin/media/upload`, formData).toPromise();
+          if (res?.success && res.data?.url) {
+            const currentCount = this.newProductImages.length;
+            const alt = currentCount === 0 ? 'Front View' : (currentCount === 1 ? 'Back View' : `Image ${currentCount + 1}`);
+            this.newProductImages.push({ url: res.data.url, altText: alt });
+          } else {
+            failureErrors.push(`Failed to upload ${file.name}`);
+          }
+        } catch (uploadErr: any) {
+          const msg = uploadErr?.error?.message || `Failed to upload ${file.name}`;
+          failureErrors.push(msg);
         }
-      },
-      error: err => {
-        this.isUploadingNewImage = false;
-        this.modalErrorMessage = err.error?.message || 'Failed to upload image file.';
       }
-    });
+
+      if (failureErrors.length > 0) {
+        this.modalErrorMessage = failureErrors.join(' | ');
+        this.scrollToModalTop();
+      }
+    } finally {
+      this.isUploadingNewImage = false;
+      this.uploadProgressText = '';
+      input.value = '';
+    }
   }
 
   async saveProduct(): Promise<void> {
-    if (!this.productForm.name || !this.productForm.basePrice) {
-      this.modalErrorMessage = 'Please fill all required fields';
+    if (!this.productForm.name?.trim() || !this.productForm.basePrice) {
+      this.modalErrorMessage = 'Please fill all required fields: Product Name and Base Price.';
+      this.scrollToModalTop();
       return;
     }
 
     if (this.newProductImages.length < 2) {
       this.modalErrorMessage = 'Every product requires at least 2 images: Front View (Image 1) and Back View (Image 2).';
+      this.scrollToModalTop();
       return;
     }
 
     if (this.newProductImages.length > 6) {
       this.modalErrorMessage = 'A maximum of 6 images is allowed per product.';
+      this.scrollToModalTop();
       return;
     }
 
@@ -614,6 +677,7 @@ export class ProductsComponent implements OnInit {
       if (this.productForm.brandId === 'OTHER' || String(this.productForm.brandId) === 'OTHER') {
         if (!this.customBrandName.trim()) {
           this.modalErrorMessage = 'Please enter a name for the new brand.';
+          this.scrollToModalTop();
           return;
         }
         const bPayload = {
@@ -628,6 +692,7 @@ export class ProductsComponent implements OnInit {
           this.productForm.brandId = bRes.data.id;
         } else {
           this.modalErrorMessage = 'Failed to create new brand.';
+          this.scrollToModalTop();
           return;
         }
       }
@@ -636,6 +701,7 @@ export class ProductsComponent implements OnInit {
       if (this.productForm.categoryId === 'OTHER' || String(this.productForm.categoryId) === 'OTHER') {
         if (!this.customCategoryName.trim()) {
           this.modalErrorMessage = 'Please enter a name for the new category.';
+          this.scrollToModalTop();
           return;
         }
         const cPayload = {
@@ -650,6 +716,7 @@ export class ProductsComponent implements OnInit {
           this.productForm.categoryId = cRes.data.id;
         } else {
           this.modalErrorMessage = 'Failed to create new category.';
+          this.scrollToModalTop();
           return;
         }
       }
@@ -672,11 +739,16 @@ export class ProductsComponent implements OnInit {
           }
         },
         error: err => {
-          this.modalErrorMessage = err.error?.message || 'Failed to save product';
+          const details = Array.isArray(err.error?.errors) && err.error.errors.length > 0
+            ? ': ' + err.error.errors.join(', ')
+            : '';
+          this.modalErrorMessage = (err.error?.message || 'Failed to save product.') + details;
+          this.scrollToModalTop();
         }
       });
     } catch (e: any) {
-      this.modalErrorMessage = e?.error?.message || 'Error auto-creating brand or category';
+      this.modalErrorMessage = e?.error?.message || e?.message || 'Error auto-creating brand or category';
+      this.scrollToModalTop();
     }
   }
 
@@ -742,32 +814,62 @@ export class ProductsComponent implements OnInit {
     });
   }
 
-  onGalleryFileUpload(event: any): void {
-    const file = event.target.files?.[0];
-    if (!file || !this.selectedGalleryProduct) return;
-    if (this.galleryImages.length >= 6) {
+  async onGalleryFileUpload(event: any): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const files = input?.files;
+    if (!files || files.length === 0 || !this.selectedGalleryProduct) return;
+
+    const availableSlots = 6 - this.galleryImages.length;
+    if (availableSlots <= 0) {
       this.galleryErrorMessage = 'Maximum 6 images allowed per product.';
+      this.scrollToGalleryTop();
+      input.value = '';
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
+    const filesToUpload = Array.from(files).slice(0, availableSlots);
     this.isUploadingGalleryImage = true;
+    this.galleryUploadProgressText = `Uploading 1 of ${filesToUpload.length}...`;
     this.galleryErrorMessage = '';
+    let failCount = 0;
 
-    this.http.post<any>(`${environment.apiUrl}/admin/media/upload`, formData).subscribe({
-      next: res => {
-        this.isUploadingGalleryImage = false;
-        if (res?.success && res.data?.url) {
-          this.galleryAddUrl = res.data.url;
-          this.addGalleryImage();
+    try {
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        this.galleryUploadProgressText = `Uploading ${i + 1} of ${filesToUpload.length}...`;
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+          const res: any = await this.http.post<any>(`${environment.apiUrl}/admin/media/upload`, formData).toPromise();
+          if (res?.success && res.data?.url) {
+            await this.http.post<any>(`${environment.apiUrl}/admin/products/${this.selectedGalleryProduct.id}/images`, {
+              imageUrl: res.data.url,
+              altText: `Image ${this.galleryImages.length + 1}`,
+              displayOrder: this.galleryImages.length,
+              isPrimary: this.galleryImages.length === 0
+            }).toPromise();
+          } else {
+            failCount++;
+          }
+        } catch (err: any) {
+          failCount++;
+          this.galleryErrorMessage = err.error?.message || `Failed to upload ${file.name}`;
         }
-      },
-      error: err => {
-        this.isUploadingGalleryImage = false;
-        this.galleryErrorMessage = err.error?.message || 'Failed to upload image file.';
       }
-    });
+
+      if (failCount > 0 && !this.galleryErrorMessage) {
+        this.galleryErrorMessage = `${failCount} image(s) failed to upload.`;
+      }
+      if (this.galleryErrorMessage) {
+        this.scrollToGalleryTop();
+      }
+      this.fetchGalleryImages(this.selectedGalleryProduct.id);
+    } finally {
+      this.isUploadingGalleryImage = false;
+      this.galleryUploadProgressText = '';
+      input.value = '';
+    }
   }
 
   startReplaceGalleryImage(img: any): void {

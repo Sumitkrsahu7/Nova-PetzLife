@@ -117,6 +117,9 @@ class ReturnAndRefundIntegrationTest {
     private InventoryService inventoryService;
 
     @Autowired
+    private ReturnService returnService;
+
+    @Autowired
     private ProductRepository productRepository;
 
     @Autowired
@@ -151,6 +154,21 @@ class ReturnAndRefundIntegrationTest {
 
     @Autowired
     private ReviewRepository reviewRepository;
+
+    @Autowired
+    private com.novapetzlife.user.UserRepository userRepository;
+
+    @Autowired
+    private com.novapetzlife.user.RoleRepository roleRepository;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private OrderService orderService;
+
+    @Autowired
+    private com.novapetzlife.refund.RefundService refundService;
 
     private Customer testCustomer;
     private Product returnableProduct;
@@ -208,7 +226,14 @@ class ReturnAndRefundIntegrationTest {
 
         // 2. Customer
         String suffix = UUID.randomUUID().toString().substring(0, 6);
-        testCustomer = new Customer(null, "rohit." + suffix + "@example.com", "+9198471" + suffix, "Rohit", "Varma", true);
+        com.novapetzlife.user.Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseGet(() -> roleRepository.save(new com.novapetzlife.user.Role("ROLE_CUSTOMER", "Customer account")));
+        com.novapetzlife.user.User user = userRepository.findByEmail("rohit.return@example.com").orElseGet(() -> {
+            com.novapetzlife.user.User u = new com.novapetzlife.user.User("rohit.return@example.com", passwordEncoder.encode("Secret123!"), "Rohit", "Varma", "+919847100999");
+            u.setRoles(java.util.Set.of(customerRole));
+            return userRepository.save(u);
+        });
+        testCustomer = new Customer(user, user.getEmail(), user.getPhone(), "Rohit", "Varma", false);
         testCustomer = customerRepository.save(testCustomer);
 
         // 3. Brands & Categories
@@ -279,6 +304,7 @@ class ReturnAndRefundIntegrationTest {
 
         // Record payment for delivered order
         paymentRepository.save(new Payment(deliveredOrder, "order_rzp_deliv_test", deliveredOrder.getFinalPayableAmount(), "SUCCESS", "RAZORPAY"));
+        statusHistoryRepository.save(new OrderStatusHistory(deliveredOrder, "OUT_FOR_DELIVERY", "DELIVERED", "DELIVERY_AGENT", "Delivered to customer at Kuravankonam"));
 
         // 6. Pending Order for Cancellation Testing
         pendingOrder = new Order();
@@ -312,6 +338,7 @@ class ReturnAndRefundIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "rohit.return@example.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Should evaluate return eligibility per item comparing purchase snapshot and delivery status")
     void testCheckReturnEligibility_DeliveredOrder() throws Exception {
         mockMvc.perform(get("/api/v1/orders/" + deliveredOrder.getOrderNumber() + "/return-eligibility"))
@@ -331,6 +358,7 @@ class ReturnAndRefundIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "rohit.return@example.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Should reject return request on un-delivered orders")
     void testCheckReturnEligibility_UndeliveredOrder() throws Exception {
         mockMvc.perform(get("/api/v1/orders/" + pendingOrder.getOrderNumber() + "/return-eligibility"))
@@ -341,6 +369,7 @@ class ReturnAndRefundIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "rohit.return@example.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Should submit return request for eligible items and assign unique RET- request number")
     void testSubmitReturnRequest_Success() throws Exception {
         OrderItem eligibleItem = deliveredOrder.getItems().stream()
@@ -372,6 +401,7 @@ class ReturnAndRefundIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "rohit.return@example.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Should cancel confirmed order prior to delivery, release reserved stock, and initiate refund")
     void testCancelOrderBeforeDelivery_Success() throws Exception {
         int initialAvailable = inventoryService.getAvailableStock(returnableProduct.getId(), null);
@@ -485,5 +515,172 @@ class ReturnAndRefundIntegrationTest {
         // No refund created
         List<Refund> refunds = refundRepository.findByOrderId(deliveredOrder.getId());
         assertTrue(refunds.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Security: Unauthenticated return eligibility check rejected with 401/403")
+    void testUnauthenticatedReturnEligibility_Rejected() throws Exception {
+        mockMvc.perform(get("/api/v1/orders/" + deliveredOrder.getOrderNumber() + "/return-eligibility"))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @DisplayName("Security: Unauthenticated return submission rejected with 401/403")
+    void testUnauthenticatedSubmitReturn_Rejected() throws Exception {
+        OrderItem eligibleItem = deliveredOrder.getItems().get(0);
+        CreateReturnRequest request = new CreateReturnRequest(
+                deliveredOrder.getOrderNumber(),
+                List.of(new CreateReturnRequest.ReturnItemRequest(eligibleItem.getId(), 1)),
+                "Wrong item", "Test unauth"
+        );
+        mockMvc.perform(post("/api/v1/returns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @DisplayName("Security: Unauthenticated order cancellation rejected with 401/403")
+    void testUnauthenticatedCancelOrder_Rejected() throws Exception {
+        CancelOrderRequest request = new CancelOrderRequest("Test unauth");
+        mockMvc.perform(post("/api/v1/orders/" + pendingOrder.getOrderNumber() + "/cancel")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @WithMockUser(username = "stranger@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Security: Customer cannot cancel another customer's order")
+    void testCustomerCannotCancelAnotherCustomerOrder() throws Exception {
+        com.novapetzlife.user.Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseGet(() -> roleRepository.save(new com.novapetzlife.user.Role("ROLE_CUSTOMER", "Customer account")));
+        userRepository.findByEmail("stranger@example.com").orElseGet(() -> {
+            com.novapetzlife.user.User u = new com.novapetzlife.user.User("stranger@example.com", passwordEncoder.encode("Secret123!"), "Stranger", "User", "+919999999999");
+            u.setRoles(java.util.Set.of(customerRole));
+            return userRepository.save(u);
+        });
+
+        CancelOrderRequest request = new CancelOrderRequest("Malicious cancel attempt");
+        mockMvc.perform(post("/api/v1/orders/" + pendingOrder.getOrderNumber() + "/cancel")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Security & Payment: OTP 123456 backdoor rejected")
+    void testDeliveryOtpBackdoor_Rejected() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            orderService.verifyDeliveryOtp(pendingOrder.getId(), "123456", "AGENT");
+        });
+    }
+
+    @Test
+    @DisplayName("Security & Payment: Cumulative refund amount cannot exceed order total")
+    void testCumulativeRefundCap_Enforced() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            refundService.processRefund(deliveredOrder, new BigDecimal("2000.00"), "Excess refund", "ADMIN");
+        });
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-004: Partial and full refund balance tracking with explicit PENDING_MANUAL_REFUND status")
+    void testRefundBalanceTrackingAndManualStatus() {
+        // First partial refund of 500.00
+        Refund r1 = refundService.processRefund(deliveredOrder, new BigDecimal("500.00"), "Partial refund 1", "ADMIN");
+        assertNotNull(r1);
+        assertEquals("PENDING_MANUAL_REFUND", r1.getStatus(), "Status must be PENDING_MANUAL_REFUND distinguishing ledger from gateway");
+        assertNull(r1.getCompletedAt(), "completedAt must be null prior to genuine gateway confirmation");
+        assertNull(r1.getGatewayRefundId(), "gatewayRefundId must be null until real gateway disbursement");
+
+        Order afterR1 = orderRepository.findById(deliveredOrder.getId()).orElseThrow();
+        assertEquals("PARTIALLY_REFUNDED", afterR1.getPaymentStatus());
+
+        // Second partial refund exceeding remaining balance (1198.00 - 500.00 = 698.00 max)
+        assertThrows(IllegalArgumentException.class, () -> {
+            refundService.processRefund(deliveredOrder, new BigDecimal("700.00"), "Excessive refund", "ADMIN");
+        });
+
+        // Exact remaining refund of 698.00 succeeds
+        Refund r2 = refundService.processRefund(deliveredOrder, new BigDecimal("698.00"), "Final balance refund", "ADMIN");
+        assertEquals("PENDING_MANUAL_REFUND", r2.getStatus());
+
+        Order afterR2 = orderRepository.findById(deliveredOrder.getId()).orElseThrow();
+        assertEquals("REFUNDED", afterR2.getPaymentStatus());
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-004: Cannot refund unpaid or unconfirmed order")
+    void testRefundUnpaidOrder_Rejected() {
+        Order unpaidOrder = new Order();
+        unpaidOrder.setOrderNumber("ORD-UNPAID-" + UUID.randomUUID().toString().substring(0, 6));
+        unpaidOrder.setCustomer(testCustomer);
+        unpaidOrder.setOrderStatus("PENDING_PAYMENT");
+        unpaidOrder.setPaymentStatus("PENDING_PAYMENT");
+        unpaidOrder.setPaymentMethod("RAZORPAY");
+        unpaidOrder.setTotalAmount(new BigDecimal("500.00"));
+        unpaidOrder.setDiscountAmount(BigDecimal.ZERO);
+        unpaidOrder.setDeliveryCharge(BigDecimal.ZERO);
+        unpaidOrder.setTaxAmount(BigDecimal.ZERO);
+        unpaidOrder.setFinalPayableAmount(new BigDecimal("500.00"));
+        unpaidOrder.setDeliveryAddressJson("{}");
+        unpaidOrder.setShopDistanceKm(new BigDecimal("1.20"));
+        unpaidOrder.setIsWithinRadius(true);
+        unpaidOrder = orderRepository.save(unpaidOrder);
+
+        Order finalUnpaid = unpaidOrder;
+        assertThrows(IllegalStateException.class, () -> {
+            refundService.processRefund(finalUnpaid, new BigDecimal("100.00"), "Unpaid refund", "ADMIN");
+        });
+    }
+
+    @Test
+    @WithMockUser(username = "rohit.return@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("NPZ-VERIFY-009: Delivered order lacking status history fails closed without fallback to order.createdAt")
+    void testReturnEligibility_LackingDeliveryHistory_FailsClosed() throws Exception {
+        // Create an order marked DELIVERED but deliberately WITHOUT any OrderStatusHistory record
+        Order legacyDelivered = new Order();
+        legacyDelivered.setOrderNumber("ORD-LEGACY-" + UUID.randomUUID().toString().substring(0, 6));
+        legacyDelivered.setCustomer(testCustomer);
+        legacyDelivered.setOrderStatus("DELIVERED");
+        legacyDelivered.setPaymentStatus("COMPLETED");
+        legacyDelivered.setPaymentMethod("RAZORPAY");
+        legacyDelivered.setTotalAmount(new BigDecimal("500.00"));
+        legacyDelivered.setDiscountAmount(BigDecimal.ZERO);
+        legacyDelivered.setDeliveryCharge(BigDecimal.ZERO);
+        legacyDelivered.setTaxAmount(BigDecimal.ZERO);
+        legacyDelivered.setFinalPayableAmount(new BigDecimal("500.00"));
+        legacyDelivered.setDeliveryAddressJson("{}");
+        legacyDelivered.setShopDistanceKm(new BigDecimal("1.20"));
+        legacyDelivered.setIsWithinRadius(true);
+        legacyDelivered = orderRepository.save(legacyDelivered);
+
+        OrderItem legacyItem = new OrderItem(
+                legacyDelivered, returnableProduct, null, returnableProduct.getName(), "Brand",
+                returnableProduct.getSku(), 1, returnableProduct.getDiscountedPrice(), returnableProduct.getDiscountedPrice(),
+                BigDecimal.ZERO, BigDecimal.ZERO, "9503",
+                "{\"returnAllowed\":true,\"returnWindowDays\":7}", "{\"refundAllowed\":true}"
+        );
+        legacyDelivered.getItems().add(legacyItem);
+        orderItemRepository.save(legacyItem);
+        legacyDelivered = orderRepository.save(legacyDelivered);
+
+        // Check eligibility: must fail closed with canRequestReturn: false
+        mockMvc.perform(get("/api/v1/orders/" + legacyDelivered.getOrderNumber() + "/return-eligibility"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.canRequestReturn", is(false)))
+                .andExpect(jsonPath("$.data.generalEligibilityMessage", containsString("lacks a verified delivery timestamp")));
+
+        // Attempting to create return request must throw IllegalStateException
+        CreateReturnRequest req = new CreateReturnRequest(
+                legacyDelivered.getOrderNumber(),
+                List.of(new CreateReturnRequest.ReturnItemRequest(legacyItem.getId(), 1)),
+                "Defective",
+                "Comments"
+        );
+        assertThrows(IllegalStateException.class, () -> {
+            returnService.createReturnRequest(testCustomer, req);
+        });
     }
 }

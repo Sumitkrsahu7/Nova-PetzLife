@@ -76,6 +76,10 @@ public class AdminCustomerController {
 
         if (customer.getUser() != null) {
             User user = customer.getUser();
+            boolean isSuperAdmin = user.getRoles().stream().anyMatch(r -> "ROLE_SUPER_ADMIN".equalsIgnoreCase(r.getName()));
+            if (isSuperAdmin) {
+                throw new IllegalArgumentException("Super Admin user status cannot be modified via customer management endpoint.");
+            }
             boolean current = Boolean.TRUE.equals(user.getIsActive());
             user.setIsActive(!current);
             userRepository.save(user);

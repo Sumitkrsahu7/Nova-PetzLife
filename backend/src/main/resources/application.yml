@@ -48,6 +48,10 @@ app:
       client-id: ${GOOGLE_CLIENT_ID:}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:4201}
+  media:
+    local-storage-enabled: ${LOCAL_MEDIA_STORAGE_ENABLED:true}
+    upload-dir: ${MEDIA_UPLOAD_DIR:uploads/products}
+    base-url: ${MEDIA_BASE_URL:}
   frontend:
     url: ${FRONTEND_URL:http://localhost:4200}
   frontend-base-url: ${CUSTOMER_FRONTEND_URL:${FRONTEND_URL:http://localhost:4200}}
