@@ -397,6 +397,16 @@
       }
     }
 
+    .modal-bottom-error {
+      margin-top: 1.25rem;
+      margin-bottom: 0.25rem;
+      font-weight: 500;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
     .modal-actions {
       display: flex;
       gap: 0.75rem;

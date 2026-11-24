@@ -25,36 +25,31 @@ public class ReviewController {
     private final ReviewService reviewService;
     private final CustomerService customerService;
     private final CustomerRepository customerRepository;
+    private final com.novapetzlife.user.UserRepository userRepository;
 
     public ReviewController(
             ReviewService reviewService,
             CustomerService customerService,
-            CustomerRepository customerRepository) {
+            CustomerRepository customerRepository,
+            com.novapetzlife.user.UserRepository userRepository) {
         this.reviewService = reviewService;
         this.customerService = customerService;
         this.customerRepository = customerRepository;
-    }
-
-    private Customer resolveCustomer(User user, Long customerId) {
-        if (user != null) {
-            return customerService.getOrCreateCustomerForUser(user);
-        }
-        if (customerId != null) {
-            return customerRepository.findById(customerId).orElse(null);
-        }
-        return null;
+        this.userRepository = userRepository;
     }
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
     @Operation(summary = "Submit product review", description = "Submits a customer rating (1-5 stars) and review comment, validating verified purchaser status")
     public ResponseEntity<ApiResponse<ReviewDto>> submitReview(
-            @AuthenticationPrincipal User user,
-            @RequestParam(required = false) Long customerId,
+            org.springframework.security.core.Authentication authentication,
             @Valid @RequestBody CreateReviewRequest request) {
-        Customer customer = resolveCustomer(user, customerId);
-        if (customer == null) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Customer account required to submit a review"));
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
+            throw new org.springframework.security.access.AccessDeniedException("Customer authentication required to submit a review");
         }
+        User user = userRepository.findByEmail(authentication.getName().toLowerCase().trim())
+                .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("Customer authentication required to submit a review"));
+        Customer customer = customerService.getOrCreateCustomerForUser(user);
         ReviewDto review = reviewService.submitReview(customer, request);
         return ResponseEntity.ok(ApiResponse.ok("Review submitted successfully", review));
     }

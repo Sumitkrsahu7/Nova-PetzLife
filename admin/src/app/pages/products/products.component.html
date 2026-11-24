@@ -477,9 +477,9 @@
 
             <!-- Uploader Input -->
             <div class="image-uploader-bar" *ngIf="newProductImages.length < 6">
-              <input type="file" accept="image/*" (change)="onNewImageFileUpload($event)" #newFileInput style="display: none;" />
+              <input type="file" accept="image/*" multiple (change)="onNewImageFileUpload($event)" #newFileInput style="display: none;" />
               <button type="button" class="btn btn-secondary-sm" (click)="newFileInput.click()" [disabled]="isUploadingNewImage">
-                {{ isUploadingNewImage ? 'Uploading...' : '📁 Upload Image File' }}
+                {{ isUploadingNewImage ? (uploadProgressText || 'Uploading Image(s)...') : '📁 Upload Image File(s)' }}
               </button>
               <span class="or-separator">or</span>
               <input type="url" [(ngModel)]="newImageUrlInput" name="newImageUrl" placeholder="Paste Image URL (https://...)" class="url-input" />
@@ -505,8 +505,13 @@
             </div>
           </div>
 
+          <div *ngIf="modalErrorMessage" class="alert alert-danger modal-bottom-error">
+            ⚠️ {{ modalErrorMessage }}
+          </div>
           <div class="modal-actions">
-            <button type="submit" class="btn btn-primary">Save to Catalog</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isUploadingNewImage">
+              {{ isUploadingNewImage ? 'Uploading Images...' : 'Save to Catalog' }}
+            </button>
             <button type="button" (click)="showModal = false" class="btn btn-outline">Cancel</button>
           </div>
         </form>
@@ -609,9 +614,9 @@
         <div class="gallery-add-box" *ngIf="galleryImages.length < 6">
           <label>Add New Product Image</label>
           <div class="add-row">
-            <input type="file" accept="image/*" (change)="onGalleryFileUpload($event)" #galleryFileInput style="display: none;" />
+            <input type="file" accept="image/*" multiple (change)="onGalleryFileUpload($event)" #galleryFileInput style="display: none;" />
             <button type="button" class="btn btn-secondary-sm" (click)="galleryFileInput.click()" [disabled]="isUploadingGalleryImage">
-              {{ isUploadingGalleryImage ? 'Uploading...' : '📁 Upload File' }}
+              {{ isUploadingGalleryImage ? (galleryUploadProgressText || 'Uploading...') : '📁 Upload File(s)' }}
             </button>
             <span class="or-separator">or</span>
             <input type="url" [(ngModel)]="galleryAddUrl" placeholder="Image URL (https://...)" class="url-input" />
@@ -672,6 +677,9 @@
           </div>
         </div>
 
+        <div *ngIf="galleryErrorMessage" class="alert alert-danger modal-bottom-error">
+          ⚠️ {{ galleryErrorMessage }}
+        </div>
         <div class="modal-actions" style="margin-top: 1.5rem;">
           <button type="button" class="btn btn-outline" (click)="showGalleryModal = false">Close</button>
         </div>

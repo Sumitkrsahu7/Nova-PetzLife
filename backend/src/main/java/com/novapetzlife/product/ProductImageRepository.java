@@ -9,4 +9,5 @@ import java.util.List;
 public interface ProductImageRepository extends JpaRepository<ProductImage, Long> {
     List<ProductImage> findByProductIdOrderByDisplayOrderAsc(Long productId);
     void deleteByProductId(Long productId);
+    boolean existsByImageUrl(String imageUrl);
 }

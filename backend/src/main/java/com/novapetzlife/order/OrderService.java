@@ -32,6 +32,8 @@ import java.util.*;
 @Service
 public class OrderService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(OrderService.class);
+
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderStatusHistoryRepository statusHistoryRepository;
@@ -211,8 +213,12 @@ public class OrderService {
         order.setDeliveryOtpHash(passwordEncoder.encode(deliveryOtp));
         order.setIsOtpVerified(false);
 
-        // 8. Snapshot Items & Reserve Inventory
-        for (CartItem cartItem : cart.getItems()) {
+        // 8. Snapshot Items & Reserve Inventory in deterministic lock order to prevent deadlocks across concurrent checkouts
+        List<CartItem> sortedCartItems = new ArrayList<>(cart.getItems());
+        sortedCartItems.sort(Comparator.comparing((CartItem item) -> item.getProduct().getId())
+                .thenComparing(item -> item.getVariant() != null ? item.getVariant().getId() : 0L));
+
+        for (CartItem cartItem : sortedCartItems) {
             Product product = lockedProductsById.get(cartItem.getProduct().getId());
             if (product == null) {
                 product = productRepository.findById(cartItem.getProduct().getId())
@@ -326,20 +332,23 @@ public class OrderService {
             return OrderDetailDto.fromEntity(order);
         }
 
+        // Terminal fulfillment state protection: DELIVERED and CANCELLED orders cannot regress or change status
+        if ("DELIVERED".equalsIgnoreCase(previousStatus)) {
+            throw new IllegalStateException("Order " + order.getOrderNumber() + " is already DELIVERED and cannot transition to " + normalizedNewStatus + ".");
+        }
+        if ("CANCELLED".equalsIgnoreCase(previousStatus)) {
+            throw new IllegalStateException("Order " + order.getOrderNumber() + " is CANCELLED and cannot transition to " + normalizedNewStatus + ".");
+        }
+
         // 2-Factor OTP verification for DELIVERED status
         if ("DELIVERED".equalsIgnoreCase(normalizedNewStatus)) {
             if (deliveryOtp != null && !deliveryOtp.isBlank()) {
-                boolean matches = (order.getDeliveryOtpHash() != null && passwordEncoder.matches(deliveryOtp.trim(), order.getDeliveryOtpHash()))
-                        || "123456".equals(deliveryOtp.trim());
+                boolean matches = order.getDeliveryOtpHash() != null && passwordEncoder.matches(deliveryOtp.trim(), order.getDeliveryOtpHash());
                 if (!matches) {
                     throw new IllegalArgumentException("Invalid delivery OTP code: " + deliveryOtp.trim() + ". Customer verification failed.");
                 }
                 order.setIsOtpVerified(true);
-            } else if (!Boolean.TRUE.equals(order.getIsOtpVerified()) && order.getDeliveryOtpHash() != null) {
-                // If OTP not verified yet and not provided, mark verified if changed by authorized staff with specific reason or dev/test
-                if (reason != null && (reason.toLowerCase().contains("otp") || reason.toLowerCase().contains("bypass") || reason.toLowerCase().contains("admin override"))) {
-                    order.setIsOtpVerified(true);
-                }
+                order.setDeliveryOtpHash(null);
             }
         }
 
@@ -369,11 +378,13 @@ public class OrderService {
                         order.getOrderNumber()
                 );
             }
-            // For COD/offline orders, confirm payment completion only upon verified customer delivery OTP handover
-            if (Boolean.TRUE.equals(order.getIsOtpVerified())) {
-                order.setPaymentStatus("COMPLETED");
-                if (order.getPaidAt() == null) {
-                    order.setPaidAt(Instant.now());
+            // For non-COD orders, confirm payment completion upon delivery if not already paid
+            if (!"COD".equalsIgnoreCase(order.getPaymentMethod())) {
+                if (Boolean.TRUE.equals(order.getIsOtpVerified())) {
+                    order.setPaymentStatus("COMPLETED");
+                    if (order.getPaidAt() == null) {
+                        order.setPaidAt(Instant.now());
+                    }
                 }
             }
         }
@@ -398,15 +409,113 @@ public class OrderService {
             throw new IllegalArgumentException("Delivery OTP code cannot be empty");
         }
 
-        boolean matches = (order.getDeliveryOtpHash() != null && passwordEncoder.matches(otp.trim(), order.getDeliveryOtpHash()))
-                || "123456".equals(otp.trim());
+        boolean matches = order.getDeliveryOtpHash() != null && passwordEncoder.matches(otp.trim(), order.getDeliveryOtpHash());
 
         if (!matches) {
             throw new IllegalArgumentException("Invalid delivery verification OTP. Please ask customer to provide the 6-digit code received via SMS/Email.");
         }
 
+        order.setDeliveryOtpHash(null);
         order.setIsOtpVerified(true);
-        return adminUpdateOrderStatus(orderId, "DELIVERED", changedBy, "Delivered successfully with verified customer 2-Factor OTP: " + otp.trim(), otp);
+        return adminUpdateOrderStatus(orderId, "DELIVERED", changedBy, "Delivered successfully with verified customer 2-Factor OTP", otp);
+    }
+
+    @Transactional
+    public OrderDetailDto adminRecordCodPayment(Long orderId, BigDecimal amount, String operator, String notes) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with id: " + orderId));
+
+        if (!"COD".equalsIgnoreCase(order.getPaymentMethod())) {
+            throw new IllegalArgumentException("Order " + order.getOrderNumber() + " is not a Cash on Delivery order.");
+        }
+        if ("COMPLETED".equalsIgnoreCase(order.getPaymentStatus()) || "PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+            throw new IllegalStateException("Payment for order " + order.getOrderNumber() + " is already marked as completed.");
+        }
+        if (amount != null && amount.compareTo(order.getFinalPayableAmount()) < 0) {
+            throw new IllegalArgumentException("Collected COD amount cannot be less than the final payable amount (" + order.getFinalPayableAmount() + ")");
+        }
+
+        order.setPaymentStatus("COMPLETED");
+        order.setPaidAt(Instant.now());
+        order.addStatusHistory(new OrderStatusHistory(
+                order,
+                order.getOrderStatus(),
+                order.getOrderStatus(),
+                operator,
+                "COD Cash Collected: INR " + (amount != null ? amount : order.getFinalPayableAmount()) + ". " + (notes != null ? notes : "")
+        ));
+        Order saved = orderRepository.save(order);
+        if (auditService != null) {
+            auditService.recordAudit("Order", saved.getOrderNumber(), "COD_PAYMENT_COLLECTED", operator, "PENDING", "COMPLETED", "Amount: " + (amount != null ? amount : order.getFinalPayableAmount()));
+        }
+        log.info("COD payment of INR {} recorded for order {} by {}", (amount != null ? amount : order.getFinalPayableAmount()), saved.getOrderNumber(), operator);
+        return OrderDetailDto.fromEntity(saved);
+    }
+
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 300000) // Every 5 minutes
+    @Transactional
+    public void cleanupAbandonedCheckoutReservations() {
+        Instant cutoff = Instant.now().minus(java.time.Duration.ofMinutes(30));
+        // Bounded batch of max 50 orders per execution to prevent unbounded memory usage
+        org.springframework.data.domain.PageRequest pageRequest = org.springframework.data.domain.PageRequest.of(0, 50);
+        Page<Order> candidatePage = orderRepository.findByOrderStatusAndCreatedAtBefore("PENDING_PAYMENT", cutoff, pageRequest);
+
+        for (Order candidate : candidatePage.getContent()) {
+            try {
+                // Re-fetch and serialize against concurrent payment captures with pessimistic write lock
+                Optional<Order> lockedOpt = orderRepository.findByIdWithLock(candidate.getId());
+                if (lockedOpt.isEmpty()) {
+                    continue;
+                }
+                Order order = lockedOpt.get();
+
+                // Idempotent re-check inside the lock: must strictly remain PENDING_PAYMENT and unpaid
+                if (!"PENDING_PAYMENT".equalsIgnoreCase(order.getOrderStatus())) {
+                    continue;
+                }
+                if ("COMPLETED".equalsIgnoreCase(order.getPaymentStatus()) || "PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+                    log.info("Order {} payment was captured in-flight (status: {}). Bypassing abandoned cleanup.",
+                            order.getOrderNumber(), order.getPaymentStatus());
+                    continue;
+                }
+
+                log.info("Cancelling abandoned checkout order {} (created at {}) and releasing stock reservation",
+                        order.getOrderNumber(), order.getCreatedAt());
+
+                // Release stock deterministically in sorted Product ID / Variant ID order
+                List<OrderItem> sortedItems = new ArrayList<>(order.getItems());
+                sortedItems.sort(Comparator.comparing((OrderItem item) -> item.getProduct().getId())
+                        .thenComparing(item -> item.getVariant() != null ? item.getVariant().getId() : 0L));
+
+                for (OrderItem item : sortedItems) {
+                    Long variantId = item.getVariant() != null ? item.getVariant().getId() : null;
+                    try {
+                        inventoryService.releaseReservedStock(
+                                item.getProduct().getId(),
+                                variantId,
+                                item.getQuantity(),
+                                order.getOrderNumber(),
+                                "Abandoned Razorpay checkout expired after 30 minutes"
+                        );
+                    } catch (Exception ex) {
+                        log.error("Failed to release stock for abandoned order item {}: {}", item.getId(), ex.getMessage());
+                    }
+                }
+
+                order.setOrderStatus("CANCELLED");
+                order.setCancellationReason("Abandoned checkout session expired after 30 minutes");
+                order.addStatusHistory(new OrderStatusHistory(
+                        order,
+                        "PENDING_PAYMENT",
+                        "CANCELLED",
+                        "SYSTEM_SCHEDULER",
+                        "Automated release of abandoned checkout inventory reservation"
+                ));
+                orderRepository.save(order);
+            } catch (Exception ex) {
+                log.error("Error during abandoned checkout cleanup for order {}: {}", candidate.getId(), ex.getMessage(), ex);
+            }
+        }
     }
 
     @Transactional

@@ -33,6 +33,7 @@ import com.novapetzlife.returns.ReturnRequestItemRepository;
 import com.novapetzlife.returns.ReturnRequestRepository;
 import com.novapetzlife.review.dto.CreateReviewRequest;
 import com.novapetzlife.review.dto.ModerateReviewRequest;
+import com.novapetzlife.review.dto.ReviewDto;
 import com.novapetzlife.support.SupportMessageRepository;
 import com.novapetzlife.support.SupportTicketRepository;
 import com.novapetzlife.tax.InvoiceRepository;
@@ -71,6 +72,18 @@ class ReviewAndGoogleBusinessIntegrationTest {
 
     @Autowired
     private ReviewRepository reviewRepository;
+
+    @Autowired
+    private ReviewService reviewService;
+
+    @Autowired
+    private com.novapetzlife.user.UserRepository userRepository;
+
+    @Autowired
+    private com.novapetzlife.user.RoleRepository roleRepository;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Autowired
     private ReviewImageRepository reviewImageRepository;
@@ -187,7 +200,14 @@ class ReviewAndGoogleBusinessIntegrationTest {
 
         // 2. Customer
         String suffix = UUID.randomUUID().toString().substring(0, 6);
-        testCustomer = new Customer(null, "harikrishnan." + suffix + "@example.com", "+9194472" + suffix, "Hari", "Krishnan", true);
+        com.novapetzlife.user.Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseGet(() -> roleRepository.save(new com.novapetzlife.user.Role("ROLE_CUSTOMER", "Customer account")));
+        com.novapetzlife.user.User user = userRepository.findByEmail("hari.review@example.com").orElseGet(() -> {
+            com.novapetzlife.user.User u = new com.novapetzlife.user.User("hari.review@example.com", passwordEncoder.encode("Secret123!"), "Hari", "Krishnan", "+919447200999");
+            u.setRoles(java.util.Set.of(customerRole));
+            return userRepository.save(u);
+        });
+        testCustomer = new Customer(user, user.getEmail(), user.getPhone(), "Hari", "Krishnan", false);
         testCustomer = customerRepository.save(testCustomer);
 
         // 3. Category & Brand
@@ -246,6 +266,7 @@ class ReviewAndGoogleBusinessIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "hari.review@example.com", authorities = {"ROLE_CUSTOMER"})
     @DisplayName("Product Reviews: Customer submits review, verified purchase detection marks badge, and rating summary updates")
     void testSubmitProductReviewWithVerifiedBuyerBadge() throws Exception {
         // 1. Create a DELIVERED order for this customer with testProduct to establish verified purchase
@@ -284,7 +305,7 @@ class ReviewAndGoogleBusinessIntegrationTest {
                 List.of("https://res.cloudinary.com/novapetzlife/image/upload/sample_kitten.jpg")
         );
 
-        mockMvc.perform(post("/api/v1/reviews?customerId=" + testCustomer.getId())
+        mockMvc.perform(post("/api/v1/reviews")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -309,7 +330,7 @@ class ReviewAndGoogleBusinessIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = "SUPER_ADMIN")
+    @WithMockUser(authorities = {"ROLE_SUPER_ADMIN"})
     @DisplayName("Admin Moderation: Admin reviews customer submission, modifies status, and appends store official response")
     void testAdminReviewModerationAndReply() throws Exception {
         // Customer leaves review
@@ -321,13 +342,8 @@ class ReviewAndGoogleBusinessIntegrationTest {
                 null
         );
 
-        String postRes = mockMvc.perform(post("/api/v1/reviews?customerId=" + testCustomer.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-
-        Long reviewId = objectMapper.readTree(postRes).path("data").path("id").asLong();
+        ReviewDto created = reviewService.submitReview(testCustomer, req);
+        Long reviewId = created.id();
 
         // Admin adds official store reply
         ModerateReviewRequest modReq = new ModerateReviewRequest("APPROVED", "Thank you Hari! We always stock the freshest batches at Kuravankonam.");
@@ -449,5 +465,114 @@ class ReviewAndGoogleBusinessIntegrationTest {
         mockMvc.perform(get("/api/v1/admin/products/" + testProduct.getId() + "/images"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)));
+    }
+
+    @Test
+    @DisplayName("Security: Unauthenticated review submission rejected with 401/403")
+    void testUnauthenticatedReviewSubmission_Rejected() throws Exception {
+        CreateReviewRequest req = new CreateReviewRequest(
+                testProduct.getId(), 5, "Unauth review", "Should be rejected", null
+        );
+        mockMvc.perform(post("/api/v1/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @WithMockUser(username = "hari.review@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Security: Duplicate review by same customer for same product rejected")
+    void testDuplicateReview_Rejected() {
+        CreateReviewRequest req = new CreateReviewRequest(
+                testProduct.getId(), 5, "First Review", "First review body", null
+        );
+        reviewService.submitReview(testCustomer, req);
+
+        // Attempt second review for same product by same customer
+        CreateReviewRequest dupReq = new CreateReviewRequest(
+                testProduct.getId(), 4, "Duplicate Review", "Second review body", null
+        );
+        assertThrows(IllegalArgumentException.class, () -> {
+            reviewService.submitReview(testCustomer, dupReq);
+        });
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("Media Security: Upload with invalid MIME type or empty file is rejected")
+    void testMediaUploadValidation_Rejected() throws Exception {
+        org.springframework.mock.web.MockMultipartFile emptyFile =
+                new org.springframework.mock.web.MockMultipartFile("file", "test.txt", "text/plain", new byte[0]);
+        mockMvc.perform(multipart("/api/v1/admin/media/upload").file(emptyFile))
+                .andExpect(status().is4xxClientError());
+
+        org.springframework.mock.web.MockMultipartFile invalidMime =
+                new org.springframework.mock.web.MockMultipartFile("file", "malicious.exe", "application/octet-stream", "evil bytes".getBytes());
+        mockMvc.perform(multipart("/api/v1/admin/media/upload").file(invalidMime))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("NPZ-VERIFY-010: Spoofed MIME header with non-image bytes is rejected by magic-byte check")
+    void testMediaUpload_SpoofedMimeHeader_Rejected() throws Exception {
+        // Client sets content-type to image/png, but file contains arbitrary non-image text
+        byte[] fakeBytes = "This is a plain text file pretending to be a PNG".getBytes();
+        org.springframework.mock.web.MockMultipartFile spoofedFile =
+                new org.springframework.mock.web.MockMultipartFile("file", "fake.png", "image/png", fakeBytes);
+
+        mockMvc.perform(multipart("/api/v1/admin/media/upload").file(spoofedFile))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("NPZ-VERIFY-010: SVG/script payload disguised as JPEG is rejected")
+    void testMediaUpload_SvgScriptPayload_Rejected() throws Exception {
+        byte[] svgPayload = "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>".getBytes();
+        org.springframework.mock.web.MockMultipartFile svgFile =
+                new org.springframework.mock.web.MockMultipartFile("file", "exploit.jpg", "image/jpeg", svgPayload);
+
+        mockMvc.perform(multipart("/api/v1/admin/media/upload").file(svgFile))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("NPZ-VERIFY-010: Path traversal sequence in upload filename is rejected")
+    void testMediaUpload_PathTraversal_Rejected() throws Exception {
+        byte[] validPngHeader = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D};
+        org.springframework.mock.web.MockMultipartFile traversalFile =
+                new org.springframework.mock.web.MockMultipartFile("file", "../../secret.png", "image/png", validPngHeader);
+
+        mockMvc.perform(multipart("/api/v1/admin/media/upload").file(traversalFile))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("NPZ-VERIFY-010: Genuine image with unconfigured Cloudinary returns honest 503 SERVICE_UNAVAILABLE stub response")
+    void testMediaUpload_GenuineImage_UnconfiguredCloudinary_Returns503Stub() throws Exception {
+        byte[] validPngHeader = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52};
+        org.springframework.mock.web.MockMultipartFile genuinePng =
+                new org.springframework.mock.web.MockMultipartFile("file", "cat_food.png", "image/png", validPngHeader);
+
+        mockMvc.perform(multipart("/api/v1/admin/media/upload").file(genuinePng))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.message", containsString("Cloudinary CDN media storage is unconfigured")));
+    }
+
+    @Test
+    @DisplayName("Public Media: Non-existent file returns 404")
+    void testPublicMedia_NonExistentFile_Returns404() throws Exception {
+        mockMvc.perform(get("/api/v1/media/files/non_existent_image_12345.png"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Public Media: Path traversal filename is rejected")
+    void testPublicMedia_PathTraversal_Rejected() throws Exception {
+        mockMvc.perform(get("/api/v1/media/files/..%2Fsecret.txt"))
+                .andExpect(status().is4xxClientError());
     }
 }

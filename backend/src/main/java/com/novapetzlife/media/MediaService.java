@@ -8,10 +8,17 @@ import com.novapetzlife.product.ProductImageRepository;
 import com.novapetzlife.product.ProductRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,11 +30,36 @@ public class MediaService {
     private final ProductImageRepository productImageRepository;
     private final ProductRepository productRepository;
 
+    @Value("${app.cloudinary.cloud-name:}")
+    private String cloudinaryCloudName;
+
+    @Value("${app.media.local-storage-enabled:false}")
+    private boolean localStorageEnabled;
+
+    @Value("${app.media.upload-dir:uploads/products}")
+    private String uploadDir;
+
+    @Value("${app.media.base-url:}")
+    private String mediaBaseUrl;
+
     public MediaService(
             ProductImageRepository productImageRepository,
             ProductRepository productRepository) {
         this.productImageRepository = productImageRepository;
         this.productRepository = productRepository;
+    }
+
+    public boolean isCloudinaryConfigured() {
+        // Genuine Cloudinary integration (API credentials and binary upload client) is not implemented in this phase
+        return false;
+    }
+
+    public boolean isLocalStorageEnabled() {
+        return localStorageEnabled;
+    }
+
+    public String getUploadDir() {
+        return uploadDir;
     }
 
     @Transactional(readOnly = true)
@@ -116,7 +148,9 @@ public class MediaService {
         }
 
         boolean wasPrimary = Boolean.TRUE.equals(img.getIsPrimary());
+        String deletedImageUrl = img.getImageUrl();
         productImageRepository.delete(img);
+        productImageRepository.flush();
 
         List<ProductImage> remaining = productImageRepository.findByProductIdOrderByDisplayOrderAsc(productId);
         for (int i = 0; i < remaining.size(); i++) {
@@ -134,6 +168,9 @@ public class MediaService {
             }
             productImageRepository.save(rem);
         }
+
+        // Safe physical file cleanup: only remove disk asset if not shared by any other product image
+        cleanupLocalFileIfUnused(deletedImageUrl);
 
         log.info("Deleted product image {} from product {}", imageId, productId);
     }
@@ -192,19 +229,78 @@ public class MediaService {
     }
 
     /**
-     * Upload handler: accepts multipart file and returns a hosted Cloudinary/CDN URL.
-     * In local/simulated environment, returns a clean deterministic media asset URL.
+     * Upload handler: accepts multipart file and returns a hosted Cloudinary/CDN or local file URL.
+     * When Cloudinary is configured, delivers cloud storage URL.
+     * When local storage is enabled, saves the file to disk and serves it via local media endpoint.
      */
     public String uploadMedia(MultipartFile file) {
-        String originalFilename = file != null && file.getOriginalFilename() != null
-                ? file.getOriginalFilename()
-                : "pet_image.jpg";
-        String cleanName = originalFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
-        String assetId = UUID.randomUUID().toString().substring(0, 8);
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Upload file cannot be null or empty.");
+        }
 
-        // Formats as Cloudinary media delivery URL
-        String mockCloudinaryUrl = "https://res.cloudinary.com/novapetzlife/image/upload/v1700000000/products/" + assetId + "_" + cleanName;
-        log.info("Processed media asset upload: {} -> {}", originalFilename, mockCloudinaryUrl);
-        return mockCloudinaryUrl;
+        String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "image.jpg";
+        String cleanName = originalFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
+        String assetId = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        String storedFilename = assetId + "_" + cleanName;
+
+        if (localStorageEnabled) {
+            try {
+                Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+                if (!Files.exists(uploadPath)) {
+                    Files.createDirectories(uploadPath);
+                }
+                Path targetLocation = uploadPath.resolve(storedFilename).normalize();
+                if (!targetLocation.startsWith(uploadPath)) {
+                    throw new SecurityException("Invalid target filename path traversal detected");
+                }
+                Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+                log.info("Saved media asset locally to {} (size: {} bytes)", targetLocation, file.getSize());
+
+                if (mediaBaseUrl != null && !mediaBaseUrl.isBlank()) {
+                    return mediaBaseUrl.replaceAll("/+$", "") + "/api/v1/media/files/" + storedFilename;
+                }
+
+                try {
+                    return ServletUriComponentsBuilder.fromCurrentContextPath()
+                            .path("/api/v1/media/files/")
+                            .path(storedFilename)
+                            .toUriString();
+                } catch (Exception e) {
+                    return "/api/v1/media/files/" + storedFilename;
+                }
+            } catch (IOException ex) {
+                log.error("Failed to store local media file: {}", originalFilename, ex);
+                throw new RuntimeException("Could not store media file locally: " + ex.getMessage(), ex);
+            }
+        }
+
+        throw new IllegalStateException("Local media storage is disabled and genuine cloud storage (Cloudinary) is unconfigured.");
+    }
+
+    private void cleanupLocalFileIfUnused(String imageUrl) {
+        if (imageUrl == null || !imageUrl.contains("/api/v1/media/files/")) {
+            return;
+        }
+        try {
+            boolean isShared = productImageRepository.existsByImageUrl(imageUrl);
+            if (isShared) {
+                log.info("Media file {} is still referenced by other product image(s); preserving physical file.", imageUrl);
+                return;
+            }
+
+            String filename = imageUrl.substring(imageUrl.lastIndexOf('/') + 1).trim();
+            if (filename.isBlank() || filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+                return;
+            }
+
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Path targetFile = uploadPath.resolve(filename).normalize();
+            if (targetFile.startsWith(uploadPath) && Files.exists(targetFile)) {
+                Files.delete(targetFile);
+                log.info("Cleaned up orphaned local media file: {}", targetFile);
+            }
+        } catch (Exception ex) {
+            log.warn("Non-fatal: could not delete local media file for {}: {}", imageUrl, ex.getMessage());
+        }
     }
 }

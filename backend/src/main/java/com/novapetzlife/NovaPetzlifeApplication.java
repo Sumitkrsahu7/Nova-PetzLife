@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @SpringBootApplication
+@org.springframework.scheduling.annotation.EnableScheduling
 public class NovaPetzlifeApplication {
 
     public static void main(String[] args) {

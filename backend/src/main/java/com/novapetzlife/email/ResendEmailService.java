@@ -62,7 +62,7 @@ public class ResendEmailService implements EmailService {
         // Security requirement: If Resend API key is not configured, safely defer delivery.
         // Never log the raw token or the full reset URL.
         if (!StringUtils.hasText(resendApiKey)) {
-            log.info("[EMAIL DEFERRED] Resend API key is not configured (RESEND_API_KEY). Password reset email deferred for recipient: [MASKED]",
+            log.info("[EMAIL DEFERRED] Resend API key is not configured (RESEND_API_KEY). Password reset email deferred for recipient: {}",
                     maskEmail(toEmail));
             return;
         }

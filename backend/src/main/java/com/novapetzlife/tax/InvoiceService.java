@@ -100,8 +100,28 @@ public class InvoiceService {
 
     private record CalculatedTax(BigDecimal taxable, BigDecimal cgstRate, BigDecimal cgst, BigDecimal sgstRate, BigDecimal sgst) {}
 
-    private CalculatedTax calculateItemTax(OrderItem item, boolean isGstEligible) {
+    private BigDecimal getEffectiveItemGross(OrderItem item, Order order) {
         BigDecimal lineGross = item.getTotalPrice() != null ? item.getTotalPrice() : BigDecimal.ZERO;
+        if (order != null && order.getTotalAmount() != null && order.getTotalAmount().compareTo(BigDecimal.ZERO) > 0
+                && order.getDiscountAmount() != null && order.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal ratio = lineGross.divide(order.getTotalAmount(), 6, RoundingMode.HALF_UP);
+            BigDecimal discountShare = order.getDiscountAmount().multiply(ratio).setScale(2, RoundingMode.HALF_UP);
+            lineGross = lineGross.subtract(discountShare);
+            if (lineGross.compareTo(BigDecimal.ZERO) < 0) {
+                lineGross = BigDecimal.ZERO;
+            }
+        }
+        return lineGross;
+    }
+
+    private CalculatedTax calculateItemTax(OrderItem item, boolean isGstEligible) {
+        return calculateItemTax(item, null, isGstEligible);
+    }
+
+    private CalculatedTax calculateItemTax(OrderItem item, BigDecimal lineGross, boolean isGstEligible) {
+        if (lineGross == null) {
+            lineGross = item.getTotalPrice() != null ? item.getTotalPrice() : BigDecimal.ZERO;
+        }
         if (!isGstEligible || item.getHsnCode() == null || item.getHsnCode().isBlank()) {
             return new CalculatedTax(lineGross, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
         }
@@ -160,7 +180,8 @@ public class InvoiceService {
 
         if (isGstEligible && order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
-                CalculatedTax tax = calculateItemTax(item, true);
+                BigDecimal effectiveGross = getEffectiveItemGross(item, order);
+                CalculatedTax tax = calculateItemTax(item, effectiveGross, true);
                 taxableValue = taxableValue.add(tax.taxable());
                 cgst = cgst.add(tax.cgst());
                 sgst = sgst.add(tax.sgst());
@@ -212,7 +233,8 @@ public class InvoiceService {
         if (order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
                 BigDecimal lineGross = item.getTotalPrice() != null ? item.getTotalPrice() : BigDecimal.ZERO;
-                CalculatedTax tax = calculateItemTax(item, isGstInvoice);
+                BigDecimal effectiveGross = isGstInvoice ? getEffectiveItemGross(item, order) : lineGross;
+                CalculatedTax tax = calculateItemTax(item, effectiveGross, isGstInvoice);
 
                 // Never fabricate or fallback to "2309" if unverified
                 String hsn = (item.getHsnCode() != null && !item.getHsnCode().isBlank()) ? item.getHsnCode().trim() : null;
@@ -231,7 +253,7 @@ public class InvoiceService {
                         tax.cgst(),
                         tax.sgstRate(),
                         tax.sgst(),
-                        lineGross,
+                        isGstInvoice ? effectiveGross : lineGross,
                         returnPolicyText
                 ));
             }

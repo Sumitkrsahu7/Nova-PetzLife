@@ -56,6 +56,13 @@ public class CouponService {
             return CouponValidationResponse.invalid(code, "Coupon '" + code + "' is inactive or has expired", subtotal);
         }
 
+        if (customerId != null) {
+            long usageCount = couponUsageRepository.countByCouponIdAndCustomerId(coupon.getId(), customerId);
+            if (usageCount > 0) {
+                return CouponValidationResponse.invalid(code, "You have already used this coupon code", subtotal);
+            }
+        }
+
         if (subtotal != null && coupon.getMinOrderValue() != null && subtotal.compareTo(coupon.getMinOrderValue()) < 0) {
             return CouponValidationResponse.invalid(code, "Minimum order amount of ₹" + coupon.getMinOrderValue() + " required to use this coupon", subtotal);
         }
@@ -93,7 +100,16 @@ public class CouponService {
     public void recordCouponUsage(String code, Customer customer, Order order, BigDecimal discountApplied) {
         if (code == null || code.isBlank()) return;
 
-        couponRepository.findByCodeIgnoreCase(code.trim()).ifPresent(coupon -> {
+        couponRepository.findByCodeIgnoreCaseForUpdate(code.trim()).ifPresent(coupon -> {
+            if (customer != null && customer.getId() != null) {
+                long customerUsage = couponUsageRepository.countByCouponIdAndCustomerId(coupon.getId(), customer.getId());
+                if (customerUsage > 0) {
+                    throw new IllegalStateException("Customer has already used coupon " + coupon.getCode());
+                }
+            }
+            if (coupon.getUsageLimit() != null && coupon.getUsageCount() >= coupon.getUsageLimit()) {
+                throw new IllegalStateException("Coupon usage limit has been reached for " + coupon.getCode());
+            }
             coupon.incrementUsage();
             couponRepository.save(coupon);
 

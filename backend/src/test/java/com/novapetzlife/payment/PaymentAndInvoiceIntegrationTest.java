@@ -14,6 +14,7 @@ import com.novapetzlife.customer.CustomerService;
 import com.novapetzlife.delivery.ShopLocation;
 import com.novapetzlife.delivery.ShopLocationRepository;
 import com.novapetzlife.inventory.InventoryRepository;
+import com.novapetzlife.inventory.InventoryService;
 import com.novapetzlife.inventory.InventoryTransactionRepository;
 import com.novapetzlife.order.*;
 import com.novapetzlife.payment.dto.CreatePaymentOrderRequest;
@@ -22,6 +23,8 @@ import com.novapetzlife.product.Product;
 import com.novapetzlife.product.ProductRepository;
 import com.novapetzlife.product.ProductReturnPolicy;
 import com.novapetzlife.tax.InvoiceRepository;
+import com.novapetzlife.tax.InvoiceService;
+import com.novapetzlife.tax.InvoiceDto;
 import com.novapetzlife.user.User;
 import com.novapetzlife.user.UserRepository;
 import com.novapetzlife.notification.NotificationRepository;
@@ -102,6 +105,9 @@ class PaymentAndInvoiceIntegrationTest {
     private InventoryRepository inventoryRepository;
 
     @Autowired
+    private InventoryService inventoryService;
+
+    @Autowired
     private ProductRepository productRepository;
 
     @Autowired
@@ -161,8 +167,15 @@ class PaymentAndInvoiceIntegrationTest {
     @Autowired
     private ReviewRepository reviewRepository;
 
+    @Autowired
+    private OrderService orderService;
+
+    @Autowired
+    private InvoiceService invoiceService;
+
     private Order testOrder;
     private Product testProduct;
+    private Customer testCustomer;
 
     @BeforeEach
     void setUp() {
@@ -218,6 +231,7 @@ class PaymentAndInvoiceIntegrationTest {
                 userRepository.save(new User("aditya.payment@example.com", "Password@123", "Aditya", "Menon", "+919876543210"))
         );
         Customer customer = customerService.getOrCreateCustomerForUser(user);
+        this.testCustomer = customer;
 
         // 3. Catalog & Return Policy
         Brand brand = brandRepository.save(new Brand("Royal Canin", "royal-canin-" + suffix, "Specialized pet nutrition"));
@@ -588,5 +602,371 @@ class PaymentAndInvoiceIntegrationTest {
         Order updated = orderRepository.findByOrderNumber(testOrder.getOrderNumber()).orElseThrow();
         assertEquals("CONFIRMED", updated.getOrderStatus());
         assertEquals("COMPLETED", updated.getPaymentStatus());
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-001: All-or-nothing stock reservation rollback when second item is out of stock")
+    void testAtomicMultiItemReservation_RollbackOnPartialStockout() throws Exception {
+        // Product 1 has stock (5 units), Product 2 has 0 stock
+        inventoryService.initializeStock(testProduct, null, 5, 2);
+        int initialStock1 = inventoryService.getAvailableStock(testProduct.getId(), null);
+        Product product2 = productRepository.save(new Product(
+                testProduct.getBrand(), testProduct.getCategory(), "Out of Stock Toy", "toy-out", "SKU-OUT",
+                new BigDecimal("500.00"), new BigDecimal("450.00")
+        ));
+        inventoryService.initializeStock(product2, null, 0, 2); // 0 available
+
+        // Create cancelled order with both items
+        Order order = new Order();
+        order.setOrderNumber("ORD-ATOMIC-" + UUID.randomUUID().toString().substring(0, 8));
+        order.setCustomer(testCustomer);
+        order.setOrderStatus("CANCELLED");
+        order.setPaymentStatus("PENDING_PAYMENT");
+        order.setPaymentMethod("RAZORPAY");
+        order.setTotalAmount(new BigDecimal("950.00"));
+        order.setDiscountAmount(BigDecimal.ZERO);
+        order.setDeliveryCharge(BigDecimal.ZERO);
+        order.setTaxAmount(BigDecimal.ZERO);
+        order.setFinalPayableAmount(new BigDecimal("950.00"));
+        order.setShopDistanceKm(new BigDecimal("1.20"));
+        order.setIsWithinRadius(true);
+        order.setDeliveryAddressJson("{}");
+        order = orderRepository.save(order);
+
+        OrderItem item1 = new OrderItem(order, testProduct, null, testProduct.getName(), "Brand", "SKU1", 2, new BigDecimal("250.00"), new BigDecimal("500.00"), BigDecimal.ZERO, BigDecimal.ZERO, "9503", "{}", "{}");
+        OrderItem item2 = new OrderItem(order, product2, null, product2.getName(), "Brand", "SKU2", 1, new BigDecimal("450.00"), new BigDecimal("450.00"), BigDecimal.ZERO, BigDecimal.ZERO, "9503", "{}", "{}");
+        order.getItems().add(item1);
+        order.getItems().add(item2);
+        orderItemRepository.save(item1);
+        orderItemRepository.save(item2);
+        order = orderRepository.save(order);
+
+        String razorpayOrderId = "order_atomic_fail";
+        Payment payment = new Payment(order, razorpayOrderId, order.getFinalPayableAmount(), "CREATED", "RAZORPAY");
+        paymentRepository.save(payment);
+
+        String payload = "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_atomic_fail\",\"order_id\":\"" + razorpayOrderId + "\"}}}}";
+        String webhookSignature = signatureVerifier.calculateHmacSha256(payload, razorpayConfig.getWebhookSecret());
+
+        mockMvc.perform(post("/api/v1/payments/webhook")
+                        .header("X-Razorpay-Signature", webhookSignature)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk());
+
+        // Inventory check: Product 1 reservation MUST NOT leak! Available stock must remain equal to initial
+        int currentStock1 = inventoryService.getAvailableStock(testProduct.getId(), null);
+        assertEquals(initialStock1, currentStock1, "Product 1 stock must not be reserved when item 2 fails");
+
+        // Order state check: marked PAYMENT_RECEIVED_OUT_OF_STOCK and NOT confirmed
+        Order updated = orderRepository.findByOrderNumber(order.getOrderNumber()).orElseThrow();
+        assertEquals("CANCELLED", updated.getOrderStatus());
+        assertEquals("PAYMENT_RECEIVED_OUT_OF_STOCK", updated.getPaymentStatus());
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("NPZ-VERIFY-002: verifyPayment handles cancelled order with available stock by re-reserving and confirming")
+    void testVerifyPayment_CancelledOrder_StockAvailable_Succeeds() throws Exception {
+        inventoryService.initializeStock(testProduct, null, 10, 2);
+        testOrder.setOrderStatus("CANCELLED");
+        testOrder.setPaymentStatus("PENDING_PAYMENT");
+        orderRepository.save(testOrder);
+
+        String razorpayOrderId = "order_verify_cancel_ok";
+        String razorpayPaymentId = "pay_verify_cancel_ok";
+        Payment payment = new Payment(testOrder, razorpayOrderId, testOrder.getFinalPayableAmount(), "CREATED", "RAZORPAY");
+        paymentRepository.save(payment);
+
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                testOrder.getOrderNumber(), razorpayOrderId, razorpayPaymentId, "simulated_rzp_signature"
+        );
+
+        mockMvc.perform(post("/api/v1/payments/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.orderStatus", is("CONFIRMED")));
+
+        Order updated = orderRepository.findByOrderNumber(testOrder.getOrderNumber()).orElseThrow();
+        assertEquals("CONFIRMED", updated.getOrderStatus());
+        assertEquals("COMPLETED", updated.getPaymentStatus());
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("NPZ-VERIFY-002: verifyPayment handles cancelled order with out-of-stock by setting PAYMENT_RECEIVED_OUT_OF_STOCK")
+    void testVerifyPayment_CancelledOrder_OutOfStock_DoesNotConfirm() throws Exception {
+        Product outProduct = productRepository.save(new Product(
+                testProduct.getBrand(), testProduct.getCategory(), "Zero Stock Food", "food-zero", "SKU-ZERO",
+                new BigDecimal("600.00"), new BigDecimal("600.00")
+        ));
+        inventoryService.initializeStock(outProduct, null, 0, 1);
+
+        Order cancelledOrder = new Order();
+        cancelledOrder.setOrderNumber("ORD-ZERO-" + UUID.randomUUID().toString().substring(0, 8));
+        cancelledOrder.setCustomer(testCustomer);
+        cancelledOrder.setOrderStatus("CANCELLED");
+        cancelledOrder.setPaymentStatus("PENDING_PAYMENT");
+        cancelledOrder.setPaymentMethod("RAZORPAY");
+        cancelledOrder.setTotalAmount(new BigDecimal("600.00"));
+        cancelledOrder.setDiscountAmount(BigDecimal.ZERO);
+        cancelledOrder.setDeliveryCharge(BigDecimal.ZERO);
+        cancelledOrder.setTaxAmount(BigDecimal.ZERO);
+        cancelledOrder.setFinalPayableAmount(new BigDecimal("600.00"));
+        cancelledOrder.setShopDistanceKm(new BigDecimal("1.20"));
+        cancelledOrder.setIsWithinRadius(true);
+        cancelledOrder.setDeliveryAddressJson("{}");
+        cancelledOrder = orderRepository.save(cancelledOrder);
+
+        OrderItem zeroItem = new OrderItem(cancelledOrder, outProduct, null, outProduct.getName(), "Brand", "SKU-ZERO", 1, new BigDecimal("600.00"), new BigDecimal("600.00"), BigDecimal.ZERO, BigDecimal.ZERO, "9503", "{}", "{}");
+        cancelledOrder.getItems().add(zeroItem);
+        orderItemRepository.save(zeroItem);
+        cancelledOrder = orderRepository.save(cancelledOrder);
+
+        String razorpayOrderId = "order_zero_stock";
+        Payment payment = new Payment(cancelledOrder, razorpayOrderId, cancelledOrder.getFinalPayableAmount(), "CREATED", "RAZORPAY");
+        paymentRepository.save(payment);
+
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                cancelledOrder.getOrderNumber(), razorpayOrderId, "pay_zero_stock", "simulated_rzp_signature"
+        );
+
+        mockMvc.perform(post("/api/v1/payments/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.orderStatus", is("CANCELLED")));
+
+        Order updated = orderRepository.findByOrderNumber(cancelledOrder.getOrderNumber()).orElseThrow();
+        assertEquals("CANCELLED", updated.getOrderStatus());
+        assertEquals("PAYMENT_RECEIVED_OUT_OF_STOCK", updated.getPaymentStatus());
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-003: Monotonic transition: Late webhook does not regress PACKED or DISPATCHED order to CONFIRMED")
+    void testMonotonicOrderTransition_LateWebhookDoesNotRegressStatus() throws Exception {
+        testOrder.setOrderStatus("PACKED");
+        orderRepository.save(testOrder);
+
+        String razorpayOrderId = "order_late_packed";
+        String razorpayPaymentId = "pay_late_packed";
+        Payment payment = new Payment(testOrder, razorpayOrderId, testOrder.getFinalPayableAmount(), "CREATED", "RAZORPAY");
+        paymentRepository.save(payment);
+
+        String payload = "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\""
+                + razorpayPaymentId + "\",\"order_id\":\"" + razorpayOrderId + "\"}}}}";
+        String webhookSignature = signatureVerifier.calculateHmacSha256(payload, razorpayConfig.getWebhookSecret());
+
+        mockMvc.perform(post("/api/v1/payments/webhook")
+                        .header("X-Razorpay-Signature", webhookSignature)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk());
+
+        Order updated = orderRepository.findByOrderNumber(testOrder.getOrderNumber()).orElseThrow();
+        assertEquals("PACKED", updated.getOrderStatus(), "Status must remain PACKED and not regress to CONFIRMED");
+        assertEquals("COMPLETED", updated.getPaymentStatus());
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-003: Late payment.failed webhook does not overwrite successful captured payment")
+    void testLatePaymentFailedWebhook_DoesNotOverwriteSuccess() throws Exception {
+        String razorpayOrderId = "order_late_fail";
+        Payment payment = new Payment(testOrder, razorpayOrderId, testOrder.getFinalPayableAmount(), "SUCCESS", "RAZORPAY");
+        payment.setGatewayPaymentId("pay_already_captured");
+        paymentRepository.save(payment);
+
+        String payload = "{\"event\":\"payment.failed\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_failed_late\",\"order_id\":\""
+                + razorpayOrderId + "\",\"error_description\":\"Bank timeout\"}}}}";
+        String webhookSignature = signatureVerifier.calculateHmacSha256(payload, razorpayConfig.getWebhookSecret());
+
+        mockMvc.perform(post("/api/v1/payments/webhook")
+                        .header("X-Razorpay-Signature", webhookSignature)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk());
+
+        Payment checked = paymentRepository.findByGatewayOrderId(razorpayOrderId).orElseThrow();
+        assertEquals("SUCCESS", checked.getStatus(), "Payment status must remain SUCCESS and not be overwritten by late failure event");
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-004: Duplicate payment.captured webhook is idempotent and does not create duplicate invoices or status history")
+    void testCapturedOrder_DuplicateWebhook_Idempotent() throws Exception {
+        String razorpayOrderId = "order_dup_capture";
+        String razorpayPaymentId = "pay_dup_capture";
+        Payment payment = new Payment(testOrder, razorpayOrderId, testOrder.getFinalPayableAmount(), "CREATED", "RAZORPAY");
+        paymentRepository.save(payment);
+
+        String payload = "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\""
+                + razorpayPaymentId + "\",\"order_id\":\"" + razorpayOrderId + "\"}}}}";
+        String webhookSignature = signatureVerifier.calculateHmacSha256(payload, razorpayConfig.getWebhookSecret());
+
+        // First webhook
+        mockMvc.perform(post("/api/v1/payments/webhook")
+                        .header("X-Razorpay-Signature", webhookSignature)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk());
+
+        int statusHistoryCountAfterFirst = statusHistoryRepository.findByOrderIdOrderByCreatedAtDesc(testOrder.getId()).size();
+        int invoiceCountAfterFirst = invoiceRepository.findByOrderId(testOrder.getId()).isPresent() ? 1 : 0;
+
+        // Duplicate webhook
+        mockMvc.perform(post("/api/v1/payments/webhook")
+                        .header("X-Razorpay-Signature", webhookSignature)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk());
+
+        int statusHistoryCountAfterSecond = statusHistoryRepository.findByOrderIdOrderByCreatedAtDesc(testOrder.getId()).size();
+        int invoiceCountAfterSecond = invoiceRepository.findByOrderId(testOrder.getId()).isPresent() ? 1 : 0;
+
+        assertEquals(statusHistoryCountAfterFirst, statusHistoryCountAfterSecond, "Duplicate webhook must not append redundant status history entries");
+        assertEquals(invoiceCountAfterFirst, invoiceCountAfterSecond, "Duplicate webhook must not create duplicate invoices");
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-004: Duplicate webhook on PAYMENT_RECEIVED_OUT_OF_STOCK order does not retry reservation or append history")
+    void testOutOfStockCapturedOrder_DuplicateWebhook_Idempotent() throws Exception {
+        // Prepare out-of-stock product
+        Product outProduct = productRepository.save(new Product(
+                testProduct.getBrand(), testProduct.getCategory(), "Zero Food", "zero-food", "SKU-Z1",
+                new BigDecimal("500.00"), new BigDecimal("500.00")
+        ));
+        inventoryService.initializeStock(outProduct, null, 0, 1);
+
+        Order cancelledOrder = new Order();
+        cancelledOrder.setOrderNumber("ORD-OUT-STOCK-" + UUID.randomUUID().toString().substring(0, 8));
+        cancelledOrder.setCustomer(testCustomer);
+        cancelledOrder.setOrderStatus("CANCELLED");
+        cancelledOrder.setPaymentStatus("PENDING_PAYMENT");
+        cancelledOrder.setPaymentMethod("RAZORPAY");
+        cancelledOrder.setTotalAmount(new BigDecimal("500.00"));
+        cancelledOrder.setDiscountAmount(BigDecimal.ZERO);
+        cancelledOrder.setDeliveryCharge(BigDecimal.ZERO);
+        cancelledOrder.setTaxAmount(BigDecimal.ZERO);
+        cancelledOrder.setFinalPayableAmount(new BigDecimal("500.00"));
+        cancelledOrder.setShopDistanceKm(new BigDecimal("1.20"));
+        cancelledOrder.setIsWithinRadius(true);
+        cancelledOrder.setDeliveryAddressJson("{}");
+        cancelledOrder = orderRepository.save(cancelledOrder);
+
+        OrderItem item = new OrderItem(cancelledOrder, outProduct, null, outProduct.getName(), "Brand", "SKU-Z1", 1, new BigDecimal("500.00"), new BigDecimal("500.00"), BigDecimal.ZERO, BigDecimal.ZERO, "9503", "{}", "{}");
+        cancelledOrder.getItems().add(item);
+        orderItemRepository.save(item);
+        cancelledOrder = orderRepository.save(cancelledOrder);
+
+        String razorpayOrderId = "order_out_of_stock_dup";
+        Payment payment = new Payment(cancelledOrder, razorpayOrderId, cancelledOrder.getFinalPayableAmount(), "CREATED", "RAZORPAY");
+        paymentRepository.save(payment);
+
+        String payload = "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_out_dup\",\"order_id\":\""
+                + razorpayOrderId + "\"}}}}";
+        String webhookSignature = signatureVerifier.calculateHmacSha256(payload, razorpayConfig.getWebhookSecret());
+
+        // First webhook -> transitions to PAYMENT_RECEIVED_OUT_OF_STOCK
+        mockMvc.perform(post("/api/v1/payments/webhook")
+                        .header("X-Razorpay-Signature", webhookSignature)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk());
+
+        Order afterFirst = orderRepository.findByOrderNumber(cancelledOrder.getOrderNumber()).orElseThrow();
+        assertEquals("PAYMENT_RECEIVED_OUT_OF_STOCK", afterFirst.getPaymentStatus());
+        int historyCountAfterFirst = statusHistoryRepository.findByOrderIdOrderByCreatedAtDesc(cancelledOrder.getId()).size();
+
+        // Duplicate webhook -> must be safely ignored
+        mockMvc.perform(post("/api/v1/payments/webhook")
+                        .header("X-Razorpay-Signature", webhookSignature)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk());
+
+        int historyCountAfterSecond = statusHistoryRepository.findByOrderIdOrderByCreatedAtDesc(cancelledOrder.getId()).size();
+        assertEquals(historyCountAfterFirst, historyCountAfterSecond, "Duplicate capture event on out-of-stock order must not append duplicate history");
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("NPZ-VERIFY-005: Client verifyPayment returns idempotent success when order is already completed")
+    void testClientVerifyPayment_AlreadyCompleted_IdempotentSuccess() throws Exception {
+        testOrder.setPaymentStatus("COMPLETED");
+        testOrder.setOrderStatus("CONFIRMED");
+        orderRepository.save(testOrder);
+
+        String razorpayOrderId = "order_already_comp";
+        String razorpayPaymentId = "pay_already_comp";
+        Payment payment = new Payment(testOrder, razorpayOrderId, testOrder.getFinalPayableAmount(), "SUCCESS", "RAZORPAY");
+        payment.setGatewayPaymentId(razorpayPaymentId);
+        paymentRepository.save(payment);
+
+        String signature = signatureVerifier.calculateHmacSha256(razorpayOrderId + "|" + razorpayPaymentId, razorpayConfig.getKeySecret());
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                testOrder.getOrderNumber(), razorpayOrderId, razorpayPaymentId, signature
+        );
+
+        mockMvc.perform(post("/api/v1/payments/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.orderStatus", is("CONFIRMED")));
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-006: State Transition: DELIVERED order cannot regress to CONFIRMED or CANCELLED")
+    void testTerminalOrderCannotRegressFromDelivered() {
+        testOrder.setOrderStatus("DELIVERED");
+        orderRepository.save(testOrder);
+
+        assertThrows(IllegalStateException.class, () ->
+                orderService.adminUpdateOrderStatus(testOrder.getId(), "CONFIRMED", "ADMIN", "Improper regression attempt")
+        );
+        assertThrows(IllegalStateException.class, () ->
+                orderService.adminUpdateOrderStatus(testOrder.getId(), "CANCELLED", "ADMIN", "Improper cancellation attempt")
+        );
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-006: State Transition: CANCELLED order cannot transition to DELIVERED via admin update")
+    void testTerminalOrderCannotRegressFromCancelled() {
+        testOrder.setOrderStatus("CANCELLED");
+        orderRepository.save(testOrder);
+
+        assertThrows(IllegalStateException.class, () ->
+                orderService.adminUpdateOrderStatus(testOrder.getId(), "DELIVERED", "ADMIN", "Improper delivery attempt without stock")
+        );
+    }
+
+    @Test
+    @DisplayName("NPZ-VERIFY-007: Exact Decimal Reconciliation: Line item totals, taxable, GST, discounts reconcile to exact paise")
+    void testExactDecimalReconciliation() {
+        InvoiceDto dto = invoiceService.getInvoiceDtoByOrder(testOrder);
+        assertNotNull(dto);
+
+        // Sum of item gross totals
+        BigDecimal itemsGrossSum = dto.items().stream()
+                .map(InvoiceDto.InvoiceItemDto::totalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Sum of item taxable values + CGST + SGST
+        BigDecimal itemsTaxableSum = dto.items().stream()
+                .map(InvoiceDto.InvoiceItemDto::taxableValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal itemsCgstSum = dto.items().stream()
+                .map(InvoiceDto.InvoiceItemDto::cgstAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal itemsSgstSum = dto.items().stream()
+                .map(InvoiceDto.InvoiceItemDto::sgstAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal calculatedTotal = itemsTaxableSum.add(itemsCgstSum).add(itemsSgstSum)
+                .add(dto.deliveryCharge())
+                .subtract(dto.discountAmount());
+
+        assertEquals(0, calculatedTotal.compareTo(dto.grandTotal()),
+                "Calculated invoice total (" + calculatedTotal + ") must match grandTotal (" + dto.grandTotal() + ") to exact paise");
     }
 }

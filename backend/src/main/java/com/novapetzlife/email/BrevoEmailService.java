@@ -43,17 +43,28 @@ public class BrevoEmailService implements EmailService {
         String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
 
         if (!mailEnabled || !StringUtils.hasText(smtpUsername)) {
-            log.info("[EMAIL DEFERRED] Password reset email deferred for {}. Brevo SMTP credentials not configured (app.mail.enabled={}). Reset link generated: {}",
-                    toEmail, mailEnabled, resetLink);
+            log.info("[EMAIL DEFERRED] Password reset email deferred. Brevo SMTP credentials not configured (app.mail.enabled={}). Recipient: {}",
+                    mailEnabled, maskEmail(toEmail));
             return;
         }
 
         try {
             log.info("[BREVO SMTP] Dispatching transactional password reset email to {} (Host: {}:{})",
-                    toEmail, smtpHost, smtpPort);
+                    maskEmail(toEmail), smtpHost, smtpPort);
             // Ready for JavaMailSender / Brevo API dispatch once credentials are set in environment
         } catch (Exception e) {
-            log.error("[BREVO SMTP ERROR] Failed to send password reset email to {}: {}", toEmail, e.getMessage());
+            log.error("[BREVO SMTP ERROR] Failed to send password reset email to {}: {}", maskEmail(toEmail), e.getMessage());
         }
+    }
+
+    private static String maskEmail(String email) {
+        if (!StringUtils.hasText(email) || !email.contains("@")) {
+            return "***";
+        }
+        String[] parts = email.split("@", 2);
+        String local = parts[0];
+        String domain = parts[1];
+        String maskedLocal = local.length() <= 2 ? local.charAt(0) + "***" : local.substring(0, 2) + "***";
+        return maskedLocal + "@" + domain;
     }
 }

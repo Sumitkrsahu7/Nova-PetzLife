@@ -44,6 +44,10 @@ public class ReviewService {
         Product product = productRepository.findById(request.productId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + request.productId()));
 
+        if (reviewRepository.existsByProductIdAndCustomerId(product.getId(), customer.getId())) {
+            throw new IllegalArgumentException("Customer has already submitted a review for this product");
+        }
+
         boolean isVerified = orderItemRepository.isVerifiedPurchase(customer.getId(), product.getId());
 
         Review review = new Review(
