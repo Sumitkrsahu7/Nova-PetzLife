@@ -52,7 +52,7 @@ public class WebsiteSettingService {
         String defaultMsg = getSetting("store_whatsapp_default_msg", "Hello Nova Petzlife, I would like to inquire about your pet products and delivery.");
         String address = getSetting("store_address", "Nova Petzlife, Kowdiar / Kuravankonam, Thiruvananthapuram, Kerala 695003");
         String phone = getSetting("store_phone", "+91 94471 00000");
-        String email = getSetting("store_email", "support@novapetzlife.in");
+        String email = getSetting("store_email", "support@novapetzlife.com");
         String timings = getSetting("store_timings", "Monday – Saturday: 9:00 AM – 8:30 PM | Sunday: 10:00 AM – 7:00 PM");
 
         // Format clean phone for wa.me URL (remove plus, spaces, dashes)

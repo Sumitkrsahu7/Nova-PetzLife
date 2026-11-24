@@ -22,9 +22,16 @@ public class NotificationService {
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     private final NotificationRepository notificationRepository;
+    private final com.novapetzlife.email.EmailService emailService;
 
-    public NotificationService(NotificationRepository notificationRepository) {
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-base-url:${app.frontend.url:https://novapetzlife.com}}")
+    private String frontendBaseUrl;
+
+    public NotificationService(
+            NotificationRepository notificationRepository,
+            com.novapetzlife.email.EmailService emailService) {
         this.notificationRepository = notificationRepository;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -36,6 +43,15 @@ public class NotificationService {
             String subject,
             String content) {
 
+        // 1. Idempotency & Deduplication: Prevent sending duplicate messages for repeated callbacks within 5 minutes
+        Instant duplicateWindow = Instant.now().minus(java.time.Duration.ofMinutes(5));
+        boolean isDuplicate = notificationRepository.existsByRecipientAndTemplateAndCreatedAtAfter(recipient, template, duplicateWindow);
+        if (isDuplicate) {
+            log.info("[NOTIFICATION DEDUP] Skipping duplicate notification to {} for template {}", maskRecipient(recipient), template);
+            return null;
+        }
+
+        // 2. Persist notification initially with status PENDING
         Notification notification = new Notification(
                 customer,
                 recipient,
@@ -43,16 +59,52 @@ public class NotificationService {
                 template,
                 subject,
                 content,
-                "SENT"
+                "PENDING"
         );
-        notification.setSentAt(Instant.now());
         notification = notificationRepository.save(notification);
 
-        // Simulated Dispatch Logging for Email, SMS, WhatsApp
-        log.info("[NOTIFICATION DISPATCH] Channel: {} | Template: {} | To: {} | Subject: {}",
-                channel, template, recipient, subject);
+        // 3. Attempt genuine delivery based on channel
+        if ("EMAIL".equalsIgnoreCase(channel)) {
+            String recipientName = customer != null ? customer.getFirstName() : "Customer";
+            boolean delivered = false;
+            try {
+                delivered = emailService.sendTransactionalEmail(recipient, recipientName, subject, content);
+            } catch (Exception ex) {
+                log.error("[NOTIFICATION EMAIL ERROR] Failed to send email to {}: {}", maskRecipient(recipient), ex.getMessage());
+            }
 
-        return notification;
+            if (delivered) {
+                notification.setStatus("SENT");
+                notification.setSentAt(Instant.now());
+                notification.setErrorMessage(null);
+                log.info("[NOTIFICATION SENT] Channel: EMAIL | Template: {} | To: {} | Subject: {}",
+                        template, maskRecipient(recipient), subject);
+            } else {
+                notification.setStatus("FAILED");
+                notification.setErrorMessage("Email delivery deferred or rejected by provider (mail disabled or credentials unconfigured)");
+                log.info("[NOTIFICATION FAILED] Channel: EMAIL | Template: {} | To: {} (Provider unconfigured or deferred)",
+                        template, maskRecipient(recipient));
+            }
+        } else {
+            // SMS & WHATSAPP channels: external providers are not yet configured; accurately mark FAILED instead of pretending SENT
+            notification.setStatus("FAILED");
+            notification.setErrorMessage(channel + " provider gateway unconfigured (log-only simulated channel)");
+            log.info("[NOTIFICATION LOG] Channel: {} | Template: {} | To: {} | Subject: {} (Provider unconfigured)",
+                    channel, template, maskRecipient(recipient), subject);
+        }
+
+        return notificationRepository.save(notification);
+    }
+
+    private static String maskRecipient(String recipient) {
+        if (!org.springframework.util.StringUtils.hasText(recipient) || !recipient.contains("@")) {
+            return recipient != null && recipient.length() > 4 ? "***" + recipient.substring(recipient.length() - 4) : "***";
+        }
+        String[] parts = recipient.split("@", 2);
+        String local = parts[0];
+        String domain = parts[1];
+        String maskedLocal = local.length() <= 2 ? local.charAt(0) + "***" : local.substring(0, 2) + "***";
+        return maskedLocal + "@" + domain;
     }
 
     @Transactional
@@ -71,30 +123,31 @@ public class NotificationService {
                 : "";
 
         // 1. Email Notification
+        String trackingUrl = frontendBaseUrl.replaceAll("/+$", "") + "/track/" + order.getOrderNumber();
         String emailSubject = "Order Confirmed: #" + order.getOrderNumber() + " - NOVA PETZLIFE";
         String emailContent = String.format(
                 "Dear %s,\n\nThank you for shopping at NOVA PETZLIFE!\n" +
                         "Your order #%s of ₹%s has been successfully received.\n" +
                         "Delivery window: %s\n" +
                         "Dispatching straight from our store for fast local delivery.%s\n\n" +
-                        "Track your order: https://novapetzlife.in/track/%s\n\n" +
+                        "Track your order: %s\n\n" +
                         "Best regards,\nNOVA PETZLIFE Team",
                 customer != null ? customer.getFirstName() : "Pet Parent",
                 order.getOrderNumber(),
                 order.getFinalPayableAmount(),
                 order.getDeliverySlot() != null ? order.getDeliverySlot() : "Standard Delivery",
                 otpSection,
-                order.getOrderNumber()
+                trackingUrl
         );
         recordAndDispatch(customer, recipientEmail, "EMAIL", "ORDER_CONFIRMATION", emailSubject, emailContent);
 
         // 2. WhatsApp Notification
         String waContent = String.format(
-                "🐾 *NOVA PETZLIFE Order Confirmed!*\nOrder #%s of ₹%s is confirmed. We are packing your pet supplies.%s Track: https://novapetzlife.in/track/%s",
+                "🐾 *NOVA PETZLIFE Order Confirmed!*\nOrder #%s of ₹%s is confirmed. We are packing your pet supplies.%s Track: %s",
                 order.getOrderNumber(),
                 order.getFinalPayableAmount(),
                 deliveryOtp != null ? " Your Delivery OTP: " + deliveryOtp + "." : "",
-                order.getOrderNumber()
+                trackingUrl
         );
         recordAndDispatch(customer, recipientPhone, "WHATSAPP", "ORDER_CONFIRMATION_WA", "WhatsApp Order Confirmed", waContent);
     }

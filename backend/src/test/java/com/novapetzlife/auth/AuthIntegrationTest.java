@@ -50,6 +50,29 @@ class AuthIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private com.novapetzlife.user.RoleRepository roleRepository;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUpActiveTestAdmin() {
+        if (userRepository.findByEmail("activeadmin@novapetzlife.com").isEmpty()) {
+            com.novapetzlife.user.Role superAdminRole = roleRepository.findByName("ROLE_SUPER_ADMIN").orElseThrow();
+            User admin = new User(
+                    "activeadmin@novapetzlife.com",
+                    passwordEncoder.encode("Test@123"),
+                    "Active",
+                    "Admin",
+                    "+919876543277"
+            );
+            admin.setIsActive(true);
+            admin.getRoles().add(superAdminRole);
+            userRepository.save(admin);
+        }
+    }
+
     @Test
     @DisplayName("Should successfully register a new customer and set refresh cookie without exposing it in JSON")
     void shouldRegisterNewCustomer() throws Exception {
@@ -151,7 +174,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("Should rotate refresh token via HttpOnly cookie and return new access token without JSON refresh token")
     void shouldRotateRefreshTokenViaCookie() throws Exception {
-        LoginRequest loginReq = new LoginRequest("test@gmail.com", "Test@123");
+        LoginRequest loginReq = new LoginRequest("activeadmin@novapetzlife.com", "Test@123");
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
@@ -181,7 +204,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("Should safely recover concurrent refresh requests within grace period without logging out")
     void shouldRecoverConcurrentRefreshRequests() throws Exception {
-        LoginRequest loginReq = new LoginRequest("test@gmail.com", "Test@123");
+        LoginRequest loginReq = new LoginRequest("activeadmin@novapetzlife.com", "Test@123");
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
@@ -228,7 +251,7 @@ class AuthIntegrationTest {
         assertEquals(0, failureCount.get(), "Neither concurrent tab should fail or be logged out");
 
         // Database assertion: only one active replacement refresh token exists
-        User admin = userRepository.findByEmail("test@gmail.com").orElseThrow();
+        User admin = userRepository.findByEmail("activeadmin@novapetzlife.com").orElseThrow();
         List<RefreshToken> activeTokens = refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(admin.getId());
         assertEquals(1, activeTokens.size(), "Only one active replacement token must exist in the database");
     }
@@ -291,7 +314,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("Should reject refresh when refresh token is expired")
     void shouldRejectExpiredRefreshToken() throws Exception {
-        LoginRequest loginReq = new LoginRequest("test@gmail.com", "Test@123");
+        LoginRequest loginReq = new LoginRequest("activeadmin@novapetzlife.com", "Test@123");
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
@@ -353,7 +376,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("Should revoke refresh token upon logout and clear cookie")
     void shouldRevokeRefreshTokenOnLogout() throws Exception {
-        LoginRequest loginReq = new LoginRequest("test@gmail.com", "Test@123");
+        LoginRequest loginReq = new LoginRequest("activeadmin@novapetzlife.com", "Test@123");
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
@@ -434,7 +457,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("CSRF Test 1: Should permit refresh request with trusted Origin and X-Requested-With")
     void shouldAllowTrustedOriginCsrf() throws Exception {
-        LoginRequest loginReq = new LoginRequest("test@gmail.com", "Test@123");
+        LoginRequest loginReq = new LoginRequest("activeadmin@novapetzlife.com", "Test@123");
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
@@ -511,7 +534,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("CSRF Test 6: Valid preflight OPTIONS followed by valid refresh request")
     void shouldPermitPreflightFollowedByRefresh() throws Exception {
-        LoginRequest loginReq = new LoginRequest("test@gmail.com", "Test@123");
+        LoginRequest loginReq = new LoginRequest("activeadmin@novapetzlife.com", "Test@123");
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
@@ -539,7 +562,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("CSRF Test 7: Valid logout request with trusted origin and X-Requested-With")
     void shouldPermitValidLogout() throws Exception {
-        LoginRequest loginReq = new LoginRequest("test@gmail.com", "Test@123");
+        LoginRequest loginReq = new LoginRequest("activeadmin@novapetzlife.com", "Test@123");
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
@@ -659,16 +682,47 @@ class AuthIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should authenticate seeded user anand.nair@example.com with Test@123")
-    void shouldLoginSeededCustomer() throws Exception {
+    @DisplayName("V14 Sanitization: Should reject login for deactivated demo customer anand.nair@example.com")
+    void shouldRejectDeactivatedDemoCustomerLogin() throws Exception {
         LoginRequest loginReq = new LoginRequest("anand.nair@example.com", "Test@123");
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.token").isNotEmpty())
-                .andExpect(jsonPath("$.data.email").value("anand.nair@example.com"));
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("V14 Sanitization: Should reject login for deactivated demo super admin test@gmail.com")
+    void shouldRejectDeactivatedDemoSuperAdminLogin() throws Exception {
+        LoginRequest loginReq = new LoginRequest("test@gmail.com", "Test@123");
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginReq)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("V14 Sanitization: Should reject login for deactivated demo staff admin staff@novapetzlife.com")
+    void shouldRejectDeactivatedDemoStaffAdminLogin() throws Exception {
+        LoginRequest loginReq = new LoginRequest("staff@novapetzlife.com", "Test@123");
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginReq)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("V14 Sanitization: Should confirm demo accounts are inactive in repository")
+    void shouldConfirmV14DemoAccountsDeactivatedInDatabase() {
+        userRepository.findByEmail("test@gmail.com").ifPresent(admin -> {
+            assertFalse(admin.getIsActive(), "Demo super admin must be deactivated");
+        });
+        userRepository.findByEmail("staff@novapetzlife.com").ifPresent(staff -> {
+            assertFalse(staff.getIsActive(), "Demo staff admin must be deactivated");
+        });
+        userRepository.findByEmail("anand.nair@example.com").ifPresent(customer -> {
+            assertFalse(customer.getIsActive(), "Demo customer must be deactivated");
+        });
     }
 
     @Test
@@ -813,7 +867,7 @@ class AuthIntegrationTest {
     void shouldNotGenerateResetTokenForAdminAccounts() throws Exception {
         // Admin accounts should receive the generic response to prevent account enumeration,
         // but NO password reset token should be generated in the database.
-        String adminEmail = "test@gmail.com"; // default super admin from seed baseline
+        String adminEmail = "activeadmin@novapetzlife.com"; // default super admin from seed baseline
         User adminUser = userRepository.findByEmail(adminEmail).orElseThrow();
         ForgotPasswordRequest forgotReq = new ForgotPasswordRequest(adminEmail);
 

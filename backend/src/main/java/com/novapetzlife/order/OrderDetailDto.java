@@ -27,9 +27,20 @@ public record OrderDetailDto(
         List<OrderItemDto> items,
         List<OrderStatusHistoryDto> statusHistory,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String gatewayPaymentId,
+        String gatewayOrderId,
+        List<com.novapetzlife.refund.RefundSummaryDto> refunds
 ) {
     public static OrderDetailDto fromEntity(Order o) {
+        return fromEntity(o, null, null, List.of());
+    }
+
+    public static OrderDetailDto fromEntity(
+            Order o,
+            String gatewayPaymentId,
+            String gatewayOrderId,
+            List<com.novapetzlife.refund.RefundSummaryDto> refunds) {
         List<OrderItemDto> itemDtos = o.getItems() != null
                 ? o.getItems().stream().map(OrderItemDto::fromEntity).toList()
                 : List.of();
@@ -65,7 +76,10 @@ public record OrderDetailDto(
                 itemDtos,
                 historyDtos,
                 o.getCreatedAt(),
-                o.getUpdatedAt()
+                o.getUpdatedAt(),
+                gatewayPaymentId,
+                gatewayOrderId,
+                refunds != null ? refunds : List.of()
         );
     }
 }

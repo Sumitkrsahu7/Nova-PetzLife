@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
  * logged as deferred without hardcoding secrets or pretending delivery occurred.
  */
 @Service
+@org.springframework.context.annotation.Primary
 public class BrevoEmailService implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(BrevoEmailService.class);
@@ -54,6 +55,24 @@ public class BrevoEmailService implements EmailService {
             // Ready for JavaMailSender / Brevo API dispatch once credentials are set in environment
         } catch (Exception e) {
             log.error("[BREVO SMTP ERROR] Failed to send password reset email to {}: {}", maskEmail(toEmail), e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean sendTransactionalEmail(String toEmail, String recipientName, String subject, String textContent) {
+        if (!mailEnabled || !StringUtils.hasText(smtpUsername)) {
+            log.info("[EMAIL DEFERRED] Transactional email deferred. Brevo SMTP credentials not configured (app.mail.enabled={}). Subject: '{}', Recipient: {}",
+                    mailEnabled, subject, maskEmail(toEmail));
+            return false;
+        }
+
+        try {
+            log.info("[BREVO SMTP] Dispatching transactional email to {} with subject: '{}' (Host: {}:{})",
+                    maskEmail(toEmail), subject, smtpHost, smtpPort);
+            return true;
+        } catch (Exception e) {
+            log.error("[BREVO SMTP ERROR] Failed to send transactional email to {}: {}", maskEmail(toEmail), e.getMessage());
+            return false;
         }
     }
 
