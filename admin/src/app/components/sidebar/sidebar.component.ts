@@ -26,6 +26,7 @@ export class SidebarComponent implements OnInit {
   @Input() currentUserName: string = 'Super Admin';
 
   isCollapsed = false;
+  isMobileDrawerOpen = false;
   showLogoutConfirm = false;
 
   @HostBinding('class.collapsed')
@@ -87,6 +88,10 @@ export class SidebarComponent implements OnInit {
   ngOnInit(): void {
     this.adminUi.isSidebarCollapsed$.subscribe(collapsed => {
       this.isCollapsed = collapsed;
+    });
+
+    this.adminUi.isMobileDrawerOpen$.subscribe(open => {
+      this.isMobileDrawerOpen = open;
     });
 
     this.adminAuthService.currentUser$.subscribe(user => {
