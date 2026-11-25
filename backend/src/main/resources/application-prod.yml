@@ -49,20 +49,13 @@ app:
     base-url: ${MEDIA_BASE_URL:}
   rate-limiting:
     enabled: ${RATE_LIMITING_ENABLED:true}
-  mail:
-    enabled: ${APP_MAIL_ENABLED:false}
-    from-email: ${BREVO_FROM_EMAIL:support@novapetzlife.com}
-    from-name: ${BREVO_FROM_NAME:NOVA PETZLIFE}
-    smtp:
-      host: ${BREVO_SMTP_HOST:smtp-relay.brevo.com}
-      port: ${BREVO_SMTP_PORT:587}
-      username: ${BREVO_SMTP_USERNAME:}
-      password: ${BREVO_SMTP_PASSWORD:}
+  customer-base-url: ${APP_CUSTOMER_BASE_URL:https://novapetzlife.com}
 
 resend:
+  enabled: ${RESEND_ENABLED:false}
   api-key: ${RESEND_API_KEY:}
   base-url: ${RESEND_BASE_URL:https://api.resend.com}
-  from-email: ${RESEND_FROM_EMAIL:no-reply@mail.novapetzlife.com}
+  from-email: ${RESEND_FROM_EMAIL:}
   from-name: ${RESEND_FROM_NAME:NOVA PETZLIFE}
 
 razorpay:

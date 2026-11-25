@@ -9,27 +9,37 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Resend Transactional Email Service implementation.
- * Designed with externalized configurations. When credentials are not provided
- * (e.g. pre-deployment staging / DNS pending verification), delivery is safely
- * logged as deferred without exposing secrets or raw reset tokens.
+ * Official production transactional email provider for NOVA PETZLIFE.
+ *
+ * Utilizes the official Resend REST API (POST https://api.resend.com/emails).
+ * Fail-Safe Design:
+ * - When credentials or resend.enabled are not configured, dispatches are cleanly
+ *   logged with [EMAIL DEFERRED] and return false (never falsely claims success).
+ * - Email failures do not roll back active database transactions or block order checkout.
+ * - Sensitive API keys, raw reset tokens, and full email addresses are masked in logs.
  */
 @Service
+@Primary
 public class ResendEmailService implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(ResendEmailService.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
-            .build();
+
+    @Value("${resend.enabled:${RESEND_ENABLED:false}}")
+    private boolean resendEnabled;
 
     @Value("${resend.api-key:${RESEND_API_KEY:}}")
     private String resendApiKey;
@@ -37,14 +47,14 @@ public class ResendEmailService implements EmailService {
     @Value("${resend.base-url:${RESEND_BASE_URL:https://api.resend.com}}")
     private String resendBaseUrl;
 
-    @Value("${resend.from-email:${RESEND_FROM_EMAIL:no-reply@mail.novapetzlife.com}}")
+    @Value("${resend.from-email:${RESEND_FROM_EMAIL:}}")
     private String fromEmail;
 
     @Value("${resend.from-name:${RESEND_FROM_NAME:NOVA PETZLIFE}}")
     private String fromName;
 
-    @Value("${app.frontend-base-url:${CUSTOMER_FRONTEND_URL:${FRONTEND_URL:http://localhost:4200}}}")
-    private String frontendBaseUrl;
+    @Value("${app.customer-base-url:${APP_CUSTOMER_BASE_URL:${app.frontend-base-url:${CUSTOMER_FRONTEND_URL:${FRONTEND_URL:http://localhost:4200}}}}}")
+    private String customerBaseUrl;
 
     @Value("${app.password-reset-path:${APP_PASSWORD_RESET_PATH:/reset-password}}")
     private String passwordResetPath;
@@ -52,17 +62,42 @@ public class ResendEmailService implements EmailService {
     @Value("${app.auth.password-reset-token-expiration-minutes:${PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES:15}}")
     private long expirationMinutes;
 
+    private final HttpClient httpClient;
+
+    public ResendEmailService() {
+        this(HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5))
+                .build());
+    }
+
+    public ResendEmailService(HttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
+
+    public boolean isConfigured() {
+        if (!resendEnabled) {
+            return false;
+        }
+        if (!StringUtils.hasText(resendApiKey) || resendApiKey.isBlank()) {
+            return false;
+        }
+        if (!StringUtils.hasText(fromEmail) || fromEmail.isBlank()
+                || "onboarding@resend.dev".equalsIgnoreCase(fromEmail.trim())) {
+            return false;
+        }
+        return fromEmail.contains("@") && fromEmail.contains(".");
+    }
+
     @Override
     public void sendPasswordResetEmail(String toEmail, String customerName, String resetToken) {
-        String cleanBaseUrl = frontendBaseUrl != null ? frontendBaseUrl.replaceAll("/+$", "") : "http://localhost:4200";
+        String cleanBaseUrl = customerBaseUrl != null ? customerBaseUrl.replaceAll("/+$", "") : "http://localhost:4200";
         String cleanPath = passwordResetPath != null ? "/" + passwordResetPath.replaceAll("^/+", "") : "/reset-password";
-        String resetLink = cleanBaseUrl + cleanPath + "?token=" + resetToken;
+        String encodedToken = URLEncoder.encode(resetToken != null ? resetToken : "", StandardCharsets.UTF_8);
+        String resetLink = cleanBaseUrl + cleanPath + "?token=" + encodedToken;
 
-        // Security requirement: If Resend API key is not configured, safely defer delivery.
-        // Never log the raw token or the full reset URL.
-        if (!StringUtils.hasText(resendApiKey)) {
-            log.info("[EMAIL DEFERRED] Resend API key is not configured (RESEND_API_KEY). Password reset email deferred for recipient: {}",
-                    maskEmail(toEmail));
+        if (!isConfigured()) {
+            log.warn("[EMAIL DEFERRED] Resend email service is not configured (resend.enabled={}, RESEND_API_KEY). Password reset email deferred for recipient: {}",
+                    resendEnabled, maskEmail(toEmail));
             return;
         }
 
@@ -70,16 +105,46 @@ public class ResendEmailService implements EmailService {
         String htmlContent = buildHtmlEmail(displayName, resetLink, expirationMinutes);
         String plainTextContent = buildPlainTextEmail(displayName, resetLink, expirationMinutes);
 
+        boolean sent = sendEmailInternal(toEmail, "Reset Your NOVA PETZLIFE Account Password", htmlContent, plainTextContent);
+        if (!sent) {
+            log.error("[RESEND ERROR] Failed to dispatch password reset email to: {}", maskEmail(toEmail));
+        }
+    }
+
+    @Override
+    public boolean sendTransactionalEmail(String toEmail, String recipientName, String subject, String textContent) {
+        if (!isConfigured()) {
+            log.warn("[EMAIL DEFERRED] Resend transactional email deferred. Service not configured (resend.enabled={}). Subject: '{}', Recipient: {}",
+                    resendEnabled, subject, maskEmail(toEmail));
+            return false;
+        }
+
+        String htmlContent = (textContent != null && textContent.contains("<") && textContent.contains(">"))
+                ? textContent
+                : "<p>" + (textContent != null ? textContent.replace("\n", "<br/>") : "") + "</p>";
+        String plainTextContent = textContent != null ? textContent.replaceAll("<[^>]*>", "") : "";
+
+        return sendEmailInternal(toEmail, subject, htmlContent, plainTextContent);
+    }
+
+    /**
+     * Genuine Resend API HTTP dispatcher with robust status code mapping and safety isolation.
+     */
+    private boolean sendEmailInternal(String toEmail, String subject, String htmlContent, String plainTextContent) {
         try {
             Map<String, Object> payload = new HashMap<>();
             payload.put("from", fromName + " <" + fromEmail + ">");
             payload.put("to", new String[]{toEmail});
-            payload.put("subject", "Reset Your NOVA PETZLIFE Account Password");
-            payload.put("html", htmlContent);
-            payload.put("text", plainTextContent);
+            payload.put("subject", subject);
+            if (StringUtils.hasText(htmlContent)) {
+                payload.put("html", htmlContent);
+            }
+            if (StringUtils.hasText(plainTextContent)) {
+                payload.put("text", plainTextContent);
+            }
 
             String requestBody = OBJECT_MAPPER.writeValueAsString(payload);
-            String targetUrl = resendBaseUrl.replaceAll("/+$", "") + "/emails";
+            String targetUrl = (StringUtils.hasText(resendBaseUrl) ? resendBaseUrl.replaceAll("/+$", "") : "https://api.resend.com") + "/emails";
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(targetUrl))
@@ -90,18 +155,43 @@ public class ResendEmailService implements EmailService {
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
 
-            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            int statusCode = response.statusCode();
 
-            if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                log.info("[RESEND SUCCESS] Dispatched password reset email to: {}", maskEmail(toEmail));
+            if (statusCode >= 200 && statusCode < 300) {
+                log.info("[RESEND SUCCESS] Dispatched email to: {} (Subject: '{}')", maskEmail(toEmail), subject);
+                return true;
+            } else if (statusCode == 400) {
+                log.error("[RESEND 400 BAD REQUEST] Invalid email request payload for recipient {}: {}", maskEmail(toEmail), response.body());
+                return false;
+            } else if (statusCode == 401) {
+                log.error("[RESEND 401 UNAUTHORIZED] Invalid or revoked Resend API key");
+                return false;
+            } else if (statusCode == 403) {
+                log.error("[RESEND 403 FORBIDDEN] Sender domain unverified or forbidden: {}", response.body());
+                return false;
+            } else if (statusCode == 429) {
+                log.error("[RESEND 429 RATE LIMITED] Rate limit exceeded by Resend API for recipient {}", maskEmail(toEmail));
+                return false;
             } else {
-                log.error("[RESEND HTTP ERROR] Failed to dispatch email. Status: {}, Response: {}",
-                        response.statusCode(), response.body());
+                log.error("[RESEND {} SERVER ERROR] Upstream failure from Resend API for recipient {}: {}", statusCode, maskEmail(toEmail), response.body());
+                return false;
             }
 
+        } catch (HttpConnectTimeoutException e) {
+            log.error("[RESEND TIMEOUT] Connection timeout while connecting to Resend API for recipient {}", maskEmail(toEmail));
+            return false;
+        } catch (HttpTimeoutException e) {
+            log.error("[RESEND TIMEOUT] Request timeout waiting for Resend API response for recipient {}", maskEmail(toEmail));
+            return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("[RESEND INTERRUPTED] Email dispatch interrupted for recipient {}", maskEmail(toEmail));
+            return false;
         } catch (Exception e) {
-            log.error("[RESEND EXCEPTION] Error occurred while attempting to dispatch password reset email to {}: {}",
+            log.error("[RESEND EXCEPTION] Error occurred while attempting to dispatch email to {}: {}",
                     maskEmail(toEmail), e.getMessage());
+            return false;
         }
     }
 
@@ -186,14 +276,5 @@ public class ResendEmailService implements EmailService {
             — NOVA PETZLIFE Team
             Kuravankonam, Thiruvananthapuram, Kerala
             """.formatted(name, resetLink, expMinutes);
-    }
-
-    @Override
-    public boolean sendTransactionalEmail(String toEmail, String recipientName, String subject, String textContent) {
-        if (!StringUtils.hasText(resendApiKey)) {
-            log.info("[EMAIL DEFERRED] Resend transactional email deferred. API key unconfigured. Recipient: {}", maskEmail(toEmail));
-            return false;
-        }
-        return false;
     }
 }
