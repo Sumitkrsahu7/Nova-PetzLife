@@ -331,6 +331,124 @@ class PaymentAndInvoiceIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Should reject payment order creation if order final payable amount is zero or negative")
+    void testCreatePaymentOrder_ZeroOrNegativeAmount_Rejected() throws Exception {
+        // Zero amount test
+        testOrder.setFinalPayableAmount(BigDecimal.ZERO);
+        orderRepository.save(testOrder);
+
+        CreatePaymentOrderRequest request = new CreatePaymentOrderRequest(testOrder.getOrderNumber());
+
+        mockMvc.perform(post("/api/v1/payments/create-order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Order final payable amount must be positive")));
+
+        // Negative amount test
+        testOrder.setFinalPayableAmount(new BigDecimal("-50.00"));
+        orderRepository.save(testOrder);
+
+        mockMvc.perform(post("/api/v1/payments/create-order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Order final payable amount must be positive")));
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Should calculate exact paise for valid two-decimal amounts (100.00, 100.50, 100.01)")
+    void testCreatePaymentOrder_ExactTwoDecimalAmounts() throws Exception {
+        CreatePaymentOrderRequest request = new CreatePaymentOrderRequest(testOrder.getOrderNumber());
+
+        // Test 100.00 -> 10000 paise
+        testOrder.setFinalPayableAmount(new BigDecimal("100.00"));
+        orderRepository.save(testOrder);
+        org.mockito.Mockito.when(razorpayClientService.createOrder(
+                org.mockito.ArgumentMatchers.eq(testOrder.getOrderNumber()),
+                org.mockito.ArgumentMatchers.eq(10000L),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        )).thenReturn(new RazorpayClientService.GatewayOrderResult("order_100_00", 10000L, "INR"));
+
+        mockMvc.perform(post("/api/v1/payments/create-order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.amountInPaise", is(10000)));
+
+        // Test 100.50 -> 10050 paise
+        testOrder.setFinalPayableAmount(new BigDecimal("100.50"));
+        orderRepository.save(testOrder);
+        org.mockito.Mockito.when(razorpayClientService.createOrder(
+                org.mockito.ArgumentMatchers.eq(testOrder.getOrderNumber()),
+                org.mockito.ArgumentMatchers.eq(10050L),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        )).thenReturn(new RazorpayClientService.GatewayOrderResult("order_100_50", 10050L, "INR"));
+
+        mockMvc.perform(post("/api/v1/payments/create-order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.amountInPaise", is(10050)));
+
+        // Test 100.01 -> 10001 paise
+        testOrder.setFinalPayableAmount(new BigDecimal("100.01"));
+        orderRepository.save(testOrder);
+        org.mockito.Mockito.when(razorpayClientService.createOrder(
+                org.mockito.ArgumentMatchers.eq(testOrder.getOrderNumber()),
+                org.mockito.ArgumentMatchers.eq(10001L),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        )).thenReturn(new RazorpayClientService.GatewayOrderResult("order_100_01", 10001L, "INR"));
+
+        mockMvc.perform(post("/api/v1/payments/create-order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.amountInPaise", is(10001)));
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("Should reuse matching gateway order and supersede mismatched amount payment records")
+    void testCreatePaymentOrder_IdempotencyAndMismatchedSupersede() throws Exception {
+        // Case A: Pre-existing CREATED payment with matching amount should be reused
+        Payment matchingPayment = new Payment(testOrder, "order_matching_123", testOrder.getFinalPayableAmount(), "CREATED", "RAZORPAY");
+        paymentRepository.save(matchingPayment);
+
+        CreatePaymentOrderRequest request = new CreatePaymentOrderRequest(testOrder.getOrderNumber());
+        mockMvc.perform(post("/api/v1/payments/create-order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.razorpayOrderId", is("order_matching_123")));
+
+        // Case B: If order amount changes (e.g. delivery fee or coupon update), the old payment is superseded
+        testOrder.setFinalPayableAmount(new BigDecimal("1500.00"));
+        orderRepository.save(testOrder);
+
+        org.mockito.Mockito.when(razorpayClientService.createOrder(
+                org.mockito.ArgumentMatchers.eq(testOrder.getOrderNumber()),
+                org.mockito.ArgumentMatchers.eq(150000L),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        )).thenReturn(new RazorpayClientService.GatewayOrderResult("order_fresh_456", 150000L, "INR"));
+
+        mockMvc.perform(post("/api/v1/payments/create-order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.razorpayOrderId", is("order_fresh_456")));
+
+        Payment oldPayment = paymentRepository.findByGatewayOrderId("order_matching_123").orElseThrow();
+        assertEquals("EXPIRED", oldPayment.getStatus());
+    }
+
+    @Test
     @DisplayName("Payment Test 1: Unauthenticated request to verify endpoint is rejected with 401")
     void testUnauthenticatedPaymentVerifyRejected() throws Exception {
         VerifyPaymentRequest request = new VerifyPaymentRequest(
@@ -559,8 +677,8 @@ class PaymentAndInvoiceIntegrationTest {
 
     @Test
     @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
-    @DisplayName("Should verify simulated dev signature successfully in test profile")
-    void testVerifyPayment_SimulatedDevSignature_Succeeds() throws Exception {
+    @DisplayName("Should reject simulated dev signature without exception (no bypass allowed)")
+    void testVerifyPayment_SimulatedDevSignature_Rejected() throws Exception {
         String razorpayOrderId = "order_sim_111";
         String razorpayPaymentId = "pay_sim_222";
 
@@ -577,9 +695,8 @@ class PaymentAndInvoiceIntegrationTest {
         mockMvc.perform(post("/api/v1/payments/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.data.orderStatus", is("CONFIRMED")));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Invalid transaction signature")));
     }
 
     @Test
@@ -752,8 +869,11 @@ class PaymentAndInvoiceIntegrationTest {
         Payment payment = new Payment(testOrder, razorpayOrderId, testOrder.getFinalPayableAmount(), "CREATED", "RAZORPAY");
         paymentRepository.save(payment);
 
+        String validSignature = signatureVerifier.calculateHmacSha256(
+                razorpayOrderId + "|" + razorpayPaymentId, razorpayConfig.getKeySecret()
+        );
         VerifyPaymentRequest request = new VerifyPaymentRequest(
-                testOrder.getOrderNumber(), razorpayOrderId, razorpayPaymentId, "simulated_rzp_signature"
+                testOrder.getOrderNumber(), razorpayOrderId, razorpayPaymentId, validSignature
         );
 
         mockMvc.perform(post("/api/v1/payments/verify")
@@ -802,8 +922,11 @@ class PaymentAndInvoiceIntegrationTest {
         Payment payment = new Payment(cancelledOrder, razorpayOrderId, cancelledOrder.getFinalPayableAmount(), "CREATED", "RAZORPAY");
         paymentRepository.save(payment);
 
+        String validSignature = signatureVerifier.calculateHmacSha256(
+                razorpayOrderId + "|pay_zero_stock", razorpayConfig.getKeySecret()
+        );
         VerifyPaymentRequest request = new VerifyPaymentRequest(
-                cancelledOrder.getOrderNumber(), razorpayOrderId, "pay_zero_stock", "simulated_rzp_signature"
+                cancelledOrder.getOrderNumber(), razorpayOrderId, "pay_zero_stock", validSignature
         );
 
         mockMvc.perform(post("/api/v1/payments/verify")
@@ -1042,5 +1165,81 @@ class PaymentAndInvoiceIntegrationTest {
 
         assertEquals(0, calculatedTotal.compareTo(dto.grandTotal()),
                 "Calculated invoice total (" + calculatedTotal + ") must match grandTotal (" + dto.grandTotal() + ") to exact paise");
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("COD Transition: Cancelling pending Razorpay order releases reserved stock and marks status CANCELLED")
+    void testCancelPendingRazorpayOrder_Success_ReleasesInventory() throws Exception {
+        inventoryService.initializeStock(testProduct, null, 10, 2);
+        inventoryService.reserveStock(testProduct.getId(), null, 1, testOrder.getOrderNumber());
+        testOrder.setOrderStatus("PENDING_PAYMENT");
+        testOrder.setPaymentStatus("PENDING");
+        orderRepository.save(testOrder);
+
+        int initialAvailable = inventoryService.getAvailableStock(testProduct.getId(), null);
+        com.novapetzlife.returns.dto.CancelOrderRequest request = new com.novapetzlife.returns.dto.CancelOrderRequest("Switched to Cash on Delivery during checkout");
+
+        mockMvc.perform(post("/api/v1/orders/" + testOrder.getOrderNumber() + "/cancel")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.orderStatus", is("CANCELLED")));
+
+        Order updated = orderRepository.findByOrderNumber(testOrder.getOrderNumber()).orElseThrow();
+        assertEquals("CANCELLED", updated.getOrderStatus());
+
+        int newAvailable = inventoryService.getAvailableStock(testProduct.getId(), null);
+        assertEquals(initialAvailable + 1, newAvailable, "Cancelling pending Razorpay order must release reserved stock back to available inventory");
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("COD Transition: Repeated cancellation on already cancelled order is idempotent")
+    void testCancelOrder_RepeatedCancellation_IsIdempotent() throws Exception {
+        testOrder.setOrderStatus("CANCELLED");
+        orderRepository.save(testOrder);
+
+        com.novapetzlife.returns.dto.CancelOrderRequest request = new com.novapetzlife.returns.dto.CancelOrderRequest("Repeated cancel attempt");
+
+        mockMvc.perform(post("/api/v1/orders/" + testOrder.getOrderNumber() + "/cancel")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.orderStatus", is("CANCELLED")));
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("COD Transition: createPaymentOrder on a CANCELLED order is strictly rejected")
+    void testPaymentOrderCreation_CancelledOrder_Rejected() throws Exception {
+        testOrder.setOrderStatus("CANCELLED");
+        orderRepository.save(testOrder);
+
+        CreatePaymentOrderRequest request = new CreatePaymentOrderRequest(testOrder.getOrderNumber());
+
+        mockMvc.perform(post("/api/v1/payments/create-order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("is cancelled and ineligible for payment")));
+    }
+
+    @Test
+    @WithMockUser(username = "aditya.payment@example.com", authorities = {"ROLE_CUSTOMER"})
+    @DisplayName("COD Transition: createPaymentOrder on order with existing SUCCESS payment is strictly rejected")
+    void testPaymentOrderCreation_CompletedOrder_Rejected() throws Exception {
+        testOrder.setPaymentStatus("COMPLETED");
+        orderRepository.save(testOrder);
+
+        CreatePaymentOrderRequest request = new CreatePaymentOrderRequest(testOrder.getOrderNumber());
+
+        mockMvc.perform(post("/api/v1/payments/create-order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("is already paid")));
     }
 }
