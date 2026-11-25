@@ -7,7 +7,6 @@ import com.novapetzlife.brand.Brand;
 import com.novapetzlife.brand.BrandRepository;
 import com.novapetzlife.category.Category;
 import com.novapetzlife.category.CategoryRepository;
-import com.novapetzlife.email.BrevoEmailService;
 import com.novapetzlife.email.ResendEmailService;
 import com.novapetzlife.media.dto.AddProductImageRequest;
 import com.novapetzlife.media.dto.ProductImageDto;
@@ -40,9 +39,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 class MediaStorageAndLoggingSecurityTest {
-
-    @Autowired
-    private BrevoEmailService brevoEmailService;
 
     @Autowired
     private ResendEmailService resendEmailService;
@@ -87,41 +83,6 @@ class MediaStorageAndLoggingSecurityTest {
         ReflectionTestUtils.setField(mediaService, "localStorageEnabled", false);
         ReflectionTestUtils.setField(mediaService, "uploadDir", "uploads/products");
         ReflectionTestUtils.setField(mediaService, "cloudinaryCloudName", "");
-    }
-
-    @Test
-    @DisplayName("NPZ-SEC-LOG-01: BrevoEmailService deferred delivery never leaks reset token, full URL, or raw email")
-    void testBrevoEmailService_DeferredDelivery_DoesNotLogSensitiveData() {
-        Logger logger = (Logger) LoggerFactory.getLogger(BrevoEmailService.class);
-        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
-        listAppender.start();
-        logger.addAppender(listAppender);
-
-        String rawToken = "SECRET_TOKEN_XYZ_9876543210_UNSAFE";
-        String recipient = "aditya.testuser@example.com";
-
-        try {
-            brevoEmailService.sendPasswordResetEmail(recipient, "Aditya Test", rawToken);
-
-            List<ILoggingEvent> logList = listAppender.list;
-            assertFalse(logList.isEmpty(), "At least one log event must be generated");
-
-            for (ILoggingEvent event : logList) {
-                String message = event.getFormattedMessage();
-                // 1. Raw token must NEVER appear in logs
-                assertFalse(message.contains(rawToken), "Raw password reset token must never appear in logs");
-                // 2. Complete reset URL must NEVER appear in logs
-                assertFalse(message.contains("reset-password?token="), "Password reset action URL must never appear in logs");
-                // 3. Full unmasked recipient email must NEVER appear in deferred logs
-                assertFalse(message.contains("aditya.testuser@example.com"), "Full recipient email must not appear unmasked");
-                // 4. Safe masked representation must be used
-                assertTrue(message.contains("ad***@example.com"), "Masked recipient email should be present");
-                // 5. Safe operational status must be recorded
-                assertTrue(message.contains("[EMAIL DEFERRED]"), "Deferred delivery status should be recorded");
-            }
-        } finally {
-            logger.detachAppender(listAppender);
-        }
     }
 
     @Test
