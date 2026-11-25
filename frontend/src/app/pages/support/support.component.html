@@ -66,15 +66,44 @@
         <h2>Frequently Asked Questions</h2>
         <p class="faq-sub">Essential details regarding orders, local delivery, returns, and payment options</p>
 
+        <!-- Search & Category Filters -->
+        <div class="faq-toolbar">
+          <div class="faq-search-box">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input type="text"
+                   [(ngModel)]="faqSearchQuery"
+                   placeholder="Search questions or keywords..."
+                   aria-label="Search FAQs"
+                   class="faq-search-input">
+            <button *ngIf="faqSearchQuery"
+                    type="button"
+                    (click)="clearFaqSearch()"
+                    class="btn-clear-search"
+                    aria-label="Clear search">✕</button>
+          </div>
+
+          <div class="faq-categories-scroll" role="tablist" aria-label="FAQ categories">
+            <button *ngFor="let cat of faqCategories"
+                    type="button"
+                    role="tab"
+                    [attr.aria-selected]="selectedFaqCategory === cat"
+                    class="category-pill"
+                    [class.active]="selectedFaqCategory === cat"
+                    (click)="selectCategory(cat)">
+              {{ cat === 'ALL' ? 'All Topics' : cat }}
+            </button>
+          </div>
+        </div>
+
         <div class="faq-list">
-          <div *ngFor="let faq of faqs; let i = index" class="faq-item" [class.open]="openFaqIndex === i">
+          <div *ngFor="let faq of filteredFaqs; let i = index" class="faq-item" [class.open]="openFaqIndex === i">
             <button
               type="button"
               class="faq-question"
               (click)="toggleFaq(i)"
               [attr.aria-expanded]="openFaqIndex === i"
             >
-              <span>{{ faq.question }}</span>
+              <span class="question-text">{{ faq.question }}</span>
               <span class="faq-toggle" [class.rotated]="openFaqIndex === i" aria-hidden="true">{{ openFaqIndex === i ? '−' : '+' }}</span>
             </button>
             <div class="faq-answer-wrapper" [class.is-expanded]="openFaqIndex === i">
@@ -82,6 +111,16 @@
                 <p>{{ faq.answer }}</p>
               </div>
             </div>
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="filteredFaqs.length === 0" class="faq-empty-state">
+            <span class="empty-icon">🔍</span>
+            <p class="empty-title">No matching questions found</p>
+            <p class="empty-desc">Try different keywords or clear your search to browse all categories.</p>
+            <button type="button" class="btn-reset-faq" (click)="clearFaqSearch(); selectedFaqCategory = 'ALL'">
+              Reset Filters
+            </button>
           </div>
         </div>
       </div>

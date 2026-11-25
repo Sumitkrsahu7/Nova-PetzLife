@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { CartService } from '../../core/services/cart.service';
@@ -106,7 +106,8 @@ export class AccountComponent implements OnInit {
     private cartService: CartService,
     private petService: PetService,
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit(): void {
@@ -114,6 +115,16 @@ export class AccountComponent implements OnInit {
       this.router.navigate(['/login'], { queryParams: { returnUrl: '/account' } });
       return;
     }
+
+    this.route.queryParams.subscribe(params => {
+      if (params['tab'] === 'orders') {
+        this.activeTab = 'orders';
+      } else if (params['tab'] === 'addresses') {
+        this.activeTab = 'addresses';
+      } else if (params['tab'] === 'profile') {
+        this.activeTab = 'profile';
+      }
+    });
 
     this.user = this.authService.getCurrentUser();
 

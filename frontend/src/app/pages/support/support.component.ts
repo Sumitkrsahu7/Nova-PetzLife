@@ -16,6 +16,8 @@ export class SupportComponent implements OnInit {
   storeInfo: StoreInfo | null = null;
   faqs: FaqItem[] = [];
   openFaqIndex: number | null = 0; // First FAQ open by default
+  faqSearchQuery: string = '';
+  selectedFaqCategory: string = 'ALL';
   whatsappUrl: string = 'https://wa.me/919447100000?text=Hi%2C%20i%20would%20like%20to%20know%20about%20this%20product';
   contactInfo: any = null;
 
@@ -57,7 +59,15 @@ export class SupportComponent implements OnInit {
     this.supportService.getFaqs().subscribe({
       next: res => {
         if (res?.success && res.data) {
-          this.faqs = res.data;
+          const list = [...res.data];
+          if (!list.some(f => f.question?.toLowerCase().includes('delete account'))) {
+            list.push({
+              category: 'Account & Privacy',
+              question: 'How do I request deletion of my account and personal data?',
+              answer: 'You can permanently delete your customer account at any time by logging in, navigating to My Account > Privacy & Account Deletion, and confirming deletion. You may also contact our store desk directly.'
+            });
+          }
+          this.faqs = list;
         }
       }
     });
@@ -80,6 +90,33 @@ export class SupportComponent implements OnInit {
         }
       }
     });
+  }
+
+  get faqCategories(): string[] {
+    const cats = Array.from(new Set(this.faqs.map(f => f.category).filter((c): c is string => !!c)));
+    return ['ALL', ...cats];
+  }
+
+  get filteredFaqs(): FaqItem[] {
+    return this.faqs.filter(faq => {
+      const matchesCategory = this.selectedFaqCategory === 'ALL' ||
+        faq.category?.toLowerCase() === this.selectedFaqCategory.toLowerCase();
+      const query = this.faqSearchQuery.trim().toLowerCase();
+      const matchesSearch = !query ||
+        faq.question?.toLowerCase().includes(query) ||
+        faq.answer?.toLowerCase().includes(query);
+      return matchesCategory && matchesSearch;
+    });
+  }
+
+  selectCategory(cat: string): void {
+    this.selectedFaqCategory = cat;
+    this.openFaqIndex = 0;
+  }
+
+  clearFaqSearch(): void {
+    this.faqSearchQuery = '';
+    this.openFaqIndex = 0;
   }
 
   toggleFaq(index: number): void {
