@@ -254,6 +254,21 @@ public class MediaService {
             throw new IllegalArgumentException("Upload file cannot be null or empty.");
         }
 
+        // 1. File size limit: 5MB maximum
+        long maxSizeBytes = 5 * 1024 * 1024; // 5 MB
+        if (file.getSize() > maxSizeBytes) {
+            throw new IllegalArgumentException("File size exceeds maximum permitted limit of 5MB.");
+        }
+
+        // 2. MIME type validation
+        String contentType = file.getContentType();
+        if (contentType == null || !isAllowedContentType(contentType)) {
+            throw new IllegalArgumentException("Unsupported file type: " + contentType + ". Only JPEG, PNG, WEBP, and GIF images are permitted.");
+        }
+
+        // 3. Magic bytes / header inspection
+        validateMagicBytes(file);
+
         String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "image.jpg";
         String cleanName = originalFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
         String assetId = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
@@ -291,6 +306,39 @@ public class MediaService {
         }
 
         throw new IllegalStateException("Local media storage is disabled and genuine cloud storage (Cloudinary) is unconfigured.");
+    }
+
+    private boolean isAllowedContentType(String contentType) {
+        String lower = contentType.toLowerCase().trim();
+        return lower.equals("image/jpeg") || lower.equals("image/jpg") ||
+               lower.equals("image/png") || lower.equals("image/webp") ||
+               lower.equals("image/gif");
+    }
+
+    private void validateMagicBytes(MultipartFile file) {
+        try (var in = file.getInputStream()) {
+            byte[] header = new byte[12];
+            int bytesRead = in.read(header);
+            if (bytesRead < 4) {
+                throw new IllegalArgumentException("Uploaded file header is too short to be a valid image.");
+            }
+
+            // JPEG: FF D8 FF
+            boolean isJpeg = (header[0] & 0xFF) == 0xFF && (header[1] & 0xFF) == 0xD8 && (header[2] & 0xFF) == 0xFF;
+            // PNG: 89 50 4E 47
+            boolean isPng = (header[0] & 0xFF) == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47;
+            // GIF: 47 49 46 38 ('GIF8')
+            boolean isGif = header[0] == 'G' && header[1] == 'I' && header[2] == 'F' && header[3] == '8';
+            // WEBP: 'RIFF' .... 'WEBP'
+            boolean isWebp = header[0] == 'R' && header[1] == 'I' && header[2] == 'F' && header[3] == 'F'
+                    && bytesRead >= 12 && header[8] == 'W' && header[9] == 'E' && header[10] == 'B' && header[11] == 'P';
+
+            if (!isJpeg && !isPng && !isGif && !isWebp) {
+                throw new IllegalArgumentException("File content signature does not match permitted image formats (JPEG, PNG, WEBP, GIF).");
+            }
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Failed to inspect uploaded file content: " + e.getMessage(), e);
+        }
     }
 
     private void cleanupLocalFileIfUnused(String imageUrl) {

@@ -121,4 +121,20 @@ class RazorpaySignatureVerifierTest {
         boolean result = verifier.verifyCheckoutSignature("order_123", "pay_456", "some_sig", invalidSecret);
         assertFalse(result, "Checkout verification must return false when secret is null, empty or blank");
     }
+
+    @Test
+    @DisplayName("Checkout verification must reject simulated sandbox signature (no bypass allowed)")
+    void testVerifyCheckoutSignature_SimulatedSignature_Rejected() {
+        boolean result = verifier.verifyCheckoutSignature("order_123", "pay_456", "simulated_rzp_signature", "test_secret_key");
+        assertFalse(result, "Checkout verification must reject simulated_rzp_signature with zero bypass");
+    }
+
+    @Test
+    @DisplayName("Checkout verification succeeds with authentic HMAC-SHA256 signature")
+    void testVerifyCheckoutSignature_ValidHmac_Success() throws Exception {
+        String payload = "order_123|pay_456";
+        String expectedSig = verifier.calculateHmacSha256(payload, VALID_SECRET);
+        boolean result = verifier.verifyCheckoutSignature("order_123", "pay_456", expectedSig, VALID_SECRET);
+        assertTrue(result, "Checkout verification must succeed with authentic HMAC-SHA256 signature");
+    }
 }

@@ -13,6 +13,7 @@ import com.novapetzlife.user.UserOAuthIdentityRepository;
 import com.novapetzlife.user.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -33,6 +34,11 @@ public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
+    public static final String BOOTSTRAP_LOCK_KEY = "SUPER_ADMIN_BOOTSTRAP";
+
+    @Value("${app.bootstrap.secret:${BOOTSTRAP_SECRET:}}")
+    private String configuredBootstrapSecret;
+
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -43,6 +49,7 @@ public class AuthService {
     private final UserOAuthIdentityRepository userOAuthIdentityRepository;
     private final CustomerRepository customerRepository;
     private final CustomerService customerService;
+    private final PlatformBootstrapLockRepository bootstrapLockRepository;
 
     public AuthService(
             AuthenticationManager authenticationManager,
@@ -54,7 +61,8 @@ public class AuthService {
             GoogleOAuthService googleOAuthService,
             UserOAuthIdentityRepository userOAuthIdentityRepository,
             CustomerRepository customerRepository,
-            CustomerService customerService) {
+            CustomerService customerService,
+            PlatformBootstrapLockRepository bootstrapLockRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -65,6 +73,7 @@ public class AuthService {
         this.userOAuthIdentityRepository = userOAuthIdentityRepository;
         this.customerRepository = customerRepository;
         this.customerService = customerService;
+        this.bootstrapLockRepository = bootstrapLockRepository;
     }
 
     @Transactional
@@ -284,6 +293,61 @@ public class AuthService {
 
         AuthResponse response = AuthResponse.of(newJwt, user.getEmail(), user.getFirstName(), user.getLastName(), roles, permissions);
         return new AuthResult(response, tokenPair.rawToken());
+    }
+
+    @Transactional
+    public AuthResult bootstrapSuperAdmin(BootstrapSuperAdminRequest request, String ipAddress) {
+        if (bootstrapLockRepository.existsByBootstrapKey(BOOTSTRAP_LOCK_KEY)) {
+            log.warn("Super Admin bootstrap rejected from IP {}: Platform bootstrap lock is permanently set.", ipAddress);
+            throw new IllegalStateException("Bootstrap disabled: Initial Super Admin provisioning has already been completed.");
+        }
+
+        long activeSuperAdmins = userRepository.countActiveSuperAdmins();
+        if (activeSuperAdmins > 0) {
+            log.warn("Super Admin bootstrap attempted from IP {} but an active Super Admin already exists", ipAddress);
+            throw new IllegalStateException("Bootstrap disabled: An active Super Admin account already exists in the system.");
+        }
+
+        // Validate shared bootstrap secret via constant-time comparison if configured
+        if (StringUtils.hasText(configuredBootstrapSecret)) {
+            String providedSecret = request.bootstrapSecret();
+            if (!StringUtils.hasText(providedSecret)
+                    || !java.security.MessageDigest.isEqual(
+                            configuredBootstrapSecret.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                            providedSecret.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+                log.warn("Super Admin bootstrap rejected from IP {}: Invalid or missing bootstrap secret.", ipAddress);
+                throw new org.springframework.security.authentication.BadCredentialsException("Invalid bootstrap secret.");
+            }
+        }
+
+        String email = request.email().toLowerCase().trim();
+        if (userRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("Email is already registered: " + email);
+        }
+
+        Role superAdminRole = roleRepository.findByName("ROLE_SUPER_ADMIN")
+                .orElseThrow(() -> new IllegalStateException("ROLE_SUPER_ADMIN role definition not found in database."));
+
+        User user = new User();
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setFirstName(request.firstName().trim());
+        user.setLastName(request.lastName() != null ? request.lastName().trim() : "");
+        user.setPhone(request.phone() != null ? request.phone().trim() : null);
+        user.setIsActive(true);
+        user.getRoles().add(superAdminRole);
+
+        User savedUser = userRepository.save(user);
+
+        // Ensure associated customer profile exists for consistent account model
+        customerService.getOrCreateCustomerForUser(savedUser);
+
+        // Record persistent atomic one-time completion lock
+        PlatformBootstrapLock lock = new PlatformBootstrapLock(BOOTSTRAP_LOCK_KEY, ipAddress, email);
+        bootstrapLockRepository.save(lock);
+
+        log.info("[BOOTSTRAP COMPLETE] Created initial authoritative Super Admin account {} from IP {}", email, ipAddress);
+        return issueTokensForUser(savedUser, ipAddress);
     }
 
     public void logout() {

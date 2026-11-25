@@ -22,11 +22,6 @@ public class RazorpaySignatureVerifier {
             return false;
         }
 
-        // Allow simulated sandbox signatures during local development and testing
-        if ("simulated_rzp_signature".equals(signature) && (secret.contains("test") || secret.contains("mock"))) {
-            return true;
-        }
-
         try {
             String payload = orderId + "|" + paymentId;
             String expectedSignature = calculateHmacSha256(payload, secret);
