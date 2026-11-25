@@ -9,6 +9,15 @@
     ⚠️ {{ errorMessage }}
   </div>
 
+  <div *ngIf="paymentStateNotice" class="warning-banner">
+    <div class="banner-content">
+      <span>ℹ️ {{ paymentStateNotice }}</span>
+      <button *ngIf="paymentMethod === 'RAZORPAY'" type="button" (click)="paymentMethod = 'COD'" class="btn-switch-cod">
+        Switch to Cash on Delivery
+      </button>
+    </div>
+  </div>
+
   <div class="checkout-layout">
     <!-- Form Steps Column -->
     <div class="form-column">
@@ -278,12 +287,19 @@
         </div>
 
         <button (click)="placeOrder()"
-                [disabled]="isSubmitting || !isAddressValid"
+                [disabled]="isSubmitting || isVerifyingPayment || !isAddressValid"
                 class="btn-confirm-order"
-                [class.btn-disabled]="isSubmitting || !isAddressValid">
-          <span *ngIf="!isSubmitting">Place Order ➔</span>
-          <span *ngIf="isSubmitting">Placing Order...</span>
+                [class.btn-disabled]="isSubmitting || isVerifyingPayment || !isAddressValid">
+          <span *ngIf="isVerifyingPayment">Verifying Payment... 🔒</span>
+          <span *ngIf="!isVerifyingPayment && isSubmitting">Processing...</span>
+          <span *ngIf="!isVerifyingPayment && !isSubmitting && pendingOrderNumber && paymentMethod === 'RAZORPAY'">Retry Online Payment (Order #{{ pendingOrderNumber }}) ➔</span>
+          <span *ngIf="!isVerifyingPayment && !isSubmitting && (!pendingOrderNumber || paymentMethod !== 'RAZORPAY')">Place Order ➔</span>
         </button>
+
+        <div *ngIf="pendingOrderNumber" class="pending-order-links">
+          <span>Order #{{ pendingOrderNumber }} was reserved. </span>
+          <a [routerLink]="['/track', pendingOrderNumber]" class="link-track">View in Live Tracking</a>
+        </div>
 
         <p class="guarantee-text">
           🔒 100% Guaranteed Pet-Safe Products & Verified Local Dispatch

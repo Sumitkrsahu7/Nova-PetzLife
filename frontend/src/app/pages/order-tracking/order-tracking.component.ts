@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { OrderService, OrderTracking } from '../../core/services/order.service';
 import { ReturnService, ReturnEligibility, ReturnRequestDetail } from '../../core/services/return.service';
+import { PaymentService } from '../../core/services/payment.service';
 import { BackButtonComponent } from '../../components/back-button/back-button.component';
 import { environment } from '../../../environments/environment';
 
@@ -57,10 +58,15 @@ export class OrderTrackingComponent implements OnInit {
   returnErrorMessage = '';
   submittedReturn: ReturnRequestDetail | null = null;
 
+  // Online Payment Retry State
+  isRetryingPayment = false;
+  retryPaymentError = '';
+
   constructor(
     private route: ActivatedRoute,
     private orderService: OrderService,
-    private returnService: ReturnService
+    private returnService: ReturnService,
+    private paymentService: PaymentService
   ) {}
 
   ngOnInit(): void {
@@ -85,6 +91,86 @@ export class OrderTrackingComponent implements OnInit {
       error: err => {
         this.isLoading = false;
         this.errorMessage = err.error?.message || 'Could not find order with number: ' + this.orderNumber;
+      }
+    });
+  }
+
+  get isPaymentPending(): boolean {
+    if (!this.tracking) return false;
+    const status = (this.tracking.orderStatus || '').toUpperCase();
+    const payStatus = (this.tracking.paymentStatus || '').toUpperCase();
+    return (status === 'PENDING_PAYMENT' || payStatus === 'PENDING') && status !== 'CANCELLED';
+  }
+
+  retryPayment(): void {
+    if (!this.tracking) return;
+    this.isRetryingPayment = true;
+    this.retryPaymentError = '';
+
+    this.paymentService.createPaymentOrder(this.orderNumber).subscribe({
+      next: payRes => {
+        if (payRes?.success && payRes.data) {
+          const paymentOrder = payRes.data;
+
+          if (typeof (window as any).Razorpay !== 'undefined') {
+            const options = {
+              key: paymentOrder.keyId,
+              amount: paymentOrder.amountInPaise,
+              currency: paymentOrder.currency,
+              name: 'NOVA PETZLIFE',
+              description: `Payment for Order #${this.orderNumber}`,
+              order_id: paymentOrder.razorpayOrderId,
+              prefill: {
+                name: paymentOrder.customerName,
+                email: paymentOrder.customerEmail,
+                contact: paymentOrder.customerPhone
+              },
+              theme: {
+                color: '#248B58'
+              },
+              handler: (response: any) => {
+                this.paymentService.verifyPayment({
+                  orderNumber: this.orderNumber,
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature
+                }).subscribe({
+                  next: () => {
+                    this.isRetryingPayment = false;
+                    this.fetchTracking();
+                  },
+                  error: err => {
+                    this.isRetryingPayment = false;
+                    this.retryPaymentError = err.error?.message || 'Payment signature verification failed. Please try again or contact support.';
+                  }
+                });
+              },
+              modal: {
+                ondismiss: () => {
+                  this.isRetryingPayment = false;
+                }
+              }
+            };
+            try {
+              const rzp = new (window as any).Razorpay(options);
+              rzp.on('payment.failed', (resp: any) => {
+                this.isRetryingPayment = false;
+                this.retryPaymentError = resp.error?.description || 'Payment was declined by your bank or gateway. Please retry.';
+              });
+              rzp.open();
+            } catch (err: any) {
+              this.isRetryingPayment = false;
+              this.retryPaymentError = 'Failed to open Razorpay payment window: ' + (err?.message || err);
+            }
+          } else {
+            this.isRetryingPayment = false;
+            this.retryPaymentError = 'Unable to load Razorpay payment SDK. Please ensure your ad-blocker is disabled and try again.';
+          }
+        }
+      },
+      error: err => {
+        this.isRetryingPayment = false;
+        this.retryPaymentError = err.error?.message || 'Could not initiate online payment. Please try again.';
       }
     });
   }

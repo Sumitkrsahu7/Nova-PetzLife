@@ -7,6 +7,7 @@ import { CartService, Cart } from '../../core/services/cart.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DeliveryService, DeliveryEligibility, DeliverySlot } from '../../core/services/delivery.service';
 import { OrderService, CheckoutPayload } from '../../core/services/order.service';
+import { ReturnService } from '../../core/services/return.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { PromotionService, Coupon } from '../../core/services/promotion.service';
 import { BackButtonComponent } from '../../components/back-button/back-button.component';
@@ -58,7 +59,10 @@ export class CheckoutComponent implements OnInit {
 
   isCheckingDelivery = false;
   isSubmitting = false;
+  isVerifyingPayment = false;
   errorMessage = '';
+  paymentStateNotice = '';
+  pendingOrderNumber: string | null = null;
 
   // Form Fields
   recipientName = '';
@@ -95,6 +99,7 @@ export class CheckoutComponent implements OnInit {
     private http: HttpClient,
     private deliveryService: DeliveryService,
     private orderService: OrderService,
+    private returnService: ReturnService,
     private paymentService: PaymentService,
     private promotionService: PromotionService,
     private router: Router
@@ -314,6 +319,14 @@ export class CheckoutComponent implements OnInit {
   }
 
   placeOrder(): void {
+    if (this.pendingOrderNumber && this.paymentMethod === 'RAZORPAY') {
+      this.isSubmitting = true;
+      this.errorMessage = '';
+      this.paymentStateNotice = '';
+      this.initiateRazorpayPayment(this.pendingOrderNumber);
+      return;
+    }
+
     if (!this.isAddressValid) {
       if (this.eligibility && !this.eligibility.isEligible) {
         this.errorMessage = 'Sorry, delivery is not currently available at this location. Please choose a serviceable delivery address within our 20 km radius.';
@@ -325,7 +338,45 @@ export class CheckoutComponent implements OnInit {
 
     this.isSubmitting = true;
     this.errorMessage = '';
+    this.paymentStateNotice = '';
 
+    // If customer had an initiated Razorpay order and is now switching to Cash on Delivery:
+    // Safely cancel the old pending order first so its inventory is released back to the shop.
+    // FAIL-CLOSED REQUIREMENT: Proceed with COD order creation ONLY after backend confirms CANCELLED.
+    if (this.pendingOrderNumber && this.paymentMethod === 'COD') {
+      const oldOrderNumber = this.pendingOrderNumber;
+      this.isSubmitting = true;
+      this.errorMessage = '';
+      this.paymentStateNotice = `Cancelling previous online payment attempt for Order #${oldOrderNumber} to release held stock...`;
+
+      this.returnService.cancelOrder(oldOrderNumber, 'Switched to Cash on Delivery during checkout').subscribe({
+        next: (res) => {
+          // Verify backend confirms the order status is CANCELLED (releases inventory)
+          if (res?.success && res.data && res.data.orderStatus === 'CANCELLED') {
+            this.pendingOrderNumber = null;
+            this.paymentStateNotice = '';
+            this.proceedWithOrderCreation();
+          } else {
+            // Fail closed: Do NOT proceed if final status is not confirmed as CANCELLED
+            this.isSubmitting = false;
+            this.paymentStateNotice = '';
+            this.errorMessage = `Could not verify cancellation of previous Order #${oldOrderNumber}. Please retry switching to COD or complete payment via Razorpay.`;
+          }
+        },
+        error: (err) => {
+          // Fail closed: Do NOT proceed if cancellation request fails. Preserve pendingOrderNumber!
+          this.isSubmitting = false;
+          this.paymentStateNotice = '';
+          this.errorMessage = err.error?.message || `Failed to cancel pending Order #${oldOrderNumber}. Cannot create Cash on Delivery order while inventory is held for the online order. Please retry or continue payment via Razorpay.`;
+        }
+      });
+      return;
+    }
+
+    this.proceedWithOrderCreation();
+  }
+
+  private proceedWithOrderCreation(): void {
     // If customer entered a new address and chose to save to profile
     if (this.useNewAddress && this.saveAddressToProfile) {
       const newAddressPayload = {
@@ -393,6 +444,7 @@ export class CheckoutComponent implements OnInit {
           const orderNumber = res.data.orderNumber;
 
           if (this.paymentMethod === 'RAZORPAY') {
+            this.pendingOrderNumber = orderNumber;
             this.initiateRazorpayPayment(orderNumber);
           } else {
             // Cash on Delivery
@@ -442,33 +494,39 @@ export class CheckoutComponent implements OnInit {
               modal: {
                 ondismiss: () => {
                   this.isSubmitting = false;
-                  this.errorMessage = 'Payment was cancelled or dismissed. You can complete it anytime.';
-                  this.router.navigate(['/track', orderNumber]);
+                  this.paymentStateNotice = `Payment window was closed for Order #${orderNumber}. Your items remain reserved. Click "Retry Online Payment" to try again or switch to Cash on Delivery.`;
                 }
               }
             };
-            const rzp = new (window as any).Razorpay(options);
-            rzp.open();
+            try {
+              const rzp = new (window as any).Razorpay(options);
+              rzp.on('payment.failed', (resp: any) => {
+                this.isSubmitting = false;
+                this.errorMessage = resp.error?.description || 'Payment was declined by your bank or gateway. Please retry or choose a different payment method.';
+              });
+              rzp.open();
+            } catch (err: any) {
+              this.isSubmitting = false;
+              this.errorMessage = 'Failed to open Razorpay payment window: ' + (err?.message || err);
+            }
           } else {
-            // Offline / Sandbox Simulation Fallback
-            this.verifyAndRedirect(
-              orderNumber,
-              paymentOrder.razorpayOrderId,
-              'pay_sim_' + Math.random().toString(36).substring(2, 10),
-              'simulated_rzp_signature'
-            );
+            this.isSubmitting = false;
+            this.errorMessage = 'Razorpay payment SDK is not available. Please disable any ad-blockers or content filters blocking checkout.razorpay.com and refresh.';
           }
         }
       },
       error: err => {
         this.isSubmitting = false;
-        this.errorMessage = err.error?.message || 'Could not initiate Razorpay payment.';
-        this.router.navigate(['/track', orderNumber]);
+        this.errorMessage = err.error?.message || 'Could not initiate Razorpay payment. Please try again.';
       }
     });
   }
 
   private verifyAndRedirect(orderNumber: string, razorpayOrderId: string, razorpayPaymentId: string, razorpaySignature: string): void {
+    this.isVerifyingPayment = true;
+    this.errorMessage = '';
+    this.paymentStateNotice = 'Verifying your payment securely with the gateway. Please do not refresh or close this window...';
+
     this.paymentService.verifyPayment({
       orderNumber,
       razorpayOrderId,
@@ -477,13 +535,15 @@ export class CheckoutComponent implements OnInit {
     }).subscribe({
       next: () => {
         this.isSubmitting = false;
+        this.isVerifyingPayment = false;
         this.cartService.clearCart().subscribe();
         this.router.navigate(['/invoice', orderNumber]);
       },
       error: err => {
         this.isSubmitting = false;
-        this.errorMessage = err.error?.message || 'Payment signature verification failed.';
-        this.router.navigate(['/track', orderNumber]);
+        this.isVerifyingPayment = false;
+        this.paymentStateNotice = '';
+        this.errorMessage = err.error?.message || 'Payment signature verification failed. If your bank account was debited, your order will be confirmed automatically via webhook within a few minutes.';
       }
     });
   }

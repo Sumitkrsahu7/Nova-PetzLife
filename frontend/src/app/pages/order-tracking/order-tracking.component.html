@@ -50,6 +50,24 @@
       </div>
     </div>
 
+    <!-- Pending Payment Alert with Direct Gateway Recovery -->
+    <div class="pending-payment-banner" *ngIf="isPaymentPending">
+      <div class="banner-left">
+        <span class="banner-icon">⏳</span>
+        <div class="banner-text">
+          <h3>Online Payment Pending</h3>
+          <p>Order #{{ tracking.orderNumber }} was created via Razorpay, but payment has not been completed. Complete payment now to confirm order and initiate packing.</p>
+        </div>
+      </div>
+      <button (click)="retryPayment()" [disabled]="isRetryingPayment" class="btn-retry-payment">
+        <span *ngIf="!isRetryingPayment">💳 Complete Payment Now</span>
+        <span *ngIf="isRetryingPayment">Opening Razorpay...</span>
+      </button>
+    </div>
+    <div *ngIf="retryPaymentError" class="payment-error-alert">
+      ⚠️ {{ retryPaymentError }}
+    </div>
+
     <div class="details-grid">
       <!-- Fulfillment & Distance Info -->
       <div class="detail-tile">
