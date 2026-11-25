@@ -40,6 +40,9 @@ public class ReturnService {
     private final ObjectMapper objectMapper;
     private final com.novapetzlife.order.OrderStatusHistoryRepository statusHistoryRepository;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     public ReturnService(
             ReturnRequestRepository returnRequestRepository,
             ReturnRequestItemRepository returnRequestItemRepository,
@@ -367,8 +370,11 @@ public class ReturnService {
 
     @Transactional
     public OrderDetailDto cancelOrder(String orderNumber, String reason, String operator, Customer customer, boolean isAdmin) {
-        Order order = orderRepository.findByOrderNumber(orderNumber)
+        Order order = orderRepository.findByOrderNumberWithLock(orderNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with number: " + orderNumber));
+        if (entityManager != null && order.getId() != null && entityManager.contains(order)) {
+            entityManager.refresh(order, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        }
 
         String currentStatus = order.getOrderStatus();
 

@@ -48,6 +48,27 @@ public class Refund {
     @Column(name = "created_at", updatable = false)
     private Instant createdAt = Instant.now();
 
+    @Column(name = "idempotency_key", length = 100, unique = true)
+    private String idempotencyKey;
+
+    @Column(name = "receipt", length = 40, unique = true)
+    private String receipt;
+
+    @Column(name = "claim_token", length = 64)
+    private String claimToken;
+
+    @Column(name = "attempt_count", nullable = false)
+    private int attemptCount = 0;
+
+    @Column(name = "claim_expires_at")
+    private Instant claimExpiresAt;
+
+    @Column(name = "recovery_status", length = 50)
+    private String recoveryStatus = "PENDING";
+
+    @Column(name = "last_attempt_at")
+    private Instant lastAttemptAt;
+
     public Refund() {}
 
     public Refund(Order order, Payment payment, String gatewayRefundId, BigDecimal amount, String status, String reason, String approvedBy) {
@@ -148,5 +169,61 @@ public class Refund {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public String getReceipt() {
+        return receipt;
+    }
+
+    public void setReceipt(String receipt) {
+        this.receipt = receipt;
+    }
+
+    public String getClaimToken() {
+        return claimToken;
+    }
+
+    public void setClaimToken(String claimToken) {
+        this.claimToken = claimToken;
+    }
+
+    public int getAttemptCount() {
+        return attemptCount;
+    }
+
+    public void setAttemptCount(int attemptCount) {
+        this.attemptCount = attemptCount;
+    }
+
+    public Instant getClaimExpiresAt() {
+        return claimExpiresAt;
+    }
+
+    public void setClaimExpiresAt(Instant claimExpiresAt) {
+        this.claimExpiresAt = claimExpiresAt;
+    }
+
+    public String getRecoveryStatus() {
+        return recoveryStatus;
+    }
+
+    public void setRecoveryStatus(String recoveryStatus) {
+        this.recoveryStatus = recoveryStatus;
+    }
+
+    public Instant getLastAttemptAt() {
+        return lastAttemptAt;
+    }
+
+    public void setLastAttemptAt(Instant lastAttemptAt) {
+        this.lastAttemptAt = lastAttemptAt;
     }
 }
