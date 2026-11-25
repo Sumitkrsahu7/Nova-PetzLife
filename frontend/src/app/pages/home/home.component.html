@@ -43,7 +43,7 @@
             <span class="badge-icon">🏪</span>
             <div class="badge-content">
               <h4>Petzlife Storefront</h4>
-              <p>{{ shopCoordinates.address }}</p>
+              <p>Kuravankonam, Thiruvananthapuram</p>
             </div>
           </div>
           <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=700&auto=format&fit=crop&q=80"
@@ -129,7 +129,7 @@
           <div class="map-indicator-box">
             <div class="pin-marker">📍</div>
             <div class="map-shop-title">Petzlife Store Location</div>
-            <div class="map-shop-coords">{{ shopCoordinates.address }}</div>
+            <div class="map-shop-coords">Kuravankonam, Thiruvananthapuram</div>
             <div class="radius-circle-note">
               <span class="circle-legend"></span>
               <span>Local Service Area Coverage</span>
@@ -153,9 +153,21 @@
       <div class="info-card">
         <h3>📍 Physical Store Location</h3>
         <p class="store-name"><strong>Petzlife (NOVA PETZLIFE)</strong></p>
-        <p class="address-text">{{ shopCoordinates.address }}</p>
-        <div class="contact-pill">
-          <span>📞 Phone / WhatsApp: Storefront Desk</span>
+        <p class="store-locality">Kuravankonam, Thiruvananthapuram</p>
+        
+        <!-- Storefront Desk Direct Contact Actions -->
+        <div class="storefront-desk-box">
+          <span class="desk-heading">Storefront Desk Contact:</span>
+          <div class="desk-actions-row">
+            <a [href]="'tel:' + storePhoneTel" class="desk-btn desk-phone-btn" title="Call Storefront Desk">
+              <span class="btn-icon">📞</span>
+              <span>Call: {{ storePhone }}</span>
+            </a>
+            <a [href]="whatsappUrl" target="_blank" rel="noopener noreferrer" class="desk-btn desk-wa-btn" title="Chat on WhatsApp">
+              <span class="btn-icon">💬</span>
+              <span>WhatsApp Desk</span>
+            </a>
+          </div>
         </div>
       </div>
 

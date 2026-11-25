@@ -316,9 +316,9 @@
 }
 
 /* ==========================================================================
-   Mobile & Small Tablet Off-Canvas Drawer Behavior (<= 768px)
+   Mobile & Small Tablet Off-Canvas Drawer Behavior (<= 992px)
    ========================================================================== */
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .desktop-only {
     display: none !important;
   }
@@ -347,7 +347,7 @@
     top: 0;
     left: 0;
     bottom: 0;
-    width: 280px !important;
+    width: 285px !important;
     max-width: 85vw;
     height: 100vh;
     height: 100dvh;
@@ -361,9 +361,105 @@
       box-shadow: 4px 0 25px rgba(0, 0, 0, 0.5);
     }
 
-    /* Force expanded mode inside the mobile drawer */
+    /* Force full visibility of labels, titles, and text inside mobile drawer */
+    .link-label {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      color: #E2E8F0 !important;
+      font-size: 0.9rem !important;
+      font-weight: 500 !important;
+      flex: 1;
+      white-space: normal;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    .group-title {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      color: #94A3B8 !important;
+      font-size: 0.7rem !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 0.4rem 0.65rem;
+    }
+
+    .brand-titles {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      flex-direction: column;
+      gap: 0.15rem;
+
+      .shop-name {
+        color: #FFFFFF !important;
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+      }
+
+      .portal-badge {
+        color: #A7F3D0 !important;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+    }
+
+    .user-info {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      flex-direction: column;
+
+      .name {
+        color: #FFFFFF !important;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .role {
+        color: #94A3B8 !important;
+        font-size: 0.7rem;
+        font-weight: 500;
+      }
+    }
+
+    .logout-link {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+
+    .menu-link {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+        .link-label {
+          color: #FFFFFF !important;
+        }
+      }
+
+      &.active {
+        background-color: #248B58;
+        .link-label {
+          color: #FFFFFF !important;
+          font-weight: 700 !important;
+        }
+      }
+    }
+
+    /* Force expanded mode even if desktop sidebar was marked collapsed */
     &.collapsed {
-      width: 280px !important;
+      width: 285px !important;
 
       .sidebar-brand {
         padding: 1.5rem 1.25rem;
@@ -377,13 +473,13 @@
       }
 
       .sidebar-menu {
-        padding: 1rem 0.75rem;
+        padding: 1rem 0.75rem 2rem;
       }
 
       .menu-link {
         justify-content: flex-start;
-        padding: 0.65rem 0.75rem;
-        gap: 0.7rem;
+        padding: 0.65rem 0.85rem;
+        gap: 0.75rem;
 
         .link-icon {
           font-size: 1rem;

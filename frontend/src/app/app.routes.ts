@@ -34,6 +34,8 @@ export const routes: Routes = [
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'account', component: AccountComponent, canActivate: [authGuard] },
   { path: 'profile', component: AccountComponent, canActivate: [authGuard] },
+  { path: 'orders', redirectTo: 'account?tab=orders', pathMatch: 'full' },
+  { path: 'order-history', redirectTo: 'account?tab=orders', pathMatch: 'full' },
   { path: 'my-pets', component: PetsComponent, canActivate: [authGuard] },
   { path: 'support', component: SupportComponent },
   { path: 'policies', component: PoliciesComponent },

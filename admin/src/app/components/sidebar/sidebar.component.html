@@ -14,8 +14,8 @@
 >
   <!-- Brand Header -->
   <div class="sidebar-brand">
-    <div class="brand-paw" [title]="isCollapsed ? 'NOVA PETZLIFE Admin' : ''">🐾</div>
-    <div class="brand-titles" *ngIf="!isCollapsed">
+    <div class="brand-paw" [title]="(isCollapsed && !isMobileDrawerOpen) ? 'NOVA PETZLIFE Admin' : ''">🐾</div>
+    <div class="brand-titles" *ngIf="!isCollapsed || isMobileDrawerOpen">
       <span class="shop-name">NOVA PETZLIFE</span>
       <span class="portal-badge">ADMIN CONTROL</span>
     </div>
@@ -44,7 +44,7 @@
   <!-- Navigation Groups -->
   <nav class="sidebar-menu">
     <div *ngFor="let group of navGroups" class="menu-group">
-      <span class="group-title" *ngIf="!isCollapsed">{{ group.title }}</span>
+      <span class="group-title" *ngIf="!isCollapsed || isMobileDrawerOpen">{{ group.title }}</span>
       <div class="group-items">
         <ng-container *ngFor="let item of group.items">
           <a
@@ -56,9 +56,9 @@
             [title]="item.label"
           >
             <span class="link-icon">{{ item.icon }}</span>
-            <span class="link-label" *ngIf="!isCollapsed">{{ item.label }}</span>
+            <span class="link-label" *ngIf="!isCollapsed || isMobileDrawerOpen">{{ item.label }}</span>
             <span
-              *ngIf="item.badge && !isCollapsed"
+              *ngIf="item.badge && (!isCollapsed || isMobileDrawerOpen)"
               class="link-badge"
               [ngClass]="'badge-' + item.badgeType"
             >
@@ -75,11 +75,11 @@
     <div class="avatar-circle" [title]="currentUserName + ' (' + currentUserRole + ')'">
       {{ currentUserRole === 'ROLE_SUPER_ADMIN' ? '👑' : '👤' }}
     </div>
-    <div class="user-info" *ngIf="!isCollapsed">
+    <div class="user-info" *ngIf="!isCollapsed || isMobileDrawerOpen">
       <span class="name">{{ currentUserName }}</span>
       <span class="role">{{ currentUserRole === 'ROLE_SUPER_ADMIN' ? 'SUPER ADMIN' : 'STAFF ADMIN' }}</span>
     </div>
-    <button type="button" (click)="logout()" class="logout-link" title="Logout" *ngIf="!isCollapsed">🚪</button>
+    <button type="button" (click)="logout()" class="logout-link" title="Logout" *ngIf="!isCollapsed || isMobileDrawerOpen">🚪</button>
   </div>
 
   <!-- Admin Logout Confirmation Modal -->

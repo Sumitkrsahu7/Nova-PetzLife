@@ -30,13 +30,6 @@
     >
       📦 Order History
     </button>
-    <button
-      class="tab-btn"
-      [class.active]="activeTab === 'pets'"
-      (click)="setTab('pets')"
-    >
-      🐾 My Pets ({{ pets.length }})
-    </button>
   </div>
 
   <!-- Profile Tab -->
@@ -63,45 +56,33 @@
         </div>
       </div>
 
-      <!-- Registered Pets Summary Box -->
-      <div class="account-pets-summary-box">
-        <div class="pets-summary-header">
+      <!-- Dedicated Account Security & Privacy Section -->
+      <div class="security-privacy-card">
+        <div class="security-header">
+          <div class="header-icon">🛡️</div>
           <div>
-            <h4>🐾 Registered Pets ({{ pets.length }})</h4>
-            <p>Personalized nutrition and life-stage care</p>
-          </div>
-          <button type="button" (click)="setTab('pets')" class="btn btn-outline btn-sm">View All Pets →</button>
-        </div>
-        <div *ngIf="pets.length > 0" class="pets-pill-list">
-          <div *ngFor="let pet of pets" class="pet-summary-pill" (click)="setTab('pets')">
-            <span class="pet-icon">{{ getSpeciesIcon(pet.petType) }}</span>
-            <div class="pet-meta">
-              <strong>{{ pet.petName }}</strong>
-              <small>{{ pet.petType }}<span *ngIf="pet.breed"> • {{ pet.breed }}</span></small>
-            </div>
+            <h4>Privacy & Account Deletion</h4>
+            <p>Manage your account lifecycle and personal data governance</p>
           </div>
         </div>
-        <div *ngIf="pets.length === 0 && !isLoadingPets" class="empty-pets-hint">
-          <p>No pets registered yet. Add your pets to get tailored nutritional plans!</p>
-          <a routerLink="/my-pets" class="btn btn-primary btn-sm">+ Register A Pet</a>
-        </div>
-      </div>
 
-      <div class="store-info-box">
-        <h4>🏪 Petzlife Store</h4>
-        <p>Your local pet supplies are fulfilled straight from {{ shopAddress }}.</p>
-        <p class="highlight">Prompt, dependable local pet delivery directly to your door across Trivandrum!</p>
-      </div>
-
-      <!-- Danger Zone: Delete Account -->
-      <div class="danger-zone-box">
-        <div class="danger-info">
-          <h4>⚠️ Danger Zone</h4>
-          <p>Permanently remove your account and stored personal details from NOVA PETZLIFE.</p>
+        <div class="security-explanation">
+          <p>
+            Under data protection rights, you can request permanent deletion of your customer profile.
+            This will deactivate your account, remove saved addresses, and revoke active login access.
+            Tax invoices and completed order records remain archived for statutory financial compliance.
+          </p>
         </div>
-        <button type="button" class="btn-danger-outline" (click)="openDeleteAccountModal()">
-          Delete Account
-        </button>
+
+        <div class="danger-action-row">
+          <div class="danger-notice">
+            <span class="warning-badge">Permanent Action</span>
+            <span class="warning-text">This operation cannot be undone once confirmed.</span>
+          </div>
+          <button type="button" class="btn-danger-outline" (click)="openDeleteAccountModal()">
+            🗑️ Delete Account
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -269,75 +250,6 @@
           </button>
           <a [routerLink]="['/track', order.orderNumber]" class="btn btn-outline btn-sm">Track Order</a>
           <a [routerLink]="['/invoice', order.orderNumber]" class="btn btn-outline btn-sm">View Invoice</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Pets Tab -->
-  <div *ngIf="activeTab === 'pets'" class="tab-content">
-    <div class="card-header-flex">
-      <div>
-        <h3>🐾 My Registered Pets ({{ pets.length }})</h3>
-        <p class="section-sub">Personalized pet profiles, life-stage nutrition, and dietary sensitivities</p>
-      </div>
-      <a routerLink="/my-pets" class="btn btn-primary btn-sm">+ Add / Manage Pets</a>
-    </div>
-
-    <div *ngIf="isLoadingPets" class="loading-state">
-      <p>Loading your registered pet profiles...</p>
-    </div>
-
-    <div *ngIf="!isLoadingPets && pets.length === 0" class="empty-state">
-      <div class="empty-icon">🐾</div>
-      <h4>No Registered Pets Yet</h4>
-      <p>Register your dog, cat, or bird to get personalized nutrition recommendations, tailored food suggestions, and special treats!</p>
-      <a routerLink="/my-pets" class="btn btn-primary mt-2">Register Your First Pet</a>
-    </div>
-
-    <div *ngIf="!isLoadingPets && pets.length > 0" class="pets-grid">
-      <div *ngFor="let pet of pets" class="card pet-account-card">
-        <div class="pet-card-top">
-          <div class="pet-avatar-circle">{{ getSpeciesIcon(pet.petType) }}</div>
-          <div class="pet-header-info">
-            <h4>{{ pet.petName }}</h4>
-            <span class="pet-species-badge">{{ pet.petType }}<span *ngIf="pet.breed"> • {{ pet.breed }}</span></span>
-          </div>
-        </div>
-
-        <div class="pet-details-table">
-          <div class="pet-detail-row" *ngIf="pet.lifeStage">
-            <span class="p-label">Life Stage:</span>
-            <span class="p-value">{{ pet.lifeStage }}</span>
-          </div>
-          <div class="pet-detail-row" *ngIf="pet.gender">
-            <span class="p-label">Gender:</span>
-            <span class="p-value">{{ pet.gender }}</span>
-          </div>
-          <div class="pet-detail-row" *ngIf="pet.weightKg">
-            <span class="p-label">Weight:</span>
-            <span class="p-value">{{ pet.weightKg }} kg</span>
-          </div>
-          <div class="pet-detail-row" *ngIf="pet.dietaryPreferences">
-            <span class="p-label">Diet Preferences:</span>
-            <span class="p-value">{{ pet.dietaryPreferences }}</span>
-          </div>
-          <div class="pet-detail-row" *ngIf="pet.foodSensitivities">
-            <span class="p-label">Sensitivities:</span>
-            <span class="p-value danger-text">{{ pet.foodSensitivities }}</span>
-          </div>
-        </div>
-
-        <div *ngIf="pet.adminFeedback" class="pet-admin-feedback-box">
-          <div class="feedback-badge-row">
-            <span class="sparkle">✨</span>
-            <strong>Veterinary / Pet Nutritionist Advice</strong>
-          </div>
-          <p>{{ pet.adminFeedback }}</p>
-        </div>
-
-        <div class="pet-card-actions">
-          <a routerLink="/my-pets" class="btn btn-outline btn-sm">View Recommendations & Edit →</a>
         </div>
       </div>
     </div>

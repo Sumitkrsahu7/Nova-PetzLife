@@ -178,6 +178,9 @@
       <a routerLink="/my-pets" routerLinkActive="active" (click)="closeMobileMenu()" class="nav-item">
         🐾 My Pets
       </a>
+      <a routerLink="/account" [queryParams]="{tab: 'orders'}" routerLinkActive="active" (click)="closeMobileMenu()" class="nav-item">
+        📦 Order History
+      </a>
 
       <!-- Combined Help & FAQs Dropdown (Pure Click-to-Toggle) -->
       <div
