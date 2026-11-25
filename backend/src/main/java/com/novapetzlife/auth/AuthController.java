@@ -123,6 +123,28 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    @PostMapping("/bootstrap-super-admin")
+    @Operation(summary = "One-time initial Super Admin bootstrap", description = "Permanently locks once the first Super Admin is initialized.")
+    public ResponseEntity<ApiResponse<AuthResponse>> bootstrapSuperAdmin(
+            @Valid @RequestBody BootstrapSuperAdminRequest request,
+            HttpServletRequest httpRequest) {
+
+        String ipAddress = ClientIpUtil.getClientIp(httpRequest);
+        AuthResult result = authService.bootstrapSuperAdmin(request, ipAddress);
+
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", result.rawRefreshToken())
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite(cookieSameSite)
+                .path("/api/v1/auth")
+                .maxAge(refreshExpirationMs / 1000)
+                .build();
+
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(ApiResponse.ok("Super Admin account successfully bootstrapped", result.response()));
+    }
+
     @PostMapping("/logout")
     @Operation(summary = "Log out user, invalidate refresh token, and clear security context")
     public ResponseEntity<ApiResponse<Void>> logout(
