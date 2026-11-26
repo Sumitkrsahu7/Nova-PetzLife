@@ -27,13 +27,18 @@
       <!-- Store Location Card -->
       <div class="store-card" *ngIf="storeInfo">
         <div class="store-badge">📍 Store Identity & Location</div>
-        <h2>{{ storeInfo.shopName }} ({{ storeInfo.listingName }})</h2>
+        <h2>
+          {{ storeInfo.shopName }}
+          <span *ngIf="storeInfo.listingName && storeInfo.listingName.trim().toLowerCase() !== storeInfo.shopName.trim().toLowerCase()" class="listing-subname">
+            ({{ storeInfo.listingName }})
+          </span>
+        </h2>
         <p class="store-address">{{ storeInfo.address }}, {{ storeInfo.city }}, {{ storeInfo.state }} - {{ storeInfo.postalCode }}</p>
 
         <div class="meta-row">
           <div class="meta-item">
             <span class="icon">🕒</span>
-            <div>
+            <div class="meta-content">
               <strong>Store Opening Hours</strong>
               <p>{{ storeInfo.openingHours }}</p>
             </div>
@@ -41,7 +46,7 @@
 
           <div class="meta-item">
             <span class="icon">⚡</span>
-            <div>
+            <div class="meta-content">
               <strong>Local Delivery</strong>
               <p>Prompt door delivery across Thiruvananthapuram from our store</p>
             </div>

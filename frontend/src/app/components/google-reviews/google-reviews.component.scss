@@ -211,26 +211,6 @@
   }
 }
 
-.integration-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  background: #F1F5F9;
-  border-radius: 8px;
-  padding: 0.85rem 1.25rem;
-  font-size: 0.8rem;
-  color: #475569;
-  line-height: 1.4;
-
-  .notice-icon {
-    font-size: 1.1rem;
-  }
-
-  strong {
-    color: #1E293B;
-  }
-}
-
 @media (max-width: 900px) {
   .rating-overview-card {
     flex-direction: column;
