@@ -2,6 +2,9 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
+  box-sizing: border-box;
+  width: 100%;
+  overflow-x: hidden;
 
   @media (max-width: 600px) {
     padding: 1.25rem 0.85rem 3rem;
@@ -10,19 +13,34 @@
 
 .support-header {
   margin-bottom: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+
   h1 { font-size: 2rem; font-weight: 800; color: #26352D; margin: 0 0 0.25rem; }
   .subtitle { color: #667085; font-size: 0.95rem; margin: 0; }
 }
 
 .support-grid {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: minmax(0, 1fr) 420px;
   gap: 2rem;
   align-items: start;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 
   @media (max-width: 960px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
   }
+}
+
+.info-faq-column,
+.form-column {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .store-card {
@@ -32,6 +50,16 @@
   padding: 1.75rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+
+  @media (max-width: 600px) {
+    padding: 1.25rem 1rem;
+    border-radius: 14px;
+    margin-bottom: 1.25rem;
+  }
 
   .store-badge {
     display: inline-block;
@@ -44,25 +72,94 @@
     margin-bottom: 0.75rem;
   }
 
-  h2 { font-size: 1.35rem; font-weight: 800; color: #26352D; margin: 0 0 0.4rem; }
-  .store-address { font-size: 0.9rem; color: #475467; margin: 0 0 1.25rem; line-height: 1.5; }
+  h2 {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #26352D;
+    margin: 0 0 0.4rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+
+    .listing-subname {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #64748B;
+    }
+
+    @media (max-width: 600px) {
+      font-size: 1.15rem;
+    }
+  }
+
+  .store-address {
+    font-size: 0.9rem;
+    color: #475467;
+    margin: 0 0 1.25rem;
+    line-height: 1.5;
+    word-break: break-word;
+    overflow-wrap: break-word;
+
+    @media (max-width: 600px) {
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+  }
 
   .meta-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
     margin-bottom: 1.25rem;
-    @media (max-width: 600px) { grid-template-columns: 1fr; }
+    width: 100%;
+    box-sizing: border-box;
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
 
     .meta-item {
       display: flex;
-      gap: 0.6rem;
+      align-items: flex-start;
+      gap: 0.75rem;
       background: #f9fafb;
-      padding: 0.75rem 1rem;
+      padding: 0.85rem 1rem;
       border-radius: 10px;
-      .icon { font-size: 1.2rem; }
-      strong { display: block; font-size: 0.8rem; color: #344054; margin-bottom: 0.2rem; }
-      p { margin: 0; font-size: 0.75rem; color: #667085; line-height: 1.4; }
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+
+      .icon {
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        line-height: 1.2;
+        margin-top: 0.1rem;
+      }
+
+      .meta-content {
+        flex: 1;
+        min-width: 0;
+        word-break: break-word;
+        overflow-wrap: break-word;
+
+        strong {
+          display: block;
+          font-size: 0.8rem;
+          color: #344054;
+          margin-bottom: 0.25rem;
+          word-break: break-word;
+        }
+
+        p {
+          margin: 0;
+          font-size: 0.75rem;
+          color: #667085;
+          line-height: 1.45;
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
+      }
     }
   }
 
@@ -70,20 +167,37 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
+    width: 100%;
+    box-sizing: border-box;
 
     .pill-btn {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      padding: 0.5rem 1rem;
+      padding: 0.55rem 0.95rem;
       border-radius: 9999px;
-      font-size: 0.85rem;
+      font-size: 0.825rem;
       font-weight: 700;
       text-decoration: none;
       transition: all 0.2s;
+      box-sizing: border-box;
+      max-width: 100%;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      min-height: 42px;
+
       &.phone { background: #e7f5e9; color: #155c3b; &:hover { background: #c8ebd1; } }
       &.whatsapp { background: #dcfce7; color: #166534; &:hover { background: #bbf7d0; } }
       &.email { background: #f2f4f7; color: #344054; &:hover { background: #e4e7ec; } }
+
+      @media (max-width: 480px) {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        padding: 0.65rem 1rem;
+        font-size: 0.85rem;
+        min-height: 44px;
+      }
     }
   }
 }
@@ -95,6 +209,15 @@
   padding: 1.75rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+
+  @media (max-width: 600px) {
+    padding: 1.25rem 1rem;
+    border-radius: 14px;
+  }
 
   h2 { font-size: 1.35rem; font-weight: 800; color: #26352D; margin: 0 0 0.25rem; }
   .faq-sub { font-size: 0.85rem; color: #667085; margin: 0 0 1rem; }
@@ -348,6 +471,16 @@
   border-radius: 16px;
   padding: 1.75rem;
   box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+
+  @media (max-width: 600px) {
+    padding: 1.25rem 1rem;
+    border-radius: 14px;
+    margin-bottom: 1.25rem;
+  }
 
   h3 { font-size: 1.15rem; font-weight: 800; color: #26352D; margin: 0 0 0.25rem; }
   .track-sub { font-size: 0.8rem; color: #667085; margin: 0 0 1rem; }
@@ -478,6 +611,15 @@
   border-radius: 16px;
   padding: 1.75rem;
   box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+
+  @media (max-width: 600px) {
+    padding: 1.25rem 1rem;
+    border-radius: 14px;
+  }
 
   h2 { font-size: 1.35rem; font-weight: 800; color: #26352D; margin: 0 0 0.25rem; }
   .card-desc { font-size: 0.85rem; color: #667085; margin: 0 0 1.25rem; line-height: 1.4; }
