@@ -1,10 +1,13 @@
 package com.novapetzlife.auth;
 
 import com.novapetzlife.email.EmailService;
+import com.novapetzlife.email.GoogleAppsScriptEmailService;
 import com.novapetzlife.user.User;
 import com.novapetzlife.user.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ public class PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
     private final EmailService emailService;
+    private final GoogleAppsScriptEmailService gmailBridgeEmailService;
 
     public PasswordResetService(
             PasswordResetTokenRepository resetTokenRepository,
@@ -40,11 +44,23 @@ public class PasswordResetService {
             PasswordEncoder passwordEncoder,
             RefreshTokenService refreshTokenService,
             EmailService emailService) {
+        this(resetTokenRepository, userRepository, passwordEncoder, refreshTokenService, emailService, null);
+    }
+
+    @Autowired
+    public PasswordResetService(
+            PasswordResetTokenRepository resetTokenRepository,
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            RefreshTokenService refreshTokenService,
+            EmailService emailService,
+            @Qualifier("googleAppsScriptEmailService") GoogleAppsScriptEmailService gmailBridgeEmailService) {
         this.resetTokenRepository = resetTokenRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenService = refreshTokenService;
         this.emailService = emailService;
+        this.gmailBridgeEmailService = gmailBridgeEmailService;
     }
 
     @Transactional
@@ -73,7 +89,11 @@ public class PasswordResetService {
             resetTokenRepository.save(resetToken);
 
             log.info("Generated password reset token for user id={}, expiresAt={}", user.getId(), expiresAt);
-            emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), rawToken);
+            if (gmailBridgeEmailService != null && gmailBridgeEmailService.isEnabled()) {
+                gmailBridgeEmailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), rawToken);
+            } else {
+                emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), rawToken);
+            }
         });
 
         // Always return generic confirmation to protect against email enumeration attacks

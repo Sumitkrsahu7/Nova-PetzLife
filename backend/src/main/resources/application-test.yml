@@ -31,6 +31,9 @@ app:
     cookie-secure: false
     cookie-same-site: Lax
 
+gmail-bridge:
+  enabled: false
+
 razorpay:
   key-id: rzp_test_mock_id
   key-secret: mock_secret_key
