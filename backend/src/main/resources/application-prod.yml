@@ -51,12 +51,19 @@ app:
     enabled: ${RATE_LIMITING_ENABLED:true}
   customer-base-url: ${APP_CUSTOMER_BASE_URL:https://novapetzlife.com}
 
-resend:
-  enabled: ${RESEND_ENABLED:false}
-  api-key: ${RESEND_API_KEY:}
-  base-url: ${RESEND_BASE_URL:https://api.resend.com}
-  from-email: ${RESEND_FROM_EMAIL:}
-  from-name: ${RESEND_FROM_NAME:NOVA PETZLIFE}
+# Previous Resend configuration kept commented out for easy rollback once custom domain DNS is verified:
+# resend:
+#   enabled: ${RESEND_ENABLED:false}
+#   api-key: ${RESEND_API_KEY:}
+#   base-url: ${RESEND_BASE_URL:https://api.resend.com}
+#   from-email: ${RESEND_FROM_EMAIL:}
+#   from-name: ${RESEND_FROM_NAME:NOVA PETZLIFE}
+
+gmail-bridge:
+  enabled: ${GMAIL_BRIDGE_ENABLED:false}
+  webhook-url: ${GMAIL_BRIDGE_WEBHOOK_URL:}
+  secret: ${GMAIL_BRIDGE_SECRET:}
+  from-name: ${GMAIL_BRIDGE_FROM_NAME:NOVA PETZLIFE}
 
 razorpay:
   key-id: ${RAZORPAY_KEY_ID:}
